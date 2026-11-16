@@ -229,6 +229,7 @@ Mientras tanto la Etapa 5 no depende de esto: todas las sesiones trabajan en wor
 - Cambios en los generadores de PDF.
 
 ## Bitácora (lo más nuevo arriba)
+- 16/11/2026 · Director: lanzados el Líder de la Fase A (`fase-a`, local_46deab67-ae1c-4dca-bfca-6f212dba54b4) y el de la Fase B (`fase-b`, local_2cc916eb-b786-4d9e-89da-18e171df236c), Opus, worktrees desde `claude/etapa5-plan`. Puertas pendientes: A1 (reconocimiento) y B1 (maquetas).
 - 16/11/2026 · Director: T0.1 hecha. Respaldo en `C:\Users\Steve\CATDIC-RESPALDOS\etapa5-2026-11-16` (planes locales, skills, BD) y en `git stash` ("respaldo-etapa5-2026-11-16"). Los 4 archivos locales de `PLANES/` eran superconjuntos de `origin/main` (Evaluaciones 5–13 de la Etapa 2, 23 de la Etapa 3 y decisiones de Steven sin subir): se rescatan en la rama `claude/etapa5-plan`. Checkout principal en `main` = `b5f7d26`.
 - 16/11/2026 · Steven aprueba el plan con las propuestas.
 - 16/11/2026 · Director: plan v2. Steven decide sin llave y sin pago adicional; la Fase A pasa a preparar → leer con Claude Code → importar con anclaje. Sin sesiones lanzadas.
