@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CATDIC · Maqueta A · Expediente</title>
+<style>
+:root {
+  --suelo: #efefef;          /* gris de la Hoja de Inspección STP */
+  --papel: #ffffff;
+  --tinta: #1b1f24;
+  --tinta-2: #4b525b;
+  --tinta-3: #6b737d;
+  --regla: #d3d6da;
+  --regla-fina: #e4e6e9;
+  --banda: #dcdfe3;
+  --riel: #14304d;           /* azul tinta de formulario */
+  --riel-2: #1c3d60;
+  --riel-txt: #e9eff6;
+  --riel-txt-2: #a9bdd2;
+  --accion: #14304d;
+  --accion-hover: #1f4569;
+  --duda: #9a3412; --duda-fondo: #fdebdd; --duda-borde: #e9a97e;
+  --hallazgo: #854d0e; --hallazgo-fondo: #fbf3d6;
+  --ok: #166534; --ok-fondo: #e2f2e7; --ok-borde: #93c9a5;
+  --proc: #1e40af; --proc-fondo: #e3ebfb;
+  --rojo-plano: rgb(220, 0, 0);
+  --pend: #92400e;
+  --foco: #2563eb;
+  --ui: "Segoe UI Variable Text", "Segoe UI Variable", "Segoe UI", system-ui, sans-serif;
+  --rotulo: "Bahnschrift", "Segoe UI Variable Text", "Segoe UI", sans-serif;
+  --dato: "Consolas", "Cascadia Mono", ui-monospace, monospace;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; }
+body { background: var(--suelo); color: var(--tinta); font: 14px/1.45 var(--ui); font-variant-numeric: tabular-nums; }
+::selection { background: #c9daf0; color: var(--tinta); }
+:focus-visible { outline: 2px solid var(--foco); outline-offset: 2px; border-radius: 3px; }
+button { font: inherit; cursor: pointer; }
+svg.ic { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+
+.app { display: grid; grid-template-columns: 236px 1fr; height: 100vh; }
+
+/* ---------- Riel (navegación) ---------- */
+.riel { background: var(--riel); color: var(--riel-txt); display: flex; flex-direction: column; padding: 18px 12px 14px; }
+.marca { display: flex; align-items: center; gap: 10px; padding: 0 8px 18px; border-bottom: 1px solid #ffffff1f; }
+.marca b { font: 700 15px/1 var(--rotulo); letter-spacing: .08em; background: var(--riel-txt); color: var(--riel); padding: 5px 7px 4px; border-radius: 3px; }
+.marca span { font: 600 13px/1.2 var(--ui); color: var(--riel-txt); }
+.marca small { display: block; color: var(--riel-txt-2); font-weight: 400; font-size: 11.5px; }
+.nav { list-style: none; margin: 14px 0 0; padding: 0; display: grid; gap: 2px; }
+.nav a { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 6px; color: var(--riel-txt-2); text-decoration: none; font-size: 13.5px; }
+.nav a:hover { background: #ffffff12; color: var(--riel-txt); }
+.nav a[aria-current="page"] { background: var(--riel-txt); color: var(--riel); font-weight: 600; }
+.nav .n { margin-left: auto; font: 600 12px/1 var(--rotulo); padding: 3px 6px; border-radius: 10px; background: #ffffff1a; color: var(--riel-txt); }
+.nav a[aria-current="page"] .n { background: var(--riel); color: var(--riel-txt); }
+.nav .n.alerta { background: #f3b28a; color: #4a1a04; }
+.nav .sep { height: 1px; background: #ffffff1f; margin: 10px 4px; }
+.nav a.inactivo { opacity: .55; cursor: default; }
+.nav a.inactivo:hover { background: none; color: var(--riel-txt-2); }
+.nav .fase { margin-left: auto; font-size: 10.5px; border: 1px solid #ffffff40; border-radius: 3px; padding: 1px 5px; }
+.riel-pie { margin-top: auto; padding: 12px 8px 0; border-top: 1px solid #ffffff1f; font-size: 12px; color: var(--riel-txt-2); display: grid; gap: 6px; }
+.riel-pie .punto { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: #7ad49b; margin-right: 6px; }
+
+/* ---------- Área de trabajo ---------- */
+.trabajo { display: flex; flex-direction: column; min-width: 0; height: 100vh; }
+.barra { display: flex; align-items: center; gap: 12px; padding: 14px 28px; background: var(--papel); border-bottom: 1px solid var(--regla); }
+.barra h1 { margin: 0; font: 600 19px/1.2 var(--ui); letter-spacing: -.01em; }
+.barra .migas { font-size: 12.5px; color: var(--tinta-3); }
+.barra .migas a { color: var(--tinta-2); text-decoration: none; }
+.barra .esp { flex: 1; }
+.btn { display: inline-flex; align-items: center; gap: 7px; height: 34px; padding: 0 14px; border-radius: 6px; border: 1px solid var(--regla); background: var(--papel); color: var(--tinta); font-size: 13.5px; font-weight: 500; transition: background-color .15s, border-color .15s, transform .1s; }
+.btn:hover { background: #f5f6f7; border-color: #bfc4ca; }
+.btn:active { transform: scale(.98); }
+.btn.prim { background: var(--accion); border-color: var(--accion); color: #fff; }
+.btn.prim:hover { background: var(--accion-hover); }
+.btn.peq { height: 28px; padding: 0 10px; font-size: 12.5px; }
+.btn[disabled] { opacity: .45; cursor: not-allowed; transform: none; }
+.desplaza { flex: 1; overflow: auto; padding: 22px 28px 64px; }
+
+/* Bandas numeradas: el lenguaje de la hoja STP */
+.hoja { background: var(--papel); border: 1px solid var(--regla); border-radius: 4px; margin-bottom: 20px; }
+.banda { display: flex; align-items: center; gap: 12px; background: var(--banda); padding: 7px 14px; font: 600 12.5px/1.3 var(--rotulo); letter-spacing: .05em; text-transform: uppercase; color: #2b3138; border-bottom: 1px solid #c8ccd1; }
+.banda .esp { flex: 1; }
+.banda .nota { font: 400 12px/1.3 var(--ui); letter-spacing: 0; text-transform: none; color: var(--tinta-2); }
+.banda.dividida { display: grid; grid-template-columns: 1fr 1fr; padding: 0; gap: 0; }
+.banda.dividida > div { padding: 7px 14px; display: flex; gap: 10px; align-items: center; }
+.banda.dividida > div + div { border-left: 2px solid #fff; }
+
+.aviso-bloqueo { display: grid; grid-template-columns: auto 1fr auto; gap: 16px; align-items: center; padding: 14px 16px; }
+.aviso-bloqueo .ic-grande { width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center; background: var(--duda-fondo); color: var(--duda); }
+.aviso-bloqueo p { margin: 0; }
+.aviso-bloqueo strong { font-size: 15px; }
+.aviso-bloqueo .det { color: var(--tinta-2); font-size: 13px; margin-top: 2px; }
+.lista-bloq { border-top: 1px solid var(--regla-fina); display: grid; grid-template-columns: repeat(3, 1fr); }
+.lista-bloq > div { padding: 10px 16px; border-right: 1px solid var(--regla-fina); font-size: 12.5px; }
+.lista-bloq > div:last-child { border-right: 0; }
+.lista-bloq .cifra { font: 600 20px/1.1 var(--rotulo); color: var(--tinta); margin-right: 6px; }
+.lista-bloq .cifra.duda { color: var(--duda); }
+
+table { width: 100%; border-collapse: collapse; }
+th { text-align: left; font: 600 11.5px/1.3 var(--rotulo); letter-spacing: .04em; text-transform: uppercase; color: var(--tinta-2); padding: 8px 12px; border-bottom: 1px solid var(--regla); background: #fafafa; white-space: nowrap; }
+td { padding: 9px 12px; border-bottom: 1px solid var(--regla-fina); vertical-align: top; }
+tr:last-child td { border-bottom: 0; }
+tbody tr:hover td { background: #f7f9fb; }
+.grupo-th th { background: #eef0f2; border-bottom: 1px solid var(--regla); color: #2b3138; font-size: 11px; }
+.grupo-th th.capa1 { border-right: 2px solid #fff; }
+.col-capa1 { border-right: 1px solid var(--regla); }
+.obra-nombre { font-weight: 600; }
+.sub { display: block; color: var(--tinta-3); font-size: 12px; }
+.num { font: 500 13px/1.3 var(--dato); }
+.acciones { display: flex; flex-direction: column; align-items: stretch; gap: 5px; }
+.acciones .btn { white-space: nowrap; justify-content: flex-start; }
+
+/* Etiquetas de estado */
+.est { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 600; padding: 2px 8px; border-radius: 3px; white-space: nowrap; border: 1px solid transparent; }
+.est::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+.est.dudas { color: var(--duda); background: var(--duda-fondo); border-color: var(--duda-borde); }
+.est.sinproc { color: #3f4650; background: #eceef0; border-color: #cfd3d8; }
+.est.procesada { color: var(--ok); background: var(--ok-fondo); border-color: var(--ok-borde); }
+.est.enproc { color: var(--proc); background: var(--proc-fondo); }
+
+/* "pendiente de verificar": un blanco del formulario, nunca un hueco */
+.pend { display: inline-block; min-width: 132px; font: italic 500 12px/1.2 var(--ui); color: var(--pend); border-bottom: 1.5px dashed #c98a4e; padding: 2px 2px 3px; white-space: nowrap; }
+.sinplano { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--duda); font-weight: 600; }
+
+.pie-tabla { display: flex; align-items: center; justify-content: space-between; padding: 9px 14px; border-top: 1px solid var(--regla); font-size: 12.5px; color: var(--tinta-2); background: #fafafa; }
+.pie-tabla a { color: var(--accion); font-weight: 600; text-decoration: none; }
+
+.cols-2 { display: grid; grid-template-columns: minmax(0, 1.65fr) minmax(0, 1fr); gap: 20px; align-items: start; }
+.ot { padding: 12px 16px; display: grid; gap: 4px; font-size: 13px; }
+.ot .doc { font: 600 13px/1.2 var(--dato); }
+.ot-col { display: grid; grid-template-columns: repeat(6, 1fr); border-top: 1px solid var(--regla-fina); }
+.ot-col > div { padding: 8px 10px; border-right: 1px solid var(--regla-fina); font-size: 11.5px; color: var(--tinta-3); }
+.ot-col > div:last-child { border-right: 0; }
+.ot-col b { display: block; font: 600 16px/1.2 var(--rotulo); color: var(--tinta); }
+.ot-col .activa b { color: var(--proc); }
+
+/* ---------- Confirmar datos del plano ---------- */
+.confirmar { display: grid; grid-template-columns: 300px 1fr; height: 100%; }
+.tablas { border-right: 1px solid var(--regla); background: var(--papel); overflow: auto; }
+.tablas h2 { margin: 0; padding: 14px 16px 6px; font: 600 12px/1.3 var(--rotulo); letter-spacing: .05em; text-transform: uppercase; color: var(--tinta-2); }
+.tablas .resumen { padding: 0 16px 12px; font-size: 12.5px; color: var(--tinta-2); border-bottom: 1px solid var(--regla-fina); }
+.tabla-item { display: block; width: 100%; text-align: left; border: 0; border-bottom: 1px solid var(--regla-fina); background: none; padding: 10px 16px; }
+.tabla-item:hover { background: #f6f8fa; }
+.tabla-item[aria-selected="true"] { background: #eaf0f7; box-shadow: inset 3px 0 0 var(--accion); }
+.tabla-item .t { display: flex; justify-content: space-between; gap: 8px; font-weight: 600; font-size: 13px; }
+.tabla-item .s { display: block; font-size: 12px; color: var(--tinta-3); margin-top: 2px; }
+.tabla-item .f { display: block; font-size: 12px; color: #a1281b; margin-top: 3px; }
+.res { font: 600 11px/1 var(--rotulo); letter-spacing: .05em; text-transform: uppercase; padding: 3px 6px; border-radius: 3px; }
+.res.verde { color: var(--ok); background: var(--ok-fondo); }
+.res.rojo { color: #a1281b; background: #fbe4e1; }
+.mas { padding: 10px 16px; font-size: 12.5px; color: var(--tinta-3); }
+.detalle { overflow: auto; padding: 20px 24px 64px; }
+.cab-tabla { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; margin-bottom: 4px; }
+.cab-tabla h2 { margin: 0; font: 600 18px/1.25 var(--ui); }
+.meta { font-size: 12.5px; color: var(--tinta-2); margin-bottom: 14px; }
+.comprob { display: flex; flex-wrap: wrap; gap: 6px 16px; padding: 10px 14px; font-size: 12.5px; color: var(--tinta-2); }
+.comprob span { display: inline-flex; align-items: center; gap: 5px; }
+.comprob svg { color: var(--ok); width: 15px; height: 15px; }
+.par { display: grid; grid-template-columns: 1fr 1fr; }
+.par > div { padding: 16px; min-width: 0; }
+.par > div + div { border-left: 1px solid var(--regla); }
+.recorte { background: #fff; border: 1px solid var(--regla); padding: 18px 16px; position: relative; }
+.plano-tabla { font: 500 12px/1 var(--rotulo); border-collapse: collapse; width: auto; margin: 0 auto; color: #000; }
+.plano-tabla td, .plano-tabla th { border: 1px solid #000; padding: 6px 9px; text-align: center; background: #fff !important; font: 500 12px/1 var(--rotulo); color: #000; letter-spacing: 0; text-transform: none; }
+.plano-tabla td.marcada { outline: 2px solid var(--rojo-plano); outline-offset: -1px; background: rgba(220,0,0,.08) !important; }
+.leyenda { font-size: 12px; color: var(--tinta-3); margin-top: 8px; }
+.prop td { font-size: 13px; }
+.prop tr { cursor: default; }
+.prop tr.activa td { background: #fbeeee; }
+.val { font: 600 13px/1.3 var(--dato); }
+.cierre { border-top: 1px solid var(--regla); padding: 16px; display: grid; gap: 12px; }
+.casilla { display: flex; gap: 10px; align-items: flex-start; padding: 12px 14px; border: 1px solid var(--regla); border-radius: 4px; background: #fafafa; font-size: 13.5px; }
+.casilla input { width: 17px; height: 17px; margin-top: 1px; accent-color: var(--accion); }
+.casilla small { display: block; color: var(--tinta-3); font-size: 12px; margin-top: 2px; }
+
+/* Barra de la maqueta (solo para revisar) */
+.maqueta { position: fixed; left: 50%; bottom: 14px; transform: translateX(-50%); display: flex; gap: 4px; align-items: center; background: #111a; backdrop-filter: blur(6px); padding: 5px; border-radius: 999px; font-size: 12px; color: #fff; z-index: 9; }
+.maqueta span { padding: 0 10px; opacity: .85; }
+.maqueta button { border: 0; background: transparent; color: #fff; padding: 6px 12px; border-radius: 999px; }
+.maqueta button[aria-pressed="true"] { background: #fff; color: #111; }
+[hidden] { display: none !important; }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-obras" viewBox="0 0 24 24"><path d="M4 21V5l8-2v18M12 8l8 2v11M3 21h18M7.5 9h1M7.5 13h1M7.5 17h1M15.5 13h1M15.5 17h1"/></symbol>
+  <symbol id="i-cola" viewBox="0 0 24 24"><path d="M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01"/></symbol>
+  <symbol id="i-duda" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.6 9.3a2.5 2.5 0 0 1 4.8.9c0 1.7-2.4 2.2-2.4 3.6M12 17.2h.01"/></symbol>
+  <symbol id="i-plano" viewBox="0 0 24 24"><path d="M3 5h18v14H3zM3 10h18M9 10v9M15 14h3"/></symbol>
+  <symbol id="i-ot" viewBox="0 0 24 24"><path d="M4 4h4v16H4zM10 4h4v10h-4zM16 4h4v7h-4z"/></symbol>
+  <symbol id="i-lectura" viewBox="0 0 24 24"><path d="M4 7V4h3M17 4h3v3M20 17v3h-3M7 20H4v-3M8 12h8M12 8v8"/></symbol>
+  <symbol id="i-sync" viewBox="0 0 24 24"><path d="M20 11a8 8 0 0 0-14.3-4.9L4 8M4 4v4h4M4 13a8 8 0 0 0 14.3 4.9L20 16M20 20v-4h-4"/></symbol>
+  <symbol id="i-rayo" viewBox="0 0 24 24"><path d="M13 3 5 14h6l-1 7 8-11h-6z"/></symbol>
+  <symbol id="i-mas" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-subir" viewBox="0 0 24 24"><path d="M12 16V4M7 9l5-5 5 5M4 20h16"/></symbol>
+  <symbol id="i-ok" viewBox="0 0 24 24"><path d="m5 12.5 4.5 4.5L19 7"/></symbol>
+  <symbol id="i-alerta" viewBox="0 0 24 24"><path d="M12 4 2.8 19.5h18.4zM12 10v4.5M12 17.2h.01"/></symbol>
+  <symbol id="i-extraer" viewBox="0 0 24 24"><path d="M4 4h10l6 6v10H4zM14 4v6h6M8 15h8"/></symbol>
+</svg>
+
+<div class="app">
+  <nav class="riel" aria-label="Secciones">
+    <div class="marca"><b>CATDIC</b><span>Control Taller<small>Supervisión y levantamiento</small></span></div>
+    <ul class="nav">
+      <li><a href="#principal" data-ir="principal" aria-current="page"><svg class="ic"><use href="#i-obras"/></svg>Obras<span class="n">3</span></a></li>
+      <li><a href="#principal" data-ir="principal"><svg class="ic"><use href="#i-cola"/></svg>Cola de visitas<span class="n">24</span></a></li>
+      <li><a href="#principal" data-ir="principal"><svg class="ic"><use href="#i-duda"/></svg>Mesa de Dudas<span class="n alerta">22</span></a></li>
+      <li><a href="#confirmar" data-ir="confirmar"><svg class="ic"><use href="#i-plano"/></svg>Planos y datos de diseño</a></li>
+      <li><a href="#principal" data-ir="principal"><svg class="ic"><use href="#i-ot"/></svg>Órdenes de trabajo<span class="n">1</span></a></li>
+      <li class="sep" role="separator"></li>
+      <li><a class="inactivo" aria-disabled="true"><svg class="ic"><use href="#i-lectura"/></svg>Lectura asistida<span class="fase">Fase C</span></a></li>
+    </ul>
+    <div class="riel-pie">
+      <span><span class="punto"></span>Servidor local · sin internet</span>
+      <span>Base local SQLite</span>
+    </div>
+  </nav>
+
+  <!-- ================= PANTALLA PRINCIPAL ================= -->
+  <section class="trabajo" id="pantalla-principal">
+    <header class="barra">
+      <div><h1>Obras</h1><div class="migas">Domingo 16/11/2026 · 3 obras activas</div></div>
+      <span class="esp"></span>
+      <button class="btn"><svg class="ic"><use href="#i-mas"/></svg>Nueva obra</button>
+      <button class="btn"><svg class="ic"><use href="#i-sync"/></svg>Sincronizar desde Dropbox</button>
+      <button class="btn prim"><svg class="ic"><use href="#i-rayo"/></svg>Procesar cola de visitas</button>
+    </header>
+    <div class="desplaza">
+
+      <div class="hoja">
+        <div class="banda">1. Lo que bloquea hoy<span class="esp"></span><span class="nota">Se resuelve en la Mesa de Dudas</span></div>
+        <div class="aviso-bloqueo">
+          <span class="ic-grande"><svg class="ic"><use href="#i-alerta"/></svg></span>
+          <p><strong>12 visitas de Terra Living no pueden procesarse</strong>
+            <span class="det" style="display:block">A 10 les falta la fecha o la clase, una no tiene el PDF en su carpeta y otra espera saber si ya tiene STP. Además, la visita 17 figura como Procesada con 3 etiquetas de fotos sin leer.</span></p>
+          <button class="btn prim">Abrir Mesa de Dudas</button>
+        </div>
+        <div class="lista-bloq">
+          <div><span class="cifra duda">20</span>dudas bloqueantes abiertas</div>
+          <div><span class="cifra">2</span>hallazgos internos por revisar</div>
+          <div><span class="cifra">6</span>visitas listas en la cola</div>
+        </div>
+      </div>
+
+      <div class="hoja">
+        <div class="banda">2. Obras<span class="esp"></span><span class="nota">Capa 1: el plano sellado · Capa 2: lo que se ve en obra</span></div>
+        <table>
+          <thead>
+            <tr class="grupo-th"><th colspan="3"></th><th colspan="2" class="capa1">Plano</th><th colspan="3">Obra</th></tr>
+            <tr><th>Obra</th><th>Tipo / formato</th><th>Cliente</th><th>Plano vigente</th><th class="col-capa1">Datos de diseño</th><th>Visitas</th><th>Dudas</th><th></th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><span class="obra-nombre">Terra Living</span><span class="sub">Supervisor: <span class="pend" style="min-width:0">pendiente de verificar</span></span></td>
+              <td>Supervisión<span class="sub">STP-MIVED + Formularios MIVED</span></td>
+              <td>CONSTRUCTORA CEBALLOS</td>
+              <td><span class="sinplano"><svg class="ic" style="width:15px;height:15px"><use href="#i-alerta"/></svg>Sin plano</span></td>
+              <td class="col-capa1"><span class="sub" style="margin:0">Sin elementos</span></td>
+              <td><span class="num">6/24</span><span class="sub">procesadas</span></td>
+              <td><span class="est dudas">22 abiertas</span></td>
+              <td><div class="acciones"><button class="btn peq"><svg class="ic" style="width:15px;height:15px"><use href="#i-subir"/></svg>Subir planos</button><button class="btn peq">Subir visita</button><button class="btn peq">Dropbox conectado</button></div></td>
+            </tr>
+            <tr>
+              <td><span class="obra-nombre">Torre P16</span><span class="sub">Supervisor: <span class="pend" style="min-width:0">pendiente de verificar</span></span></td>
+              <td>Supervisión<span class="sub">STP-MIVED + Formularios MIVED</span></td>
+              <td>—</td>
+              <td><span class="sinplano"><svg class="ic" style="width:15px;height:15px"><use href="#i-alerta"/></svg>Sin plano</span></td>
+              <td class="col-capa1"><span class="sub" style="margin:0">Sin elementos</span></td>
+              <td><span class="num">0</span><span class="sub">sin visitas</span></td>
+              <td><span class="sub" style="margin:0">Ninguna</span></td>
+              <td><div class="acciones"><button class="btn peq"><svg class="ic" style="width:15px;height:15px"><use href="#i-subir"/></svg>Subir planos</button><button class="btn peq">Subir visita</button><button class="btn peq">Dropbox conectado</button></div></td>
+            </tr>
+            <tr>
+              <td><span class="obra-nombre">Hotel Zoetry Cap Cana · H2 y H5</span><span class="sub">Supervisor: <span class="pend" style="min-width:0">pendiente de verificar</span></span></td>
+              <td>Levantamiento<span class="sub">HV</span></td>
+              <td>—</td>
+              <td><span class="sinplano"><svg class="ic" style="width:15px;height:15px"><use href="#i-alerta"/></svg>Sin plano</span></td>
+              <td class="col-capa1"><span class="sub" style="margin:0">Sin elementos</span></td>
+              <td><span class="sub" style="margin:0">No aplica</span></td>
+              <td><span class="sub" style="margin:0">Ninguna</span></td>
+              <td><div class="acciones"><button class="btn peq"><svg class="ic" style="width:15px;height:15px"><use href="#i-subir"/></svg>Subir planos</button><button class="btn peq">Datos de la obra</button></div></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="cols-2">
+        <div class="hoja">
+          <div class="banda">3. Cola de visitas · Terra Living<span class="esp"></span><span class="nota">24 visitas · 12 con dudas</span></div>
+          <table>
+            <thead><tr><th>N.º</th><th>Carpeta de visita</th><th>Fecha</th><th>Clase</th><th>Estado</th></tr></thead>
+            <tbody>
+              <tr><td class="num">1</td><td>1. FONDO DE SEPTICO</td><td><span class="pend">pendiente de verificar</span></td><td><span class="pend" style="min-width:0">pendiente de verificar</span></td><td><span class="est dudas">Con dudas</span></td></tr>
+              <tr><td class="num">1</td><td>1. FUNDACIONES PARCIAL</td><td><span class="pend">pendiente de verificar</span></td><td>Parcial</td><td><span class="est dudas">Con dudas</span></td></tr>
+              <tr><td class="num">9</td><td>9 - LOSA S-6 PARCIAL</td><td class="num">23/07/2026</td><td>Parcial</td><td><span class="est sinproc">Sin procesar</span></td></tr>
+              <tr><td class="num">12</td><td>12. COLUMNAS S-5 COMPLETIVO Y PORTICOS PARCIALES S-5 17-08-2026</td><td class="num">17/08/2026</td><td>Mixta<span class="sub">detalle pendiente de verificar</span></td><td><span class="est sinproc">Sin procesar</span></td></tr>
+              <tr><td class="num">17</td><td>17. COMPLETIVO VERTICALES S-4 28-09-2026</td><td class="num">28/09/2026</td><td>Completivo</td><td><span class="est procesada">Procesada</span><span class="sub" style="color:var(--duda);font-weight:600">con 3 dudas bloqueantes abiertas</span></td></tr>
+              <tr><td class="num">18</td><td>18. LOSA Y VIGA ENTREPISO S-4 COMPLETIVO 02-10-2026</td><td class="num">02/10/2026</td><td>Completivo</td><td><span class="est dudas">Con dudas</span></td></tr>
+              <tr><td class="num">21</td><td>21. VERTICALES S-2 PARCIAL 23-10-2026</td><td class="num">23/10/2026</td><td>Parcial</td><td><span class="est sinproc">Sin procesar</span></td></tr>
+            </tbody>
+          </table>
+          <div class="pie-tabla"><span>7 de 24 visitas</span><a href="#principal">Ver la cola completa</a></div>
+        </div>
+        <div>
+          <div class="hoja">
+            <div class="banda">4. Órdenes de trabajo</div>
+            <div class="ot"><span class="doc">OT-LEV-001</span><span>Ensamble de informes H2 y H5 · HV-INFTEC</span><span class="sub">Ensamblar parte teórica, luego informe completo</span></div>
+            <div class="ot-col">
+              <div>Pendiente<b>0</b></div><div>Asignada<b>0</b></div><div class="activa">En proceso<b>1</b></div><div>Bloqueada<b>0</b></div><div>En revisión<b>0</b></div><div>Entregada<b>0</b></div>
+            </div>
+          </div>
+          <div class="hoja">
+            <div class="banda">5. Última sincronización</div>
+            <div class="ot"><span>Todavía no se ha sincronizado en esta sesión.</span><span class="sub">El resultado aparece aquí: visitas nuevas, actualizadas, con dudas y carpetas omitidas.</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= CONFIRMAR DATOS DEL PLANO ================= -->
+  <section class="trabajo" id="pantalla-confirmar" hidden>
+    <header class="barra">
+      <div><div class="migas"><a href="#confirmar">Planos y datos de diseño</a> › Terra Living</div><h1>Confirmar datos del plano</h1></div>
+      <span class="esp"></span>
+      <button class="btn">Mesa de Dudas de la obra</button>
+      <button class="btn"><svg class="ic"><use href="#i-extraer"/></svg>Extraer del plano vigente</button>
+    </header>
+    <div class="confirmar" style="min-height:0;flex:1">
+      <aside class="tablas" aria-label="Tablas extraídas">
+        <h2>Tablas extraídas</h2>
+        <div class="resumen">38 tablas del vectorial · 1 en verde · 37 en rojo</div>
+        <button class="tabla-item" aria-selected="true"><span class="t">Zapata de muro lindero <span class="res verde">verde</span></span><span class="s">pág. 6 · nivel pendiente de verificar</span></button>
+        <button class="tabla-item"><span class="t">Acero en losa <span class="res rojo">rojo</span></span><span class="s">pág. 10 · hoja de fundaciones</span><span class="f">Falla: losa_tipo_asignado, ids_en_planta_sin_duplicados</span></button>
+        <button class="tabla-item"><span class="t">Acero en losa <span class="res rojo">rojo</span></span><span class="s">pág. 26 · planta del primer nivel</span><span class="f">Falla: losa_tipo_asignado</span></button>
+        <button class="tabla-item"><span class="t">f'c por rango <span class="res rojo">rojo</span></span><span class="s">pág. 20</span><span class="f">Falla: rangos_expandidos (faltan las equivalencias E-n ↔ nivel)</span></button>
+        <div class="mas">+ 34 tablas más: 20 de f'c y 14 de acero en losa</div>
+      </aside>
+      <div class="detalle">
+        <div class="cab-tabla"><h2>Zapata de muro lindero</h2><span class="res verde">verde</span></div>
+        <div class="meta">pág. 6 · nivel <span class="pend" style="min-width:0">pendiente de verificar</span> · ejes <span class="pend" style="min-width:0">pendiente de verificar</span> · vectorial vigente de Terra Living</div>
+
+        <div class="hoja">
+          <div class="banda">Comprobaciones</div>
+          <div class="comprob">
+            <span><svg class="ic"><use href="#i-ok"/></svg>celdas_completas</span>
+            <span><svg class="ic"><use href="#i-ok"/></svg>unidades</span>
+            <span><svg class="ic"><use href="#i-ok"/></svg>total_de_barras</span>
+            <span><svg class="ic"><use href="#i-ok"/></svg>ids_duplicados</span>
+            <span><svg class="ic"><use href="#i-ok"/></svg>sin_notas_de_modificacion</span>
+          </div>
+        </div>
+
+        <div class="hoja">
+          <div class="banda dividida"><div>1. Tabla en el plano <span class="nota">recorte del vectorial · pág. 6</span></div><div>2. Valores propuestos <span class="nota">10 · pasa el ratón para ver su celda</span></div></div>
+          <div class="par">
+            <div>
+              <div class="recorte">
+                <table class="plano-tabla" id="recorte">
+                  <tr><td>MURO</td><td>B</td><td>h</td><td>Df</td><td>ACERO Ast</td><td>ACERO Asl</td></tr>
+                  <tr><td data-c="6-et">6"</td><td data-c="6-B">0.60</td><td data-c="6-h">0.30</td><td data-c="6-Df">0.80</td><td data-c="6-Ast">∅ 3/8" @ 0.15</td><td data-c="6-Asl">4 ∅ 3/8"</td></tr>
+                  <tr><td data-c="8-et">8"</td><td data-c="8-B">0.80</td><td data-c="8-h">0.30</td><td data-c="8-Df">1.00</td><td data-c="8-Ast">∅ 3/8" @ 0.10</td><td data-c="8-Asl">5 ∅ 3/8"</td></tr>
+                </table>
+              </div>
+              <p class="leyenda">En la app real aquí va la imagen nítida del vectorial con el recuadro rojo sobre la celda.</p>
+            </div>
+            <div>
+              <table class="prop">
+                <thead><tr><th>Elemento</th><th>Campo</th><th>Valor</th><th>Estado</th></tr></thead>
+                <tbody id="propuestas">
+                  <tr data-c="6-B"><td>ZAPATA MURO LINDERO 6"</td><td>B</td><td class="val">0.60</td><td><span class="est dudas">pendiente</span></td></tr>
+                  <tr data-c="6-h"><td></td><td>h</td><td class="val">0.30</td><td><span class="est dudas">pendiente</span></td></tr>
+                  <tr data-c="6-Df"><td></td><td>Df</td><td class="val">0.80</td><td><span class="est dudas">pendiente</span></td></tr>
+                  <tr data-c="6-Ast"><td></td><td>ACERO Ast</td><td class="val">∅ 3/8" @ 0.15</td><td><span class="est dudas">pendiente</span></td></tr>
+                  <tr data-c="6-Asl"><td></td><td>ACERO Asl</td><td class="val">4 ∅ 3/8"</td><td><span class="est dudas">pendiente</span></td></tr>
+                  <tr data-c="8-B"><td>ZAPATA MURO LINDERO 8"</td><td>B</td><td class="val">0.80</td><td><span class="est dudas">pendiente</span></td></tr>
+                  <tr data-c="8-h"><td></td><td>h</td><td class="val">0.30</td><td><span class="est dudas">pendiente</span></td></tr>
+                  <tr data-c="8-Df"><td></td><td>Df</td><td class="val">1.00</td><td><span class="est dudas">pendiente</span></td></tr>
+                  <tr data-c="8-Ast"><td></td><td>ACERO Ast</td><td class="val">∅ 3/8" @ 0.10</td><td><span class="est dudas">pendiente</span></td></tr>
+                  <tr data-c="8-Asl"><td></td><td>ACERO Asl</td><td class="val">5 ∅ 3/8"</td><td><span class="est dudas">pendiente</span></td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <div class="cierre">
+            <label class="casilla"><input type="checkbox" id="revisado"><span>Revisé los 10 valores pendientes contra el recorte del plano y los confirmo, junto con la identidad de los elementos (6 campos: ID, nivel, ejes, hoja y archivo).<small>Queda auditado campo por campo con tu usuario y el lote. Nivel y ejes siguen pendientes de verificar: no se confirman aquí.</small></span></label>
+            <div><button class="btn prim" id="btn-confirmar" disabled><svg class="ic"><use href="#i-ok"/></svg>Confirmar tabla completa</button></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<div class="maqueta" role="group" aria-label="Maqueta">
+  <span>Maqueta A · Expediente</span>
+  <button data-ir="principal" aria-pressed="true">Pantalla principal</button>
+  <button data-ir="confirmar" aria-pressed="false">Confirmar datos del plano</button>
+</div>
+
+<script>
+(function () {
+  const pant = { principal: document.getElementById('pantalla-principal'), confirmar: document.getElementById('pantalla-confirmar') };
+  function ir(nombre) {
+    if (!pant[nombre]) nombre = 'principal';
+    for (const k in pant) pant[k].hidden = k !== nombre;
+    document.querySelectorAll('.maqueta button').forEach(b => b.setAttribute('aria-pressed', b.dataset.ir === nombre));
+    document.querySelectorAll('.nav a[data-ir]').forEach(a => a.removeAttribute('aria-current'));
+    const nav = nombre === 'confirmar' ? document.querySelector('.nav a[href="#confirmar"]') : document.querySelector('.nav a[data-ir="principal"]');
+    if (nav) nav.setAttribute('aria-current', 'page');
+  }
+  document.querySelectorAll('[data-ir]').forEach(el => el.addEventListener('click', e => { e.preventDefault(); ir(el.dataset.ir); history.replaceState(null, '', '#' + el.dataset.ir); }));
+  ir((location.hash || '#principal').slice(1));
+  const recorte = document.getElementById('recorte');
+  document.querySelectorAll('#propuestas tr').forEach(tr => {
+    tr.addEventListener('mouseenter', () => { tr.classList.add('activa'); const c = recorte.querySelector('[data-c="' + tr.dataset.c + '"]'); if (c) c.classList.add('marcada'); });
+    tr.addEventListener('mouseleave', () => { tr.classList.remove('activa'); recorte.querySelectorAll('.marcada').forEach(c => c.classList.remove('marcada')); });
+  });
+  const casilla = document.getElementById('revisado'), boton = document.getElementById('btn-confirmar');
+  casilla.addEventListener('change', () => { boton.disabled = !casilla.checked; });
+})();
+</script>
+</body>
+</html>
