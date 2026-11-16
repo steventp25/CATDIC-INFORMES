@@ -72,7 +72,7 @@ El trabajo se parte en tres piezas. Solo la del medio es Claude; las otras dos s
 
 | Fase | Alcance | Zona de archivos | Depende de | Modo | Estado |
 |---|---|---|---|---|---|
-| **0 · Cimientos** | git al día, montaje de estáticos, contrato de la lectura asistida, ajuste de la especificación | `BACKEND/main.py`, `PLANES/`, `CLAUDE.md` + `AGENTS.md` | Aprobación de Steven | **directo** (3 tareas) | pendiente |
+| **0 · Cimientos** | git al día, ajuste de la especificación | `PLANES/`, `CLAUDE.md` + `AGENTS.md` | Aprobación de Steven | **directo** | T0.1 hecha · T0.2 no hace falta · T0.3 pendiente (no bloquea A ni B) |
 | **A · Claude razona los planos** | reconocimiento, preparar hojas, importar con anclaje, skill `extraer-plano`, rutas, prueba real | `BACKEND/plano/asistido/**` (nuevo), `.claude/skills/extraer-plano/` (nuevo), `BACKEND/tests/test_asistido_*.py` | Fase 0 | **líder** (Opus) | pendiente |
 | **B · Rediseño del tablero** | inventario, dirección visual, base, pantallas, movimiento, prueba de rotura | `FRONTEND/**`, `DESIGN.md` | Fase 0 | **líder** (Opus) | pendiente |
 | **C · Integración** | pantalla "Lectura asistida" contra las rutas reales, auditoría de integración, prueba completa en el navegador | `FRONTEND/**` (solo esa pantalla), `PLANES/` | A5 y B3 | **directo** | pendiente |
@@ -89,14 +89,10 @@ El trabajo se parte en tres piezas. Solo la del medio es Claude; las otras dos s
 - Ejecutor: Director, con permiso expreso de Steven para cada paso.
 - Hecho cuando: existe una rama `claude/etapa5-plan` salida de `origin/main` con este plan; el checkout principal queda como Steven decida.
 
-#### T0.2 — Estáticos y contrato
-- Ejecutor: ejecutor-backend (Sonnet) · Agente: Claude Code · rama `claude/etapa5-t02-cimientos`
-- Archivos: `BACKEND/main.py`, `BACKEND/tests/test_frontend_servido.py`, `PLANES/etapa-5-contrato-asistido.md` (nuevo).
-- Qué hacer:
-  1. `main.py`: servir `FRONTEND/` como carpeta de estáticos (para B2) sin cambiar lo que hoy entrega `/`.
-  2. Dejar escrito el contrato de la Fase A (formato de `textos.json` y `propuesta.json`, y las rutas de A5), para que A, B y C construyan contra él.
-- Hecho cuando: `py -3.14 -m pytest -q` en verde y el contrato revisado por el Director.
-- No tocar: `FRONTEND/`, `BACKEND/plano/`, `requirements.txt` (no entra ninguna dependencia nueva).
+#### T0.2 — Estáticos y contrato — NO HACE FALTA (16/11/2026)
+- Comprobado en `main`: `BACKEND/main.py:196` ya monta toda la carpeta `FRONTEND/` en `/` (`StaticFiles(..., html=True)`). El tablero nuevo puede repartirse en archivos sin tocar el backend, y el viejo puede vivir en `FRONTEND/clasico/index.html` (se abre en `/clasico/`).
+- El contrato de rutas es el de A5 (abajo). El formato de `textos.json` y `propuesta.json` lo fija el Líder de la Fase A en `PLANES/etapa-5-contrato-asistido.md` después de A1.
+- Única excepción a "nadie toca `main.py`": A5 agrega **una línea** `app.include_router(...)` para sus rutas.
 
 #### T0.3 — Especificación
 - Ejecutor: Director (texto) · rama `claude/etapa5-spec`
@@ -183,6 +179,9 @@ Cada ejecutor trabaja en su propio worktree salido de `origin/main`. Ver D8 sobr
 
 ## Reglas de convivencia (de `COLABORACION.md`, sin cambios)
 - Ramas `claude/etapa5-<tarea>`; nadie hace push a `main`; un PR por tarea; **Steven fusiona**.
+- Todas las ramas de la etapa salen de `claude/etapa5-plan` (trae este plan y los planes rescatados). Una tarea que depende de otra sale de la rama de la anterior.
+- Los Líderes y Ejecutores solo hacen commits locales en su propia rama de tarea. **Ningún push, fusión ni cambio en el checkout principal sin permiso de Steven**; el push va después de la auditoría del Director.
+- Suite de referencia en `main` (`b5f7d26`, 16/11/2026): 943 pasan, 3 saltadas y **2 fallan por el contenido actual de Dropbox**, no por el código (`test_escaner_dropbox.py::test_terra_living_real`: el PDF `TERRA LIVING -ESTRUCTURALES.pdf` pesa 57.692.301 bytes y la prueba espera 57.692.938; `test_parser_visitas.py::test_lista_coincide_con_dropbox_si_esta_disponible`: faltan 6 carpetas de visita con el nombre esperado). Pendiente de verificar con Steven; ninguna tarea de la Etapa 5 las toca.
 - Antes de cambiar de rama, hacer commit, push o fusionar: se le pregunta a Steven.
 - Nunca se suben `*.db`, PDFs, fotos ni las carpetas de hojas preparadas. Dropbox en solo lectura. La BD real se respalda antes de tocarla; las pruebas usan `CATDIC_DB_PATH`.
 - Todo con `py -3.14`.
