@@ -5,7 +5,7 @@ Plan madre: `PLANES/etapa-5.md` (decisiones D5–D8, tareas B0–B5). Este archi
 
 ## Reglas que mandan en esta fase
 - Zona: `FRONTEND/**`, `DESIGN.md`, `PLANES/etapa-5-fase-B.md`, `PLANES/etapa-5-inventario-ui.md`, `PLANES/etapa-5-reportes/B*.md`. **No tocar `BACKEND/**`** (ni rutas, ni respuestas, ni `main.py`): lo que haga falta se pide al Director.
-- Sin compilación (D5): varios archivos, Vue y Tailwind locales en `FRONTEND/vendor/`, funciona **sin internet**. El tablero viejo queda en `FRONTEND/clasico/index.html` (abre en `/clasico/`) hasta el cierre.
+- Sin compilación (D5): varios archivos, Vue y Tailwind locales en `FRONTEND/vendor/`, funciona **sin internet**. El tablero viejo queda en `FRONTEND/clasico/index.html` **sin ningún enlace ni mención desde el tablero nuevo** (decisión de Steven, 19/11) y se borra en **B3h**, en cuanto B3 cubra todo lo que hoy solo hace él.
 - Nada de lo que hace hoy el tablero puede perderse (paridad con B0). Textos en español. Lo que falta se muestra como "pendiente de verificar"; nunca datos de ingeniería inventados.
 - **1 Ejecutor a la vez** en esta fase (plan v3); máximo **3 sesiones de CATDIC-WEB trabajando a la vez** entre las fases A y B. Ejecutores `fresh`, Sonnet medio (Haiku bajo para lo mecánico).
 - **Ramas (Director, 19/11, a pedido de Steven):** solo quedan `main`, `etapa5-plan`, `etapa5-fase-a` y `etapa5-fase-b`. Todo el trabajo de la Fase B va en `claude/etapa5-fase-b-0020e1`. Un Ejecutor trabaja **en el worktree del Líder, sobre esa misma rama, por turnos** (nunca a la vez que el Líder edita) y **no crea ramas nuevas**.
@@ -20,16 +20,17 @@ Plan madre: `PLANES/etapa-5.md` (decisiones D5–D8, tareas B0–B5). Este archi
 |---|---|---|---|---|
 | B0 | Inventario funcional del tablero actual → `PLANES/etapa-5-inventario-ui.md` | Ejecutor Sonnet `b0-inventario` (archivado) | `claude/etapa5-b0-inventario-fb8728` (`effa03a`, traído aquí con cherry-pick) | **aceptada** |
 | B1 (16/11) | Navegación + 3 maquetas en `FRONTEND/maquetas/{expediente,plano,obra}/` + `NOTAS-DESIGN.md` | Líder | esta rama | antecedente (sustituida por B1 v3) |
-| B1 v3 | 3 estilos sobre la organización D6, 5 pantallas, en `FRONTEND/maquetas/v2/` + `NOTAS.md`; B0 §10 «Necesidades nuevas»; `PRODUCT.md` al día | Líder | esta rama | **hecha, esperando auditoría del Director** |
+| B1 v3 | 3 estilos sobre la organización D6, 5 pantallas, en `FRONTEND/maquetas/v2/` + `NOTAS.md`; B0 §10 «Necesidades nuevas»; `PRODUCT.md` al día | Líder | esta rama | **auditada y aprobada (19/11)** |
 | — | **Puerta de Steven:** elige estilo (vía Director) | Steven | — | **resuelta 19/11: «Plano sellado»** |
 | B2 | Base: estructura de `FRONTEND/`, `vendor/` local, tokens del estilo B, armazón con navegación D6, cliente API, `/clasico/` (encargo `PLANES/etapa-5-reportes/B2-brief.md`) | Ejecutor Sonnet (subagente, en este worktree) + revisión del Líder | esta rama (`d254519`…`485b3ea`, Líder `a7a1f3f`, `078d4f3`, prueba de backend) | **aprobada por el Director (19/11)** |
 | B3a | Inicio y Mis obras, con Nueva obra (encargo `PLANES/etapa-5-reportes/B3a-brief.md`) | Ejecutor Sonnet (subagente, en este worktree) | esta rama | **en curso** |
-| B3b | Obra: Resumen, Avance, Cierre, Planos y ficha, visor y recuadros | Ejecutor | — | pendiente |
-| B3c | Revisión de planos (confirmar datos del plano) | Ejecutor | — | pendiente |
-| B3d | Visitas y trabajos: cola, subir visita/Dropbox, avance del procesador (cubre T10b) | Ejecutor | — | pendiente |
-| B3e | Bandeja de trabajo y Mesa de Dudas (la ruta común es Fase D-a) | Ejecutor | — | pendiente |
-| B3f | Órdenes de trabajo | Ejecutor | — | pendiente |
-| B3g | Informes y Crear informe (solo lo que ya genera el sistema; lo demás «disponible más adelante»; guardar trabajos es Fase D-c) | Ejecutor | — | pendiente |
+| B3d | **(2.º)** Visitas y trabajos: **Procesar cola** con el seguimiento del trabajo (polling cada 2 s), **Sincronizar desde Dropbox** con su resultado (Z8), cola de visitas de todas las obras (Z15) y de cada obra, subir visita / conectar Dropbox (M3), avance del procesador (cubre T10b) | Ejecutor | — | pendiente |
+| B3e | **(3.º)** **Mesa de Dudas** completa (M1: por visita y por obra, responder, conflictos) y Bandeja de trabajo con lo que hay hoy (la ruta común es Fase D-a) | Ejecutor | — | pendiente |
+| B3b | **(4.º)** Obra: Resumen, Avance, Cierre, Planos y ficha (cambiar plano con el formulario de B3a, datos de la obra M5), visor y recuadros (M4) | Ejecutor | — | pendiente |
+| B3c | **(5.º)** Revisión de planos: confirmar datos del plano (M6) | Ejecutor | — | pendiente |
+| B3f | **(6.º)** Órdenes de trabajo (kanban Z16) | Ejecutor | — | pendiente |
+| B3g | **(7.º)** Informes y Crear informe (solo lo que ya genera el sistema; lo demás «disponible más adelante»; guardar trabajos es Fase D-c) | Ejecutor | — | pendiente |
+| B3h | **Retiro del clásico:** checklist de paridad de B0 §9 completa en el tablero nuevo; se borran `FRONTEND/clasico/` y `test_clasico_entrega_el_tablero_anterior` (esta prueba es de `BACKEND/`: pide excepción al Director) | Líder + Ejecutor | — | pendiente |
 | B4 | Movimiento y pulido (`animate`, `choreograph`, `emil-design-eng`), `prefers-reduced-motion` | Ejecutor + Líder | — | pendiente |
 | B5 | `break-ui`, teclado, contraste, 1280/1920, paridad con B0, cierre | Líder + Ejecutor | — | pendiente |
 
@@ -48,9 +49,17 @@ Hueco reservado en la navegación: "Lectura asistida" (Fase C, no es de esta fas
 - Necesidades de Fase D que salen de B1 (B0 §10): D-a ruta común de la Bandeja, vencimientos y actividad reciente; D-b indicadores (tras D15); D-c guardar trabajos independientes.
 
 ## Decisiones de Steven
+- **19/11/2026 · Tablero clásico:** «EL TABLERO CLASICO NO LO QUIERO VOLVER A VER» (cita relayada por el Director). Consecuencias:
+  - Desde B3a, ningún enlace ni mención al clásico en el tablero nuevo.
+  - `FRONTEND/clasico/` sigue en el repo sin enlazar hasta B3h, donde se borra con su prueba.
+  - B3 se reordena para que lleguen primero las funciones que hoy solo tiene el clásico: Procesar cola, Sincronizar, la cola de visitas y la Mesa de Dudas.
 - **19/11/2026 · Estilo visual:** «Plano sellado» (respuesta textual de Steven, relayada por el Director). Se construye con el estilo B de `FRONTEND/maquetas/v2/` (`plano.html`, `estilo-plano.css`). Hormigón y Tablero quedan como antecedente, sin borrarlos. Telemetría del sorteo de `impeccable` enviada (`--kind pick`: «choice recorded»).
 
 ## Bitácora (lo más nuevo arriba)
+- 19/11/2026 · Director: Steven no quiere volver a ver el tablero clásico. Hecho:
+  - Pedido al Ejecutor de B3a, que trabaja en `FRONTEND/`, un commit aparte que quita las 3 menciones: `componentes.js`, `obra.js` y el `noscript` de `index.html`.
+  - B3 reordenado: B3a → B3d → B3e → B3b → B3c → B3f → B3g.
+  - Añadida B3h, retiro del clásico. Ver «Decisiones de Steven».
 - 19/11/2026 · Director: **B2 aprobada.** Respuestas:
   1. Excepción coordinada: el Líder puede tocar solo `BACKEND/tests/test_frontend_servido.py`. La prueba vieja pasa a `/clasico/` y una nueva comprueba que `/` entrega el tablero nuevo con `vendor/vue/`. Hecho; la suite queda en 944 pasan, 2 fallan (Dropbox) y 3 se omiten.
   2. Avance y Cierre entran en B3b; las pestañas ya lo dicen.
