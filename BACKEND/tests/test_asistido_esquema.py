@@ -116,6 +116,20 @@ def test_revisar_dato_tres_salidas():  # SINTÉTICO
     assert mal == {"valor": None, "fuente": None, "duda": "IA: propuso 'C2' pero el texto citado dice 'COLUMNA C1'"}
 
 
-def test_revisar_dato_guarda_el_diametro_normalizado():  # SINTÉTICO
-    r = revisar_dato({"valor": '36Ø1"', "citas": [3]}, es.textos_por_n(TEXTOS))
-    assert r["valor"] == '36∅1"' and r["fuente"]["textos"] == ['36Ø1"']
+def test_revisar_dato_guarda_el_trozo_literal_del_plano():  # SINTÉTICO
+    por_n = es.textos_por_n(TEXTOS)
+    r = revisar_dato({"valor": '36∅1"', "citas": [3]}, por_n)  # Claude escribe ∅; el plano trae Ø
+    assert r["valor"] == '36Ø1"' and r["fuente"]["textos"] == ['36Ø1"']
+    assert revisar_dato({"valor": "C1", "citas": [74]}, por_n)["valor"] == "C1"
+
+
+@pytest.mark.parametrize("valor,citados", [("E-3", ["E-3"]), ("A-B", ["A-B"]), ("2-3", ["2-3"]),
+                                           ("0.25", ["H=0.25M"]), ("3", ["E - 3"]), ("A", ["EJE A"])])
+def test_guion_y_punto_que_si_anclan(valor, citados):  # SINTÉTICO
+    assert anclar(valor, citados)
+
+
+@pytest.mark.parametrize("valor,citados", [("3", ["E-3"]), ("E", ["E-3"]), ("A", ["A-B"]), ("B", ["A-B"]),
+                                           ("3", ["2-3"]), ("2", ["2-3"]), ("25", ["0.25"])])
+def test_guion_y_punto_pegados_no_anclan(valor, citados):  # SINTÉTICO
+    assert not anclar(valor, citados)

@@ -134,8 +134,12 @@ def validar_propuesta(propuesta: Dict, textos: Dict) -> Dict:
 
 # ---------- Anclaje (contrato §5) ----------
 
+def _colapsar(s: str) -> str:
+    return " ".join(s.split())
+
+
 def _norm(s: str) -> str:
-    return " ".join(s.replace("Ø", "∅").split())
+    return _colapsar(s).replace("Ø", "∅")
 
 
 def _pegajoso(c: str) -> bool:
@@ -147,8 +151,12 @@ def _limites_ok(union: str, i: int, j: int) -> bool:
     v_ini, v_fin = union[i], union[j - 1]
     antes = union[i - 1] if i > 0 else ""
     despues = union[j] if j < len(union) else ""
-    if antes and (_pegajoso(antes) or (antes == "." and v_ini.isdigit())):
-        return False
+    # Un '-' o un '.' con letra o dígito a los dos lados (E-3, 0.25, A-B) deja el valor pegado al otro trozo.
+    if antes:
+        if _pegajoso(antes):
+            return False
+        if antes in ".-" and i > 1 and _pegajoso(union[i - 2]) and _pegajoso(v_ini):
+            return False
     if not despues:
         return True
     if despues in "Mm" and v_fin.isdigit():  # sufijo de unidad: H=0.25M
@@ -156,21 +164,27 @@ def _limites_ok(union: str, i: int, j: int) -> bool:
         return resto == "" or not _pegajoso(resto)
     if _pegajoso(despues):
         return False
-    return not (despues == "." and v_fin.isdigit() and union[j + 1:j + 2].isdigit())
+    return not (despues in ".-" and _pegajoso(v_fin) and _pegajoso(union[j + 1:j + 2] or " "))
+
+
+def encontrar(valor: str, citados: List[str]) -> Optional[str]:
+    """El trozo LITERAL del plano (espacios colapsados, sin cambiar Ø/∅) donde `valor` se ancla, o None."""
+    v = _norm(valor or "")
+    union = _colapsar(" ".join(citados))
+    comparable = union.replace("Ø", "∅")  # mismo largo: los índices coinciden
+    if not v:
+        return None
+    i = comparable.find(v)
+    while i != -1:
+        if _limites_ok(comparable, i, i + len(v)):
+            return union[i:i + len(v)]
+        i = comparable.find(v, i + 1)
+    return None
 
 
 def anclar(valor: str, citados: List[str]) -> bool:
     """¿Aparece `valor` tal cual dentro de la unión de los textos citados, con límites válidos?"""
-    v = _norm(valor or "")
-    union = _norm(" ".join(citados))
-    if not v:
-        return False
-    i = union.find(v)
-    while i != -1:
-        if _limites_ok(union, i, i + len(v)):
-            return True
-        i = union.find(v, i + 1)
-    return False
+    return encontrar(valor, citados) is not None
 
 
 def _union_bbox(bboxes: List[List[float]]) -> Optional[List[float]]:
@@ -187,10 +201,11 @@ def revisar_dato(dato: Dict, textos_por_n: Dict[int, Dict]) -> Dict:
     valor = dato["valor"]
     citas = list(dato.get("citas", []))
     textos = [textos_por_n[c]["texto"] for c in citas if c in textos_por_n]
-    if citas and len(textos) == len(citas) and anclar(valor, textos):
-        return {"valor": _norm(valor),
+    literal = encontrar(valor, textos) if citas and len(textos) == len(citas) else None
+    if literal is not None:  # el valor lo pone el plano, no Claude
+        return {"valor": literal,
                 "fuente": {"citas": citas, "textos": textos,
                            "bbox": _union_bbox([textos_por_n[c]["bbox"] for c in citas])},
                 "duda": None}
-    union = _norm(" ".join(textos))
+    union = _colapsar(" ".join(textos))
     return {"valor": None, "fuente": None, "duda": f"IA: propuso '{valor}' pero el texto citado dice '{union}'"}
