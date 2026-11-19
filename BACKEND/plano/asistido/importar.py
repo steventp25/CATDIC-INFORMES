@@ -55,8 +55,8 @@ def _escribir_importacion(carpeta: Path, res: Dict):
         (json.dumps(res, ensure_ascii=False, indent=1) + "\n").encode("utf-8"))
 
 
-def _fuente(f: Optional[Dict], pagina: int, hoja: str, sha: str) -> Optional[Dict]:
-    return None if f is None else {**f, "pagina": pagina, "hoja": hoja, "sha256": sha}
+def _fuente(f: Optional[Dict], pagina: int, hoja: str, sha: str, lector: str) -> Optional[Dict]:
+    return None if f is None else {**f, "pagina": pagina, "hoja": hoja, "sha256": sha, "lector": lector}
 
 
 def _nivel_comparable(nivel: str) -> str:
@@ -121,17 +121,19 @@ def _doble_lectura(conn, proyecto_id: str, clave, tipo: str, campos: Dict[str, O
     return False
 
 
-def _elemento(conn, proyecto_id: str, plano: Dict, textos: Dict, el: Dict, i: int, h: _Hoja, vistas: Dict, ahora: str):
+def _elemento(conn, proyecto_id: str, plano: Dict, textos: Dict, el: Dict, i: int, h: _Hoja, vistas: Dict, ahora: str,
+              lector: str = ""):
     por_n = es.textos_por_n(textos)
     pagina, hoja, sha = textos["pagina"], textos["hoja"], textos["sha256"]
-    rev = {k: es.revisar_dato(el[k], por_n) for k in es.DATOS_FIJOS}
-    campos = {c: es.revisar_dato(d, por_n) for c, d in el["campos"].items()}
+    rev = {k: es.revisar_dato(el[k], por_n, textos) for k in es.DATOS_FIJOS}
+    campos = {c: es.revisar_dato(d, por_n, textos) for c, d in el["campos"].items()}
     id_el = rev["id_elemento"]["valor"]
     explicados = set()
     for nombre, r in list(rev.items()) + [(f"campos.{c}", r) for c, r in campos.items()]:
         if r["duda"]:
             h.duda(id_el, f"elementos[{i}].{nombre}", r["duda"])
-            explicados.add(nombre.removeprefix("campos."))
+            if r["valor"] is None:  # con valor (revisión visual) el validador sigue mirando el campo
+                explicados.add(nombre.removeprefix("campos."))
     for j, d in enumerate(el["dudas"]):
         h.duda(id_el, f"elementos[{i}].dudas[{j}]", f"IA: {d['texto']}")
     for j, e in enumerate(el["enlaces"]):
@@ -160,7 +162,7 @@ def _elemento(conn, proyecto_id: str, plano: Dict, textos: Dict, el: Dict, i: in
     prop = {"id_elemento": id_el, "tipo_elemento": tipo, "nivel_rango": nivel, "ejes": ejes,
             "hoja_plano_origen": hoja, "archivo_plano_origen": plano["vectorial_archivo"],
             "datos": {c: {"valor": r["valor"] if r["valor"] is not None else PENDIENTE,
-                          "fuente": _fuente(r["fuente"], pagina, hoja, sha)} for c, r in campos.items()},
+                          "fuente": _fuente(r["fuente"], pagina, hoja, sha, lector)} for c, r in campos.items()},
             "tabla": f"IA:p{pagina:02d}", "explicados": explicados,
             "bbox_id": (rev["id_elemento"]["fuente"] or {}).get("bbox") or [], "confirmados": set()}
     v = ex._validar(prop)
@@ -209,7 +211,7 @@ def importar_hoja(proyecto_id: str, carpeta_pagina: Path, usuario: Optional[str]
         try:
             vistas: Dict = {}
             for i, el in enumerate(propuesta["elementos"]):
-                _elemento(conn, proyecto_id, plano, textos, el, i, h, vistas, ahora)
+                _elemento(conn, proyecto_id, plano, textos, el, i, h, vistas, ahora, propuesta["lector"])
             for j, d in enumerate(propuesta["dudas_hoja"]):
                 h.duda(f"hoja {textos['hoja']}", f"dudas_hoja[{j}]", f"IA: {d['texto']}")
             for d in h.dudas:

@@ -1,7 +1,9 @@
 # BACKEND/plano/asistido/esquema.py
 # Etapa 5 · A3a — Esquema de propuesta.json y regla de anclaje (contrato §4 y §5).
 # Módulo puro: sin BD y sin escribir archivos. Nada se infiere: lo que no cumple queda sin valor y con una duda `IA:`.
-from typing import Dict, List, Optional
+import re
+from decimal import Decimal
+from typing import Callable, Dict, List, Optional
 
 import reglas_ingenieria as ri
 
@@ -37,22 +39,73 @@ def _citas(citas, donde: str, existentes) -> List[int]:
     return list(citas)
 
 
-def _dato(dato, donde: str, existentes) -> Dict:
-    if not isinstance(dato, dict) or "valor" not in dato:
+EVIDENCIAS = ("literal", "partes", "zona", "conversion")
+
+
+def _numeros4(z) -> bool:
+    return isinstance(z, list) and len(z) == 4 and all(
+        isinstance(x, (int, float)) and not isinstance(x, bool) for x in z)
+
+
+def _con_citas(o, donde: str, existentes) -> Dict:
+    """{"valor": str, "citas": [n…]} con valor no vacío y al menos una cita que exista."""
+    if not isinstance(o, dict) or not isinstance(o.get("valor"), str) or not o["valor"].strip():
+        raise PropuestaInvalida(f"{donde}: debe traer 'valor' (cadena).")
+    if not o.get("citas"):
+        raise PropuestaInvalida(f"{donde}: falta 'citas'.")
+    return {"valor": o["valor"], "citas": _citas(o["citas"], donde, existentes)}
+
+
+def _dato(dato, donde: str, existentes, fijo: bool = False) -> Dict:
+    """Un dato con su evidencia (§5.1). `fijo`: id_elemento, nivel_rango y ejes (solo literal o partes)."""
+    if not isinstance(dato, dict):
+        raise PropuestaInvalida(f"{donde}: debe ser un objeto.")
+    evidencia = dato.get("evidencia", "literal")
+    valor = dato.get("valor")
+    if valor is None and isinstance(dato.get("duda"), str) and dato["duda"].strip():
+        # valor null + duda: igual que siempre, con cualquier evidencia
+        return {"valor": None, "citas": _citas(dato.get("citas", []), donde, existentes), "duda": dato["duda"],
+                "evidencia": "literal"}
+    if evidencia not in EVIDENCIAS:
+        raise PropuestaInvalida(f"{donde}: evidencia {evidencia!r} desconocida.")
+    if fijo and (evidencia in ("zona", "conversion") or "zona" in dato or "conversion" in dato):
+        raise PropuestaInvalida(f"{donde}: la identidad del elemento solo admite 'literal' o 'partes'.")
+    if evidencia == "conversion" and valor is None and "conversion" in dato:
+        pass  # el valor lo calcula el programa
+    elif "valor" not in dato:
         raise PropuestaInvalida(f"{donde}: falta 'valor'.")
-    valor = dato["valor"]
-    if valor is None:
-        duda = dato.get("duda")
-        if not isinstance(duda, str) or not duda.strip():
-            raise PropuestaInvalida(f"{donde}: 'valor' es null y falta 'duda'.")
-        return {"valor": None, "citas": _citas(dato.get("citas", []), donde, existentes), "duda": duda}
-    if not isinstance(valor, str) or not valor.strip():
+    elif valor is None:
+        raise PropuestaInvalida(f"{donde}: 'valor' es null y falta 'duda'.")
+    elif not isinstance(valor, str) or not valor.strip():
         raise PropuestaInvalida(f"{donde}: 'valor' debe ser una cadena o null.")
-    if not dato.get("citas"):
-        raise PropuestaInvalida(f"{donde}: tiene valor pero no 'citas'.")
-    out = {"valor": valor, "citas": _citas(dato["citas"], donde, existentes)}
+    out = {"valor": valor, "evidencia": evidencia, "citas": []}
     if isinstance(dato.get("duda"), str):
         out["duda"] = dato["duda"]
+    if evidencia == "literal":
+        if not dato.get("citas"):
+            raise PropuestaInvalida(f"{donde}: tiene valor pero no 'citas'.")
+        out["citas"] = _citas(dato["citas"], donde, existentes)
+    elif evidencia == "partes":
+        partes = dato.get("partes")
+        if not isinstance(partes, list) or len(partes) < 2:
+            raise PropuestaInvalida(f"{donde}: 'partes' debe ser una lista de 2 o más.")
+        out["partes"] = [_con_citas(p, f"{donde}.partes[{k}]", existentes) for k, p in enumerate(partes)]
+        out["citas"] = _citas(dato.get("citas", []), donde, existentes)
+    elif evidencia == "zona":
+        if not _numeros4(dato.get("zona")):
+            raise PropuestaInvalida(f"{donde}: 'zona' debe ser 4 números.")
+        out["zona"] = list(dato["zona"])
+        out["citas"] = _citas(dato.get("citas", []), donde, existentes)
+    else:
+        conv = dato.get("conversion")
+        if not isinstance(conv, dict) or not isinstance(conv.get("regla"), str):
+            raise PropuestaInvalida(f"{donde}: 'conversion.regla' debe ser una cadena.")
+        entradas = conv.get("entradas")
+        if not isinstance(entradas, list) or not entradas:
+            raise PropuestaInvalida(f"{donde}: 'conversion.entradas' debe ser una lista no vacía.")
+        out["conversion"] = {"regla": conv["regla"],
+                             "entradas": [_con_citas(e, f"{donde}.conversion.entradas[{k}]", existentes)
+                                          for k, e in enumerate(entradas)]}
     return out
 
 
@@ -113,7 +166,7 @@ def validar_propuesta(propuesta: Dict, textos: Dict) -> Dict:
         for k in DATOS_FIJOS:
             if k not in el:
                 raise PropuestaInvalida(f"{d}: falta '{k}'.")
-            nuevo[k] = _dato(el[k], f"{d}.{k}", existentes)
+            nuevo[k] = _dato(el[k], f"{d}.{k}", existentes, fijo=True)
         campos = el.get("campos")
         if not isinstance(campos, dict):
             raise PropuestaInvalida(f"{d}: 'campos' debe ser un objeto.")
@@ -194,18 +247,155 @@ def _union_bbox(bboxes: List[List[float]]) -> Optional[List[float]]:
             max(b[2] for b in bboxes), max(b[3] for b in bboxes)]
 
 
-def revisar_dato(dato: Dict, textos_por_n: Dict[int, Dict]) -> Dict:
-    """→ {"valor", "fuente", "duda"}: valor anclado con su fuente, o sin valor y con la duda `IA:` que corresponda."""
-    if dato.get("valor") is None:
-        return {"valor": None, "fuente": None, "duda": dato.get("duda")}
+# ---------- Reglas de conversión (§5.1): las únicas; aritmética decimal exacta, sin redondeo ----------
+
+def _decimal(texto: str, patron: str, que: str) -> Decimal:
+    t = texto.strip()
+    if not re.fullmatch(patron, t):
+        raise ValueError(f"'{texto}' no es {que}")
+    return Decimal(t)
+
+
+def _decimales(d: Decimal) -> int:
+    return max(0, -d.as_tuple().exponent)
+
+
+def decimales_2(entradas: List[str]) -> str:
+    if len(entradas) != 1:
+        raise ValueError("decimales_2 lleva exactamente 1 entrada")
+    d = _decimal(entradas[0], r"\d+(\.\d{1,2})?", "un decimal con punto y hasta 2 decimales")
+    return f"{d:.2f}"
+
+
+def cm_a_m(entradas: List[str]) -> str:
+    if len(entradas) != 1:
+        raise ValueError("cm_a_m lleva exactamente 1 entrada")
+    m = re.fullmatch(r"(\d+)(?:cm)?", entradas[0].strip(), re.IGNORECASE)
+    if not m:
+        raise ValueError(f"'{entradas[0]}' no es un entero de centímetros (con o sin 'cm')")
+    return f"{Decimal(m.group(1)) / 100:.2f}"
+
+
+def suma(entradas: List[str]) -> str:
+    if len(entradas) < 2:
+        raise ValueError("suma lleva 2 o más entradas")
+    ds = [_decimal(e, r"\d+(\.\d+)?", "un decimal con punto") for e in entradas]
+    return f"{sum(ds, Decimal(0)):.{max(_decimales(d) for d in ds)}f}"
+
+
+REGLAS_CONVERSION: Dict[str, Callable[[List[str]], str]] = {
+    "decimales_2": decimales_2, "cm_a_m": cm_a_m, "suma": suma}
+
+
+# ---------- Revisión de un dato ----------
+
+def _sin_valor(duda: str, evidencia: str) -> Dict:
+    # `literal` no lleva la clave (conducta de A3a/A3b intacta); quien la lea usa .get("evidencia", "literal")
+    r = {"valor": None, "fuente": None, "duda": duda}
+    if evidencia != "literal":
+        r["evidencia"] = evidencia
+    return r
+
+
+def _anclar_con_citas(valor: str, citas: List[int], por_n: Dict[int, Dict]):
+    """→ (literal | None, textos citados, bbox unida)."""
+    textos = [por_n[c]["texto"] for c in citas if c in por_n]
+    literal = encontrar(valor, textos) if citas and len(textos) == len(citas) else None
+    bbox = _union_bbox([por_n[c]["bbox"] for c in citas if c in por_n])
+    return literal, textos, bbox
+
+
+def _revisar_literal(dato: Dict, por_n: Dict[int, Dict]) -> Dict:
     valor = dato["valor"]
     citas = list(dato.get("citas", []))
-    textos = [textos_por_n[c]["texto"] for c in citas if c in textos_por_n]
-    literal = encontrar(valor, textos) if citas and len(textos) == len(citas) else None
+    literal, textos, bbox = _anclar_con_citas(valor, citas, por_n)
     if literal is not None:  # el valor lo pone el plano, no Claude
-        return {"valor": literal,
-                "fuente": {"citas": citas, "textos": textos,
-                           "bbox": _union_bbox([textos_por_n[c]["bbox"] for c in citas])},
-                "duda": None}
+        return {"valor": literal, "fuente": {"citas": citas, "textos": textos, "bbox": bbox}, "duda": None}
     union = _colapsar(" ".join(textos))
-    return {"valor": None, "fuente": None, "duda": f"IA: propuso '{valor}' pero el texto citado dice '{union}'"}
+    return _sin_valor(f"IA: propuso '{valor}' pero el texto citado dice '{union}'", "literal")
+
+
+def _anclar_trozos(trozos: List[Dict], por_n: Dict[int, Dict], que: str):
+    """Ancla cada {"valor","citas"}. → (lista de trozos anclados, None) o (None, duda)."""
+    out = []
+    for k, t in enumerate(trozos):
+        literal, textos, bbox = _anclar_con_citas(t["valor"], t["citas"], por_n)
+        if literal is None:
+            union = _colapsar(" ".join(textos))
+            return None, f"IA: {que} {k + 1}: propuso '{t['valor']}' pero el texto citado dice '{union}'"
+        out.append({"literal": literal, "citas": list(t["citas"]), "textos": textos, "bbox": bbox})
+    return out, None
+
+
+def _citas_de(trozos: List[Dict]) -> List[int]:
+    return [c for t in trozos for c in t["citas"]]
+
+
+def _revisar_partes(dato: Dict, por_n: Dict[int, Dict]) -> Dict:
+    partes, duda = _anclar_trozos(dato["partes"], por_n, "parte")
+    if duda:
+        return _sin_valor(duda, "partes")
+    unido = " ".join(p["literal"] for p in partes)
+    if _norm(dato["valor"]) != _norm(unido):
+        return _sin_valor(f"IA: propuso '{_colapsar(dato['valor'])}' pero las partes citadas dicen '{unido}'", "partes")
+    return {"valor": unido, "duda": None, "evidencia": "partes",
+            "fuente": {"evidencia": "partes", "citas": _citas_de(partes),
+                       "textos": [t for p in partes for t in p["textos"]],
+                       "partes": [{"valor": p["literal"], "citas": p["citas"], "textos": p["textos"], "bbox": p["bbox"]}
+                                  for p in partes],
+                       "bbox": _union_bbox([p["bbox"] for p in partes if p["bbox"]])}}
+
+
+def _revisar_zona(dato: Dict, hoja: Optional[Dict]) -> Dict:
+    zona = list(dato["zona"])
+    ancho, alto = (hoja or {}).get("ancho_pt"), (hoja or {}).get("alto_pt")
+    if not all(isinstance(x, (int, float)) and not isinstance(x, bool) for x in (ancho, alto)):
+        return _sin_valor(f"IA: la zona {zona} no se puede comprobar: faltan ancho_pt y alto_pt de la hoja.", "zona")
+    x0, y0, x1, y1 = zona
+    if not (x0 < x1 and y0 < y1 and x0 >= 0 and y0 >= 0 and x1 <= ancho and y1 <= alto):
+        return _sin_valor(f"IA: la zona {zona} no es una caja válida dentro de la hoja ({ancho} x {alto} pt).", "zona")
+    lectura = _colapsar(dato["valor"])
+    return {"valor": lectura, "evidencia": "zona",
+            "fuente": {"evidencia": "zona", "zona": zona, "lectura": lectura, "citas": list(dato.get("citas", []))},
+            "duda": f"IA: revisión visual: Claude leyó '{lectura}' en la zona {zona}; no hay texto vectorial que lo "
+                    f"compruebe. Confírmalo mirando el recorte."}
+
+
+def _revisar_conversion(dato: Dict, por_n: Dict[int, Dict]) -> Dict:
+    conv = dato["conversion"]
+    regla = REGLAS_CONVERSION.get(conv["regla"])
+    if regla is None:
+        return _sin_valor(f"IA: la regla de conversión '{conv['regla']}' no existe.", "conversion")
+    entradas, duda = _anclar_trozos(conv["entradas"], por_n, "entrada")
+    if duda:
+        return _sin_valor(duda, "conversion")
+    literales = [e["literal"] for e in entradas]
+    try:
+        resultado = regla(literales)
+    except ValueError as err:
+        return _sin_valor(f"IA: la regla '{conv['regla']}' falla con {literales}: {err}", "conversion")
+    propuesto = dato.get("valor")
+    if propuesto is not None and _colapsar(propuesto) != resultado:
+        return _sin_valor(f"IA: propuso '{_colapsar(propuesto)}' pero la regla '{conv['regla']}' da '{resultado}'",
+                          "conversion")
+    return {"valor": resultado, "duda": None, "evidencia": "conversion",
+            "fuente": {"evidencia": "conversion", "regla": conv["regla"], "citas": _citas_de(entradas),
+                       "entradas": entradas, "bbox": _union_bbox([e["bbox"] for e in entradas if e["bbox"]])}}
+
+
+def revisar_dato(dato: Dict, textos_por_n: Dict[int, Dict], hoja: Optional[Dict] = None) -> Dict:
+    """
+    → {"valor", "fuente", "duda"} (+ "evidencia" si no es `literal`): valor anclado con su fuente, o sin valor y con la duda `IA:` que
+    corresponda. `hoja` es el textos.json completo (solo la zona lo necesita: ancho_pt y alto_pt). Con la evidencia
+    `zona` hay valor Y duda a la vez (revisión visual).
+    """
+    evidencia = dato.get("evidencia", "literal")
+    if dato.get("valor") is None and (evidencia != "conversion" or dato.get("duda")):
+        return {"valor": None, "fuente": None, "duda": dato.get("duda")}
+    if evidencia == "partes":
+        return _revisar_partes(dato, textos_por_n)
+    if evidencia == "zona":
+        return _revisar_zona(dato, hoja)
+    if evidencia == "conversion":
+        return _revisar_conversion(dato, textos_por_n)
+    return _revisar_literal(dato, textos_por_n)

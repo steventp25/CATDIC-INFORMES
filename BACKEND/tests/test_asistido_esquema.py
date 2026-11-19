@@ -133,3 +133,166 @@ def test_guion_y_punto_que_si_anclan(valor, citados):  # SINTÉTICO
                                            ("3", ["2-3"]), ("2", ["2-3"]), ("25", ["0.25"])])
 def test_guion_y_punto_pegados_no_anclan(valor, citados):  # SINTÉTICO
     assert not anclar(valor, citados)
+
+
+# ---------- Evidencias (§5.1, A3d) ----------
+
+def _tx(*textos, ancho=1000, alto=800):
+    return {**TEXTOS, "ancho_pt": ancho, "alto_pt": alto,
+            "textos": [{"n": n, "texto": t, "bbox": [n, n, n + 10, n + 5], "tam": 8} for n, t in enumerate(textos, 1)]}
+
+
+def _rev(dato, *textos, hoja=True, **kw):
+    t = _tx(*textos, **kw)
+    return revisar_dato(dato, es.textos_por_n(t), t if hoja else None)
+
+
+def _prop_con(dato_campo):
+    p = _buena()
+    p["elementos"][0]["campos"] = {"x": dato_campo}
+    return validar_propuesta(p, TEXTOS)
+
+
+def test_reglas_de_conversion():  # SINTÉTICO
+    R = es.REGLAS_CONVERSION
+    assert R["decimales_2"](["1.5"]) == "1.50" and R["decimales_2"](["1"]) == "1.00"
+    assert R["decimales_2"](["0.25"]) == "0.25"
+    assert R["cm_a_m"](["60"]) == "0.60" and R["cm_a_m"](["125cm"]) == "1.25"
+    assert R["suma"](["0.30", "1.20"]) == "1.50" and R["suma"](["0.3", "1.25"]) == "1.55"
+    assert R["suma"](["1", "2"]) == "3"
+    assert set(R) == {"decimales_2", "cm_a_m", "suma"}
+
+
+@pytest.mark.parametrize("regla,entradas", [
+    ("decimales_2", ["1.505"]), ("decimales_2", ["abc"]), ("decimales_2", ["1", "2"]), ("decimales_2", ["1,5"]),
+    ("cm_a_m", ["1.5"]), ("cm_a_m", ["abc"]), ("cm_a_m", ["60", "1"]),
+    ("suma", ["0.3"]), ("suma", ["0.3", "abc"]), ("suma", ["0.3", "1,2"])])
+def test_reglas_que_fallan(regla, entradas):  # SINTÉTICO
+    with pytest.raises(ValueError):
+        es.REGLAS_CONVERSION[regla](entradas)
+
+
+# (b) partes
+def _partes(valor='9 EST. ∅3/8" @0.10'):
+    return {"valor": valor, "evidencia": "partes",
+            "partes": [{"valor": '9 EST. ∅3/8"', "citas": [1]}, {"valor": "@0.10", "citas": [2]}]}
+
+
+def test_partes_entra_y_guarda_cada_parte():  # SINTÉTICO
+    r = _rev(_partes(), '9 EST. Ø3/8"', "@0.10")
+    assert r["valor"] == '9 EST. Ø3/8" @0.10' and r["duda"] is None and r["evidencia"] == "partes"
+    assert [p["citas"] for p in r["fuente"]["partes"]] == [[1], [2]]
+    assert r["fuente"]["bbox"] == [1, 1, 12, 7]
+
+
+def test_partes_que_fallan():  # SINTÉTICO
+    assert _rev(_partes(), '9 EST. Ø3/8"', "@0.20")["valor"] is None  # una parte no ancla
+    mal = _rev(_partes('9 EST. ∅3/8" @0.15'), '9 EST. Ø3/8"', "@0.10")  # la unión no es el valor
+    assert mal["valor"] is None and "@0.10" in mal["duda"] and mal["duda"].startswith("IA:")
+
+
+# (c) zona
+def _zona(zona, valor="0.60"):
+    return {"valor": valor, "evidencia": "zona", "zona": zona}
+
+
+def test_zona_dentro_de_la_hoja_da_valor_y_duda_de_revision_visual():  # SINTÉTICO
+    r = _rev(_zona([10, 10, 100, 50]), "x")
+    assert r["valor"] == "0.60" and r["duda"].startswith("IA: revisión visual: ")
+    assert "[10, 10, 100, 50]" in r["duda"] and "0.60" in r["duda"]
+    assert r["fuente"] == {"evidencia": "zona", "zona": [10, 10, 100, 50], "lectura": "0.60", "citas": []}
+
+
+@pytest.mark.parametrize("zona", [[10, 10, 1001, 50], [10, 10, 100, 801], [-1, 0, 5, 5], [50, 10, 50, 20],
+                                  [60, 10, 50, 20], [10, 30, 20, 20]])
+def test_zona_fuera_de_la_hoja_o_invertida_no_da_valor(zona):  # SINTÉTICO
+    r = _rev(_zona(zona), "x")
+    assert r["valor"] is None and r["duda"].startswith("IA:")
+
+
+def test_zona_sin_hoja_no_da_valor():  # SINTÉTICO
+    assert _rev(_zona([10, 10, 100, 50]), "x", hoja=False)["valor"] is None
+    t = _tx("x")
+    del t["ancho_pt"]
+    assert revisar_dato(_zona([10, 10, 100, 50]), es.textos_por_n(t), t)["valor"] is None
+
+
+# (d) conversion
+def _conv(regla, entradas, valor=None):
+    d = {"evidencia": "conversion", "conversion": {"regla": regla, "entradas": [
+        {"valor": v, "citas": [n]} for n, v in enumerate(entradas, 1)]}}
+    if valor is not None:
+        d["valor"] = valor
+    return d
+
+
+def test_conversion_entra_y_guarda_regla_y_entradas():  # SINTÉTICO
+    r = _rev(_conv("suma", ["0.30", "1.20"], "1.50"), "e=0.30m", "1.20")
+    assert r["valor"] == "1.50" and r["duda"] is None and r["evidencia"] == "conversion"
+    assert r["fuente"]["regla"] == "suma" and [e["literal"] for e in r["fuente"]["entradas"]] == ["0.30", "1.20"]
+    assert r["fuente"]["bbox"] == [1, 1, 12, 7] and r["fuente"]["citas"] == [1, 2]
+    assert _rev(_conv("cm_a_m", ["60"]), "60")["valor"] == "0.60"  # sin valor de la IA
+
+
+@pytest.mark.parametrize("dato,textos", [
+    (_conv("no_existe", ["1"]), ("1",)),                      # regla desconocida
+    (_conv("cm_a_m", ["70"]), ("60",)),                       # entrada que no ancla
+    (_conv("decimales_2", ["1.505"]), ("1.505",)),            # la regla falla
+    (_conv("cm_a_m", ["60"], "0.65"), ("60",)),               # el valor de la IA no es el calculado
+])
+def test_conversion_que_falla(dato, textos):  # SINTÉTICO
+    r = _rev(dato, *textos)
+    assert r["valor"] is None and r["duda"].startswith("IA:") and r["fuente"] is None
+
+
+# Formato
+def _intenta(dato):
+    with pytest.raises(PropuestaInvalida):
+        _prop_con(dato)
+
+
+def test_rechazos_de_formato_de_evidencia():  # SINTÉTICO
+    _intenta({"valor": "1", "evidencia": "inventada", "citas": [1]})
+    _intenta({"valor": "1", "evidencia": "partes", "partes": [{"valor": "1", "citas": [1]}]})  # una sola parte
+    _intenta({"valor": "1", "evidencia": "partes",
+              "partes": [{"valor": "1", "citas": [999]}, {"valor": "2", "citas": [1]}]})
+    _intenta({"valor": "1", "evidencia": "partes"})
+    _intenta({"valor": "1", "evidencia": "zona"})
+    _intenta({"valor": "1", "evidencia": "zona", "zona": [1, 2, 3]})
+    _intenta({"valor": "1", "evidencia": "conversion"})
+    _intenta({"evidencia": "conversion", "conversion": {"regla": 5, "entradas": [{"valor": "1", "citas": [1]}]}})
+    _intenta({"evidencia": "conversion", "conversion": {"regla": "suma", "entradas": []}})
+    _intenta({"evidencia": "conversion",
+              "conversion": {"regla": "suma", "entradas": [{"valor": "1", "citas": [999]}]}})
+
+
+@pytest.mark.parametrize("extra", [{"evidencia": "zona", "zona": [1, 2, 3, 4]},
+                                   {"evidencia": "conversion", "conversion": {"regla": "suma", "entradas": [
+                                       {"valor": "1", "citas": [1]}]}},
+                                   {"zona": [1, 2, 3, 4]}])
+@pytest.mark.parametrize("dato", ["id_elemento", "nivel_rango", "ejes"])
+def test_zona_o_conversion_en_la_identidad_rechazan_la_hoja(dato, extra):  # SINTÉTICO
+    p = _buena()
+    p["elementos"][0][dato] = {"valor": "C1", "citas": [74], **extra}
+    with pytest.raises(PropuestaInvalida):
+        validar_propuesta(p, TEXTOS)
+
+
+def test_evidencias_buenas_se_normalizan_y_partes_no_piden_citas():  # SINTÉTICO
+    d = _prop_con(_partes())["elementos"][0]["campos"]["x"]
+    assert d["evidencia"] == "partes" and len(d["partes"]) == 2
+    z = _prop_con({"valor": "0.6", "evidencia": "zona", "zona": [1, 2, 3, 4]})["elementos"][0]["campos"]["x"]
+    assert z["zona"] == [1, 2, 3, 4]
+    c = _prop_con(_conv("suma", ["0.3", "1"]))["elementos"][0]["campos"]["x"]
+    assert c["valor"] is None and c["conversion"]["regla"] == "suma"
+    q = _buena()  # el id sí admite partes
+    q["elementos"][0]["id_elemento"] = {"valor": "COLUMNA C1", "evidencia": "partes",
+                                        "partes": [{"valor": "COLUMNA", "citas": [74]}, {"valor": "C1", "citas": [74]}]}
+    validar_propuesta(q, TEXTOS)
+
+
+def test_null_con_duda_vale_con_cualquier_evidencia():  # SINTÉTICO
+    for ev in ("literal", "partes", "zona", "conversion", "otra"):
+        d = {"valor": None, "duda": "no se ve", "evidencia": ev}
+        assert _prop_con(d)["elementos"][0]["campos"]["x"]["duda"] == "no se ve"
+        assert _rev(d, "x")["valor"] is None and _rev(d, "x")["duda"] == "no se ve"

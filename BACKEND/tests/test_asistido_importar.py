@@ -280,3 +280,101 @@ def test_campo_que_t6n_no_tiene_se_cuenta_como_descartado(ctx):  # SINTÉTICO
 def test_losa_sin_fila_t6n_entra_nueva(ctx):  # SINTÉTICO
     _losa_con_nivel(ctx, "NIVEL 3")
     assert ctx["importar"]()["nuevo"] == 1
+
+
+# ---------- Evidencias (§5.1, A3d) ----------
+
+def _textos_con_hoja(sha, extra=()):
+    t = _textos(sha)
+    t["ancho_pt"], t["alto_pt"] = 1000, 800
+    for k, (texto, bbox) in enumerate(extra, len(t["textos"]) + 1):
+        t["textos"].append({"n": k, "texto": texto, "bbox": bbox, "tam": 8})
+    return t
+
+
+def _fuente_de(campo, id_elemento="C1"):
+    f = _sql("SELECT fuente_json FROM elementos_diseno WHERE id_elemento = ?", id_elemento)[0]["fuente_json"]
+    return json.loads(f)["valores"][campo]
+
+
+def test_zona_escribe_el_valor_y_abre_la_duda_de_revision_visual(ctx):  # SINTÉTICO
+    el = _columna(h={"valor": "1.50", "evidencia": "zona", "zona": [10, 10, 100, 50]})
+    ctx["poner"](_propuesta(ctx["sha"], [el]), _textos_con_hoja(ctx["sha"]))
+    r = ctx["importar"]()
+    assert r["nuevo"] == 1
+    f = _sql("SELECT * FROM elementos_diseno WHERE id_elemento = 'C1'")[0]
+    assert json.loads(f["datos_diseno_json"])["h"] == "1.50"
+    assert json.loads(f["estado_campos_json"])["datos_diseno.h"] == "pendiente_de_verificar"
+    fuente = _fuente_de("h")
+    assert fuente["evidencia"] == "zona" and fuente["zona"] == [10, 10, 100, 50] and fuente["lectura"] == "1.50"
+    visual = [d for d in _dudas_ia(ctx["pid"]) if d["descripcion_pregunta"].startswith("IA: revisión visual: ")]
+    assert len(visual) == 1 and visual[0]["campo_afectado"] == "IA:p14.elementos[0].campos.h"
+    _sin_confirmados(ctx["pid"])
+
+
+def test_zona_fuera_de_la_hoja_queda_pendiente_sin_valor(ctx):  # SINTÉTICO
+    el = _columna(h={"valor": "1.50", "evidencia": "zona", "zona": [10, 10, 5000, 50]})
+    ctx["poner"](_propuesta(ctx["sha"], [el]), _textos_con_hoja(ctx["sha"]))
+    ctx["importar"]()
+    assert json.loads(_sql("SELECT datos_diseno_json FROM elementos_diseno")[0]["datos_diseno_json"])["h"] == "pendiente de verificar"
+    assert not [d for d in _dudas_ia(ctx["pid"]) if "revisión visual" in d["descripcion_pregunta"]]
+
+
+def test_conversion_guarda_la_regla_y_las_entradas_en_la_fuente(ctx):  # SINTÉTICO
+    el = _columna(h={"evidencia": "conversion", "valor": "1.25",
+                     "conversion": {"regla": "cm_a_m", "entradas": [{"valor": "125cm", "citas": [12]}]}})
+    ctx["poner"](_propuesta(ctx["sha"], [el]), _textos_con_hoja(ctx["sha"], [("125cm", [300, 300, 340, 310])]))
+    r = ctx["importar"]()
+    assert r["nuevo"] == 1
+    assert json.loads(_sql("SELECT datos_diseno_json FROM elementos_diseno")[0]["datos_diseno_json"])["h"] == "1.25"
+    f = _fuente_de("h")
+    assert f["evidencia"] == "conversion" and f["regla"] == "cm_a_m"
+    assert f["entradas"][0]["literal"] == "125cm" and f["entradas"][0]["citas"] == [12]
+    assert f["bbox"] == [300, 300, 340, 310]
+    _sin_confirmados(ctx["pid"])
+
+
+def test_conversion_con_valor_distinto_queda_pendiente_con_duda(ctx):  # SINTÉTICO
+    el = _columna(h={"evidencia": "conversion", "valor": "1.30",
+                     "conversion": {"regla": "cm_a_m", "entradas": [{"valor": "125cm", "citas": [12]}]}})
+    ctx["poner"](_propuesta(ctx["sha"], [el]), _textos_con_hoja(ctx["sha"], [("125cm", [300, 300, 340, 310])]))
+    ctx["importar"]()
+    assert json.loads(_sql("SELECT datos_diseno_json FROM elementos_diseno")[0]["datos_diseno_json"])["h"] == "pendiente de verificar"
+    assert any("la regla 'cm_a_m' da '1.25'" in d["descripcion_pregunta"] for d in _dudas_ia(ctx["pid"]))
+
+
+def test_partes_se_guardan_con_cada_parte(ctx):  # SINTÉTICO
+    el = _columna(estribos={"valor": '9 EST. ∅3/8" @0.10', "evidencia": "partes", "partes": [
+        {"valor": '9 EST. ∅3/8"', "citas": [5]}, {"valor": "@0.10", "citas": [6]}]})
+    ctx["poner"](_propuesta(ctx["sha"], [el]))
+    ctx["importar"]()
+    f = _fuente_de("estribos")
+    assert f["evidencia"] == "partes" and [p["citas"] for p in f["partes"]] == [[5], [6]]
+
+
+def test_el_lector_va_en_la_fuente_de_cada_valor(ctx):  # SINTÉTICO
+    ctx["poner"](_propuesta(ctx["sha"], [_columna()]))
+    ctx["importar"]()
+    for campo in ("b", "acero_longitudinal", "estribos"):
+        assert _fuente_de(campo)["lector"] == "claude-code"
+
+
+def test_con_evidencias_importar_dos_veces_no_cambia_nada(ctx):  # SINTÉTICO
+    el = _columna(h={"valor": "1.50", "evidencia": "zona", "zona": [10, 10, 100, 50]},
+                  s={"evidencia": "conversion", "conversion": {"regla": "cm_a_m", "entradas": [{"valor": "125cm", "citas": [12]}]}})
+    ctx["poner"](_propuesta(ctx["sha"], [el]), _textos_con_hoja(ctx["sha"], [("125cm", [300, 300, 340, 310])]))
+    ctx["importar"]()
+    antes = (_conteos(), _sql("SELECT * FROM elementos_diseno"))
+    r = ctx["importar"]()
+    assert r["sin_cambios"] == 1 and r["dudas_abiertas"] == 0
+    assert (_conteos(), _sql("SELECT * FROM elementos_diseno"))[1] == antes[1]
+    assert _conteos()["dudas_y_hallazgos"] == antes[0]["dudas_y_hallazgos"]
+
+
+def test_zona_o_conversion_en_el_id_rechaza_la_hoja_sin_escribir(ctx):  # SINTÉTICO
+    el = _columna()
+    el["id_elemento"] = {"valor": "C1", "evidencia": "zona", "zona": [1, 2, 3, 4]}
+    antes = _conteos()
+    ctx["poner"](_propuesta(ctx["sha"], [el]), _textos_con_hoja(ctx["sha"]))
+    r = ctx["importar"]()
+    assert r["estado"] == "rechazada" and _conteos() == antes
