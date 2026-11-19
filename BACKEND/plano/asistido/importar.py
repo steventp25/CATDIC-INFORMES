@@ -28,8 +28,14 @@ class _Hoja:
     def __init__(self, pagina: int):
         self.pagina = pagina
         self.dudas: List[Dict] = []
+        self.descartados: List[Dict] = []  # lo que Claude leyó y no se escribió: nunca desaparece en silencio
         self.cuenta = {"nuevo": 0, "actualizado": 0, "sin_cambios": 0, "choque": 0, "dudas_abiertas": 0,
-                       "comprobaciones": 0}
+                       "comprobaciones": 0, "descartados": 0}
+
+    def descartar(self, id_elemento: str, i: int, campo: str, valor: str, motivo: str):
+        self.descartados.append({"elemento": i, "id_elemento": id_elemento, "campo": campo, "valor": valor,
+                                 "motivo": motivo})
+        self.cuenta["descartados"] += 1
 
     def duda(self, id_elemento: str, lugar: str, texto: str):
         self.dudas.append({"id_elemento": id_elemento or "(sin id)", "campo": f"p{self.pagina:02d}.{lugar}",
@@ -38,7 +44,8 @@ class _Hoja:
 
 def _rechazar(carpeta: Path, motivo: str, ahora: str) -> Dict:
     res = {"estado": "rechazada", "motivo": motivo, "nuevo": 0, "actualizado": 0, "sin_cambios": 0, "choque": 0,
-           "dudas_abiertas": 0, "comprobaciones": 0, "fecha": ahora}
+           "dudas_abiertas": 0, "comprobaciones": 0, "descartados": 0, "fecha": ahora,
+           "descartados_detalle": []}
     _escribir_importacion(carpeta, res)
     return res
 
@@ -52,23 +59,66 @@ def _fuente(f: Optional[Dict], pagina: int, hoja: str, sha: str) -> Optional[Dic
     return None if f is None else {**f, "pagina": pagina, "hoja": hoja, "sha256": sha}
 
 
-def _doble_lectura(conn, proyecto_id: str, clave, campos: Dict[str, Optional[str]], h: _Hoja, i: int, id_el: str) -> bool:
-    """Si la fila ya la escribió T6n, no se escribe: se compara campo por campo. True = se atendió aquí."""
-    previo = conn.execute("""SELECT fuente_json, datos_diseno_json FROM elementos_diseno WHERE proyecto_id = ?
-                             AND id_elemento = ? AND nivel_rango = ? AND ejes = ?""", (proyecto_id, *clave)).fetchone()
-    if previo is None or json.loads(previo["fuente_json"] or "{}").get("extractor") != ex.EXTRACTOR:
-        return False
-    datos = json.loads(previo["datos_diseno_json"] or "{}")
+def _nivel_comparable(nivel: str) -> str:
+    """Nivel sin 'PLANTA ... DE', sin tildes, en mayúsculas y con espacios simples: solo para buscar la fila T6n."""
+    return _normalizar_texto(ex.nivel_de_titulo(nivel) or nivel)
+
+
+def _es_t6n(fila) -> bool:
+    return json.loads(fila["fuente_json"] or "{}").get("extractor") == ex.EXTRACTOR
+
+
+def _comparar_con_t6n(fila, campos: Dict[str, Optional[str]], h: _Hoja, i: int, id_el: str):
+    datos = json.loads(fila["datos_diseno_json"] or "{}")
     for campo, valor in campos.items():
-        if valor is None or campo not in datos:
+        if valor is None:
             continue
-        if _colapsar(datos[campo]) == _colapsar(valor):
+        if campo not in datos:
+            h.descartar(id_el, i, campo, valor, "la fila T6n no tiene ese campo; la doble lectura no escribe")
+        elif _colapsar(datos[campo]) == _colapsar(valor):
             h.cuenta["comprobaciones"] += 1
         else:
             h.duda(id_el, f"elementos[{i}].doble_lectura.{campo}",
                    f"IA: la lectura asistida da '{valor}' para {campo} de {id_el}, pero T6n (tabla de aplicación) "
                    f"tiene '{datos[campo]}'. No se escribe nada ({PENDIENTE}).")
-    return True
+
+
+def _doble_lectura(conn, proyecto_id: str, clave, tipo: str, campos: Dict[str, Optional[str]], h: _Hoja, i: int,
+                   id_el: str) -> bool:
+    """
+    Si la fila ya la escribió T6n, no se escribe: se compara campo por campo. True = se atendió aquí.
+    Losas (condición del Director, 19/11): si no hay fila con la clave exacta pero T6n tiene la misma losa con el
+    nivel escrito de otra forma, se compara contra esa fila; si T6n tiene ese ID en otro nivel, no se crea una losa
+    nueva (podría ser la misma): se abre una duda y los campos van a `descartados`.
+    """
+    sel = "SELECT nivel_rango, fuente_json, datos_diseno_json FROM elementos_diseno WHERE proyecto_id = ? AND id_elemento = ?"
+    previo = conn.execute(sel + " AND nivel_rango = ? AND ejes = ?", (proyecto_id, *clave)).fetchone()
+    if previo is not None:
+        if not _es_t6n(previo):
+            return False
+        _comparar_con_t6n(previo, campos, h, i, id_el)
+        return True
+    if _normalizar_texto(tipo) not in TIPOS_LOSA:
+        return False
+    nivel = clave[1]
+    t6n = [f for f in conn.execute(sel + " AND ejes = ?", (proyecto_id, id_el, clave[2])).fetchall() if _es_t6n(f)]
+    iguales = [f for f in t6n if _nivel_comparable(f["nivel_rango"]) == _nivel_comparable(nivel)]
+    if len(iguales) == 1:
+        h.duda(id_el, f"elementos[{i}].nivel_distinto",
+               f"IA: la losa {id_el} llega con el nivel '{nivel}' y T6n la tiene como '{iguales[0]['nivel_rango']}'. "
+               f"Se compara contra la fila T6n y no se crea otra; confirma que es el mismo nivel ({PENDIENTE}).")
+        _comparar_con_t6n(iguales[0], campos, h, i, id_el)
+        return True
+    if t6n:
+        niveles = ", ".join(sorted(f"'{f['nivel_rango']}'" for f in t6n))
+        h.duda(id_el, f"elementos[{i}].posible_duplicado",
+               f"IA: la losa {id_el} llega con el nivel '{nivel}', que no coincide con ningún nivel donde T6n ya la "
+               f"tiene ({niveles}). No se crea una losa nueva: indica si es otro nivel o la misma ({PENDIENTE}).")
+        for campo, valor in campos.items():
+            if valor is not None:
+                h.descartar(id_el, i, campo, valor, "posible losa duplicada de una fila T6n")
+        return True
+    return False
 
 
 def _elemento(conn, proyecto_id: str, plano: Dict, textos: Dict, el: Dict, i: int, h: _Hoja, vistas: Dict, ahora: str):
@@ -105,7 +155,7 @@ def _elemento(conn, proyecto_id: str, plano: Dict, textos: Dict, el: Dict, i: in
                f"{vistas[clave]} de esta hoja. No se fusionan ({PENDIENTE}).")
         return
     vistas[clave] = i
-    if _doble_lectura(conn, proyecto_id, clave, {c: r["valor"] for c, r in campos.items()}, h, i, id_el):
+    if _doble_lectura(conn, proyecto_id, clave, tipo, {c: r["valor"] for c, r in campos.items()}, h, i, id_el):
         return
     prop = {"id_elemento": id_el, "tipo_elemento": tipo, "nivel_rango": nivel, "ejes": ejes,
             "hoja_plano_origen": hoja, "archivo_plano_origen": plano["vectorial_archivo"],
@@ -117,6 +167,9 @@ def _elemento(conn, proyecto_id: str, plano: Dict, textos: Dict, el: Dict, i: in
     res, uid = ex._escribir_elemento(conn, proyecto_id, plano, prop, v, ahora, origen=ORIGEN_FUENTE)
     h.cuenta[res] += 1
     if res == "choque":
+        for c, r in campos.items():
+            if r["valor"] is not None:
+                h.descartar(id_el, i, c, r["valor"], "choque con una fila que no viene de esta lectura")
         h.duda(id_el, f"elementos[{i}].clave_unica",
                f"IA: ya existe un elemento {id_el} (nivel '{nivel}', ejes '{ejes}', uid {uid or '?'}) que no viene de "
                f"esta lectura; no se toca ({PENDIENTE}).")
@@ -163,7 +216,7 @@ def importar_hoja(proyecto_id: str, carpeta_pagina: Path, usuario: Optional[str]
                 h.cuenta["dudas_abiertas"] += ex._abrir_duda(conn, proyecto_id, d["id_elemento"], d["campo"], d["texto"],
                                                              origen=ORIGEN_DUDA)
             res = {"estado": "importada", "motivo": "", **h.cuenta, "fecha": ahora,
-                   "comprobaciones_de_claude": propuesta["comprobaciones"]}
+                   "descartados_detalle": h.descartados, "comprobaciones_de_claude": propuesta["comprobaciones"]}
             conn.execute("INSERT INTO auditoria (fecha_hora, usuario, modulo, accion, entidad_id, detalle_json) "
                          "VALUES (?, ?, 'ASISTIDO', 'IMPORTAR_PROPUESTA', ?, ?)",
                          (ahora, usuario, proyecto_id, json.dumps({

@@ -232,3 +232,51 @@ def test_choque_con_fila_manual_abre_duda(ctx):  # SINTÉTICO
     r = ctx["importar"]()
     assert r["choque"] == 1 and r["nuevo"] == 0
     assert any("m-1" in d["descripcion_pregunta"] for d in _dudas_ia(ctx["pid"]))
+
+
+# ---------- Condiciones del Director (19/11): losa duplicada y campos descartados ----------
+
+def _losa_con_nivel(ctx, texto_nivel, campos=None):
+    textos = _textos(ctx["sha"])
+    textos["textos"][8]["texto"] = texto_nivel  # n=9 es el nivel
+    el = _losa()
+    el["nivel_rango"] = {"valor": texto_nivel, "citas": [9]}
+    if campos:
+        el["campos"].update(campos)
+    ctx["poner"](_propuesta(ctx["sha"], [el]), textos)
+
+
+def test_losa_con_nivel_escrito_distinto_no_se_duplica(ctx):  # SINTÉTICO
+    _con_t6n(ctx)
+    antes = _sql("SELECT * FROM elementos_diseno WHERE id_elemento = 'L1'")
+    _losa_con_nivel(ctx, "PLANTA ESTRUCTURAL DE  Nivel 2")
+    r = ctx["importar"]()
+    assert r["nuevo"] == 0 and r["comprobaciones"] == 1
+    assert _sql("SELECT * FROM elementos_diseno WHERE id_elemento = 'L1'") == antes
+    assert [d for d in _dudas_ia(ctx["pid"]) if "nivel_distinto" in d["campo_afectado"]]
+
+
+def test_losa_en_nivel_que_t6n_no_tiene_abre_duda_y_no_crea_otra(ctx):  # SINTÉTICO
+    _con_t6n(ctx)
+    antes = _sql("SELECT * FROM elementos_diseno WHERE id_elemento = 'L1'")
+    _losa_con_nivel(ctx, "NIVEL 3")
+    r = ctx["importar"]()
+    assert r["nuevo"] == 0 and r["descartados"] == 1
+    assert _sql("SELECT * FROM elementos_diseno WHERE id_elemento = 'L1'") == antes
+    assert [d for d in _dudas_ia(ctx["pid"]) if "posible_duplicado" in d["campo_afectado"]]
+    guardado = json.loads((ctx["carpeta"] / "importacion.json").read_text(encoding="utf-8"))
+    assert guardado["descartados_detalle"] == [{"elemento": 0, "id_elemento": "L1", "campo": "H", "valor": "0.25",
+                                                 "motivo": "posible losa duplicada de una fila T6n"}]
+
+
+def test_campo_que_t6n_no_tiene_se_cuenta_como_descartado(ctx):  # SINTÉTICO
+    _con_t6n(ctx)
+    _losa_con_nivel(ctx, "NIVEL 2", {"Bw9": {"valor": "0.60", "citas": [3]}})
+    r = ctx["importar"]()
+    assert r["comprobaciones"] == 1 and r["descartados"] == 1
+    assert r["descartados_detalle"][0]["campo"] == "Bw9" and r["descartados_detalle"][0]["valor"] == "0.60"
+
+
+def test_losa_sin_fila_t6n_entra_nueva(ctx):  # SINTÉTICO
+    _losa_con_nivel(ctx, "NIVEL 3")
+    assert ctx["importar"]()["nuevo"] == 1
