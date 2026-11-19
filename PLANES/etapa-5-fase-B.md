@@ -12,6 +12,7 @@ Plan madre: `PLANES/etapa-5.md` (decisiones D5–D8, tareas B0–B5). Este archi
 - Lo que necesite backend nuevo es la **Fase D** (D-a bandeja común, D-b indicadores tras D15, D-c trabajos independientes): se pide al Director, no se simula. En pantalla se rotula y queda «pendiente de verificar».
 - Git: solo commits locales en `claude/etapa5-fase-b-0020e1`. Ningún push ni cambio en el checkout principal.
 - Para ver el tablero: backend desde el worktree con una **copia** de la BD (`CATDIC_DB_PATH` en el scratch), puerto ≠ 8000. Nunca se commitean PDFs, capturas ni `*.db`.
+- **Sin contacto con servicios externos sin el sí de Steven (Director, 19/11).** Incluye los comandos de `impeccable` que llaman a la red (`concept-seed`) y cualquier descarga. La única librería externa autorizada es Vue 3.5.13 (`FRONTEND/vendor/vue/`, SHA-256 en su README).
 - Hecho de la fase: paridad completa con B0 en el navegador, sin peticiones a internet, `break-ui` sin roturas abiertas, suite del backend igual (943 pasan; 2 fallan por Dropbox).
 
 ## Tareas
@@ -48,6 +49,7 @@ Hueco reservado en la navegación: "Lectura asistida" (Fase C, no es de esta fas
 - **19/11/2026 · Estilo visual:** «Plano sellado» (respuesta textual de Steven, relayada por el Director). Se construye con el estilo B de `FRONTEND/maquetas/v2/` (`plano.html`, `estilo-plano.css`). Hormigón y Tablero quedan como antecedente, sin borrarlos. Telemetría del sorteo de `impeccable` enviada (`--kind pick`: «choice recorded»).
 
 ## Bitácora (lo más nuevo arriba)
+- 19/11/2026 · Líder: Steven autorizó, vía Director, la descarga de Vue: «Sí, descarga Vue». Bajado `vue.global.prod.min.js` 3.5.13 de cdnjs a `FRONTEND/vendor/vue/` (154 807 bytes, SHA-256 `220ffd8a…92fe`, con README). También aprobado: solo Vue, sin Tailwind, y `/clasico/` con el `index.html` actual tal cual. Respondido al Director qué envía la telemetría de `impeccable`: una consulta GET a impeccable.style/api/roll con alcance, modo, clave aleatoria y contador, sin archivos del proyecto, según declara el programa.
 - 19/11/2026 · Director: Steven eligió «Plano sellado». Se abre la puerta de B2.
 - 19/11/2026 · Director: `e07e54a` verificado a 1024 y 800 px; corrección aprobada. B1 v3 auditada. La fase queda parada en la puerta hasta que Steven elija estilo.
 - 19/11/2026 · Líder: corregido el defecto de la auditoría de B1 v3. A 768–1279 px, «Prioridades» se aplastaba a una palabra por línea. Ahora las filas se acomodan al ancho de su caja con container queries: apiladas por debajo de 640 px, 4 columnas desde ahí y tabla de 6 en la Bandeja desde 880 px. La obra se ve también en Inicio y el cajetín de A y C tiene celdas más anchas. Validado de 375 a 1920 px, con 1024 y 768, en las 5 pantallas de los 3 estilos: sin texto aplastado, sin desbordes, 0 peticiones externas y 0 errores.
