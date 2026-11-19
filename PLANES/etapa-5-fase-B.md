@@ -22,7 +22,7 @@ Plan madre: `PLANES/etapa-5.md` (decisiones D5–D8, tareas B0–B5). Este archi
 | B1 (16/11) | Navegación + 3 maquetas en `FRONTEND/maquetas/{expediente,plano,obra}/` + `NOTAS-DESIGN.md` | Líder | esta rama | antecedente (sustituida por B1 v3) |
 | B1 v3 | 3 estilos sobre la organización D6, 5 pantallas, en `FRONTEND/maquetas/v2/` + `NOTAS.md`; B0 §10 «Necesidades nuevas»; `PRODUCT.md` al día | Líder | esta rama | **hecha, esperando auditoría del Director** |
 | — | **Puerta de Steven:** elige estilo (vía Director) | Steven | — | **resuelta 19/11: «Plano sellado»** |
-| B2 | Base: estructura de `FRONTEND/`, `vendor/` local, tokens del estilo B, armazón con navegación D6, cliente API, `/clasico/` | Ejecutor | esta rama | en preparación |
+| B2 | Base: estructura de `FRONTEND/`, `vendor/` local, tokens del estilo B, armazón con navegación D6, cliente API, `/clasico/` (encargo `PLANES/etapa-5-reportes/B2-brief.md`) | Ejecutor Sonnet (subagente, en este worktree) | esta rama | **en curso** |
 | B3a | Inicio y Mis obras | Ejecutor | — | pendiente |
 | B3b | Obra: Resumen, Planos y ficha, visor y recuadros | Ejecutor | — | pendiente |
 | B3c | Revisión de planos (confirmar datos del plano) | Ejecutor | — | pendiente |
