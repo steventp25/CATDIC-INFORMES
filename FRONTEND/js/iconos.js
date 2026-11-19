@@ -16,6 +16,7 @@
     plano: '<path d="M3 5h18v14H3zM3 10h18M9 5v14M15 5v14"/>',
     foto: '<path d="M4 7h3l2-2.5h6L17 7h3v12H4z"/><path d="M12 16a3.2 3.2 0 1 0 0-6.4 3.2 3.2 0 0 0 0 6.4z"/>',
     check: '<path d="m5 12.5 4.5 4.5L19 7.5"/>',
+    cerrar: '<path d="M6 6l12 12M18 6 6 18"/>',
     reloj: '<path d="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM12 7v5l3 2"/>'
   };
 })();

@@ -25,7 +25,7 @@
   --crear-fondo: #f2f5f8; --crear-tinta: #16263a; --crear-hover: #ffffff;
   --enlace: #1f4fa8; --foco: #1f4fa8; --seleccion: #cfdcf3;
   --alerta: #b91c1c; --alerta-tinta: #a31515; --ok-tinta: #23663a;
-  --error-fondo: #f8e3e3;
+  --error-fondo: #f8e3e3; --ok-fondo: #e3f1e7;
   --aviso-fondo: #e6eef9;
   --pend-tinta: #14202e; --pend-fondo: transparent; --pend-borde: #4a5868;
   --pend-patron: linear-gradient(to top right, transparent calc(50% - 0.6px), #4a5868 50%, transparent calc(50% + 0.6px)), linear-gradient(to bottom right, transparent calc(50% - 0.6px), #4a5868 50%, transparent calc(50% + 0.6px));
@@ -49,7 +49,7 @@
   --crear-fondo: #e6ecf2; --crear-tinta: #0a111a;
   --enlace: #9bbdf8; --foco: #9bbdf8; --seleccion: #2c4565;
   --alerta: #ff7a6e; --alerta-tinta: #ff958b; --ok-tinta: #86d39c;
-  --error-fondo: #3d1d22;
+  --error-fondo: #3d1d22; --ok-fondo: #17301f;
   --aviso-fondo: #1c2f4a;
   --pend-tinta: #e6ecf2; --pend-borde: #a9b6c4;
   --pend-patron: linear-gradient(to top right, transparent calc(50% - 0.6px), #a9b6c4 50%, transparent calc(50% + 0.6px)), linear-gradient(to bottom right, transparent calc(50% - 0.6px), #a9b6c4 50%, transparent calc(50% + 0.6px));
@@ -74,7 +74,7 @@
     --crear-fondo: #e6ecf2; --crear-tinta: #0a111a;
     --enlace: #9bbdf8; --foco: #9bbdf8; --seleccion: #2c4565;
     --alerta: #ff7a6e; --alerta-tinta: #ff958b; --ok-tinta: #86d39c;
-    --error-fondo: #3d1d22;
+    --error-fondo: #3d1d22; --ok-fondo: #17301f;
     --aviso-fondo: #1c2f4a;
     --pend-tinta: #e6ecf2; --pend-borde: #a9b6c4;
     --pend-patron: linear-gradient(to top right, transparent calc(50% - 0.6px), #a9b6c4 50%, transparent calc(50% + 0.6px)), linear-gradient(to bottom right, transparent calc(50% - 0.6px), #a9b6c4 50%, transparent calc(50% + 0.6px));
