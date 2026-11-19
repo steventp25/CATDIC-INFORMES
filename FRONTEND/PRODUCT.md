@@ -2,7 +2,7 @@
 
 <!-- impeccable:product-schema 1 -->
 
-> Registro inferido del brief del Director (Etapa 5) y de `CLAUDE.md`, sin entrevista directa con Steven (regla de la fase: no hablarle salvo bloqueo). Lo marcado *(inferido)* está pendiente de confirmar por Steven al elegir dirección en B1.
+> Registro inferido del brief del Director (Etapa 5) y de `CLAUDE.md`, sin entrevista directa con Steven (regla de la fase: no hablarle salvo bloqueo). Actualizado el 19/11/2026 con lo que Steven aprobó en el plan v3 (comentario del PR 31, decisiones D6 y D10–D14). Lo marcado *(inferido)* sigue pendiente de confirmar.
 
 ## Platform
 
@@ -17,6 +17,13 @@ Sustituir al 100 % los chats manuales con IA y el antiguo FileMaker: un tablero 
 ## Positioning
 Cada valor de diseño que muestra la app está anclado a una celda impresa del plano vectorial vigente (archivo, revisión, página, hoja, recuadro) y nace "pendiente de verificar" hasta que Steven lo confirma; la app nunca rellena ni estima. Lo que no se puede anclar va a la Mesa de Dudas.
 
+## Organización aprobada (D6, 19/11/2026)
+- Navegación principal: Inicio · Mis obras · Bandeja de trabajo · Informes · Configuración, y «Crear informe» siempre a mano.
+- Dentro de cada obra: Resumen · Visitas y trabajos · Planos y ficha · Avance · Informes · Cierre.
+- Trabajos independientes: «Crear informe» arma un pedido sin obra de seguimiento (servicios, datos y fuentes, revisión, preparar) que puede vincularse después a una obra. Guardarlo pide backend nuevo (Fase D-c).
+- Indicadores del Resumen de obra: avance por entrepisos, expediente completo y documentación al día. Sus definiciones son de Steven (D15). Hasta entonces se muestran «pendiente de verificar». La falta de datos nunca se muestra como 0 %, y no se cuentan archivos, versiones ni visitas como sustituto.
+- Referencias de patrón: Procore (resumen del proyecto), Autodesk Construction Cloud (prioridades por vencimiento), PlanRadar (lista ↔ plano ↔ detalle, versiones de plano) y Fieldwire (expediente del trabajo).
+
 ## Operating Context
 - Planos estructurales sellados (PDF de ~57 MB) y su vectorial; ejes con letra y número (`EJE F-11`, `A'`), niveles `S-4`, `E-9`.
 - Carpetas de Dropbox sincronizadas localmente (solo lectura): `LEVANTAMIENTO\VISITA A OBRA\<N. ELEMENTOS NIVEL PARCIAL|COMPLETIVO DD-MM-AAAA>`.
@@ -26,12 +33,12 @@ Cada valor de diseño que muestra la app está anclado a una celda impresa del p
 
 ## Capabilities and Constraints
 - Funciona 100 % sin internet: todo (librerías, fuentes, iconos) se sirve desde `FRONTEND/`. Sin compilación (D5).
-- El backend (FastAPI, 29 rutas) no se toca en esta fase; la interfaz tiene que cubrir todo lo que hace hoy el tablero (inventario B0).
+- El backend (FastAPI, 29 rutas) no se toca en la Fase B. La interfaz tiene que cubrir todo lo que hace hoy el tablero (inventario B0). Lo que pida datos nuevos (bandeja común, indicadores, trabajos independientes) es la Fase D: la pantalla lo rotula y no lo simula.
 - Textos en español. "pendiente de verificar" es un estado visible de primera clase, nunca un hueco.
 - Nunca se fabrican firmas ni se muestran datos de ingeniería inventados.
 
 ## Brand Commitments
-- Nombre: CATDIC. El tablero hoy se llama "Control Taller 2.0" con un distintivo amarillo; si se conservan el nombre y el amarillo es decisión de Steven (D6, sin respuesta) *(abierto)*.
+- Nombre: CATDIC. El tablero hoy se llama "Control Taller 2.0" y tiene un distintivo amarillo. El estilo visual se elige en la puerta de B1, entre tres propuestas: `FRONTEND/maquetas/v2/` *(abierto)*.
 - Tipografía oficial de CATDIC en documentos: Aptos / Aptos Narrow (Windows).
 - Rojo de localización de los informes: `RGB(220,0,0)`.
 

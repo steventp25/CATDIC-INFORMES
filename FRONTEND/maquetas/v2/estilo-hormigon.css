@@ -1,0 +1,67 @@
+/* Estilo A · Hormigón — el que asignó el sorteo de impeccable (seed:b9414461f55ae1b3).
+   Mundo: la obra en curso. Suelo de concreto, riel de encofrado fenólico, crayón de marcar naranja.
+   Firma: lo que no tiene dato va RAYADO, como una sección sin definir en un plano; nunca vacío ni 0 %. */
+:root {
+  --f-texto: "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif;
+  --f-titulo: "Bahnschrift", "Segoe UI Variable Display", "Segoe UI", sans-serif;
+  --f-dato: "Bahnschrift SemiCondensed", "Bahnschrift", Consolas, monospace;
+  --radio: 3px; --radio-caja: 4px;
+  --peso-h1: 600; --track-h1: -0.005em; --peso-marca: 700; --track-marca: 0.08em; --peso-tipo: 600;
+  --fondo: #d9dbd9; --superficie: #f4f5f4; --superficie-2: #e8eae8;
+  --tinta: #1f1d1a; --tinta-2: #4f524f; --borde: #d0d3d0; --borde-fuerte: #a9ada9;
+  --sombra: 0 1px 2px rgb(60 45 30 / 0.08);
+  --riel-fondo: #4a2a20; --riel-tinta: #f6eee8; --riel-tinta-2: #d3c3b8; --riel-hover: #5d372a; --riel-activo: #713f2f;
+  --acento: #c2410c; --acento-hover: #a3360a; --sobre-acento: #ffffff;
+  --crear-fondo: #f76b15; --crear-tinta: #1a1310; --crear-hover: #ff8540;
+  --enlace: #9a3412; --foco: #c2410c; --seleccion: #ffd2b3;
+  --alerta: #b91c1c; --alerta-tinta: #a31515; --ok-tinta: #2f6b2f;
+  --error-fondo: #f9e1dc;
+  --pend-tinta: #7c2d12;
+  --pend-fondo: repeating-linear-gradient(135deg, rgb(194 65 12 / 0.20) 0 1.5px, #fff1e6 1.5px 5px);
+  --pend-borde: #c2410c;
+  --pend-patron: repeating-linear-gradient(135deg, rgb(194 65 12 / 0.38) 0 2px, transparent 2px 8px);
+  --fased-tinta: #4f524f; --fased-borde: #858a85;
+  --nuevo-fondo: #f76b15; --nuevo-tinta: #1a1310;
+  --hueso: #d3d6d3; --deshab-fondo: #e3e5e3; --deshab-tinta: #4f524f;
+  --sel-fondo: #fbe6d7; --sel-borde: #c2410c;
+  --seg-activo: #4a2a20; --seg-activo-tinta: #f6eee8;
+  --pestana-activa: #f76b15;
+  --papel: #f9faf9; --pl-tinta: #2a2622; --pl-tinta-2: #6b655c; --pl-linea: #9a948a;
+}
+:root[data-tema="oscuro"] {
+  --fondo: #1b1714; --superficie: #25201c; --superficie-2: #2f2924;
+  --tinta: #f1ebe5; --tinta-2: #c4b9ae; --borde: #3b342e; --borde-fuerte: #5a5048;
+  --sombra: none;
+  --riel-fondo: #2d1a14; --riel-hover: #40261d; --riel-activo: #5a3426;
+  --acento: #f2702a; --acento-hover: #ff8a4a; --sobre-acento: #1a1310;
+  --enlace: #ffa36b; --foco: #ff8a4a; --seleccion: #6b3a1f;
+  --alerta: #ff6b5b; --alerta-tinta: #ff8a7d; --ok-tinta: #8fd18f;
+  --error-fondo: #4a201b;
+  --pend-tinta: #ffc49c;
+  --pend-fondo: repeating-linear-gradient(135deg, rgb(247 107 21 / 0.35) 0 1.5px, #3a2419 1.5px 5px);
+  --pend-borde: #f2702a;
+  --pend-patron: repeating-linear-gradient(135deg, rgb(247 107 21 / 0.5) 0 2px, transparent 2px 8px);
+  --fased-tinta: #c4b9ae; --fased-borde: #7d7268;
+  --hueso: #3a332d; --deshab-fondo: #2f2924; --deshab-tinta: #b3a89d;
+  --sel-fondo: #42281c; --sel-borde: #f2702a;
+  --seg-activo: #f2702a; --seg-activo-tinta: #1a1310;
+  --papel: #201b17; --pl-tinta: #ece5dd; --pl-tinta-2: #b3a89d; --pl-linea: #7d7268;
+}
+/* concreto: una textura de poro muy leve en el suelo, nada en las cajas */
+body { background-image: radial-gradient(rgb(0 0 0 / 0.035) 1px, transparent 1.2px); background-size: 7px 7px; }
+:root[data-tema="oscuro"] body { background-image: radial-gradient(rgb(255 255 255 / 0.03) 1px, transparent 1.2px); }
+.marca-n { text-transform: uppercase; }
+/* rango por peso y caja, no por tamaño (lo que se tomó del horario de bolsillo) */
+.f-tipo, .cajetin dt, .cubo h3, .el-t { font-family: var(--f-titulo); text-transform: uppercase; letter-spacing: 0.04em; font-size: 0.8125rem; }
+/* cajetín como placa de colado: franja de concreto con divisiones */
+.cajetin { background: var(--superficie); border: 1px solid var(--borde-fuerte); border-radius: var(--radio); }
+.cajetin > div { padding: 8px 16px; border-left: 1px solid var(--borde); flex: 1 1 140px; }
+.cajetin > div:first-child { border-left: 0; }
+.cajetin dd { font-family: var(--f-dato); font-size: 1rem; }
+.pendiente { border: 1px solid var(--pend-borde); }
+.ind-valor .pendiente { font-size: 1rem; padding: 3px 10px; }
+.ind-barra { height: 18px; }
+.indicador h3 { font-family: var(--f-titulo); font-size: 1.0625rem; font-weight: 600; }
+.conteos .num { font-family: var(--f-titulo); }
+.es-nuevo .fila-a { background: linear-gradient(90deg, rgb(247 107 21 / 0.10), transparent 60%); }
+.eje { font-family: var(--f-dato); font-weight: 600; }

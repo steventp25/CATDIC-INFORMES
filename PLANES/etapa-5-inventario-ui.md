@@ -530,3 +530,62 @@ No hay imágenes, logos, favicon ni archivos CSS/JS propios: todo está en un ú
 - [ ] Mensajes de red: `El backend no responde en http://localhost:8000…`
 - [ ] Dependencias externas de la sección 8 (o su sustituto, anotado)
 - [ ] Sin pérdida de las capas de apertura (Mesa sobre Confirmar; modales sobre Mesa)
+
+## 10. Necesidades nuevas (plan v3, aprobado por Steven el 19/11/2026)
+
+Las secciones 1–9 son la **paridad**: lo que el tablero ya hace y no puede perderse. Esta sección recoge lo que Steven pidió además (comentario del PR 31) y tiene criterios propios. Columna «Backend»: **hoy** = se puede hacer con las rutas de la sección 5; **D-a / D-b / D-c** = necesita la tarea de la Fase D indicada y, hasta que exista, la interfaz muestra «pendiente de verificar» o «disponible más adelante» (nunca se simula que funciona).
+
+### 10.1 Organización (D6)
+| # | Necesidad | Criterio de aceptación | Backend |
+|---|---|---|---|
+| N1 | Navegación principal: Inicio · Mis obras · Bandeja de trabajo · Informes · Configuración | Las 5 entradas visibles en escritorio (barra lateral) y en móvil (barra inferior o menú); la activa se distingue sin depender solo del color | hoy |
+| N2 | «Crear informe» como acción permanente | Visible en todas las pantallas sin desplazarse, en escritorio y en móvil; alcanzable con teclado | hoy (la acción; el trabajo independiente es D-c) |
+| N3 | Dentro de cada obra: Resumen · Visitas y trabajos · Planos y ficha · Avance · Informes · Cierre | Las 6 pestañas presentes; el nombre de la obra queda a la vista al cambiar de pestaña | hoy |
+| N4 | Contexto de la obra conservado | Al ir a la Bandeja desde una obra y volver, se regresa a la misma obra y pestaña; la URL lleva la obra (enlace directo) | hoy |
+| N5 | Pantallas especializadas conservadas | Cola, Mesa de Dudas, extracción/Confirmar datos del plano y Órdenes siguen existiendo con todo lo de las secciones 1–3 | hoy |
+
+### 10.2 Inicio
+| # | Necesidad | Criterio | Backend |
+|---|---|---|---|
+| N6 | Prioridades, dudas, revisiones, entregas y próximas acciones | Cada bloque enlaza directo al registro (no a una lista genérica); vacío, cargando y error propios | parcial hoy (dashboard, dudas, cola); vencimientos y entregas: D-a |
+| N7 | Sin cifras falsas | Los contadores que hoy salen siempre en 0 (`bloqueadas`, `vencen_7_dias`, hallazgo de la sección 1) no se muestran como 0: se muestran como «pendiente de verificar» hasta que el backend los calcule | D-a |
+
+### 10.3 Resumen de obra
+| # | Necesidad | Criterio | Backend |
+|---|---|---|---|
+| N8 | Indicador 1 · Avance por entrepisos = entrepisos ejecutados y confirmados / total previsto en planos | Se muestra «pendiente de verificar» con la fórmula y la razón (falta la decisión D15); nunca 0 % ni barra vacía | D-b (tras D15) |
+| N9 | Indicador 2 · Expediente completo = unidades documentales completadas / alcance documental final confirmado | Igual que N8 | D-b (tras D15) |
+| N10 | Indicador 3 · Documentación al día = unidades completadas y exigibles / total exigible hasta el avance actual | Igual que N8 | D-b (tras D15) |
+| N11 | Prohibido el sustituto | Ningún indicador se calcula con número de archivos, versiones o visitas | — |
+| N12 | Pendientes de la obra y actividad reciente | Lista de pendientes abiertos de esa obra (dudas, cola, revisiones) con acceso directo; acciones rápidas | hoy (dudas, cola); actividad: D-a |
+
+### 10.4 Bandeja de trabajo
+| # | Necesidad | Criterio | Backend |
+|---|---|---|---|
+| N13 | Pendientes de obras y de trabajos independientes en una sola lista | Cada fila dice tipo, obra o trabajo, motivo y siguiente paso; abre el registro original (Mesa, Cola, Confirmar, Órdenes) | D-a (ruta común); D-c (trabajos independientes) |
+| N14 | Sin duplicar registros | La bandeja lee los mismos registros; resolver en la bandeja = resolver en la pantalla especializada | D-a |
+| N15 | Filtros por obra, tipo y estado | El filtro se ve aplicado y se puede quitar; vacío con filtros ≠ vacío sin pendientes | D-a |
+
+### 10.5 Revisión de planos
+| # | Necesidad | Criterio | Backend |
+|---|---|---|---|
+| N16 | Lista de elementos propuestos (izquierda) · plano (centro) · datos propuestos con fuente y acciones (derecha) | Al elegir un elemento, el plano muestra su recuadro y la derecha sus valores con hoja/página de origen | hoy (rutas de Confirmar y de la hoja) |
+| N17 | Adaptación responsive | En móvil las 3 zonas pasan a pasos (lista → plano → datos) sin perder la selección | hoy |
+| N18 | Revisión de visitas: foto y etiqueta originales | Desde un elemento de visita se ve la foto original y la etiqueta literal del log | hoy (visitas); a confirmar en B3d |
+| N19 | Lo dudoso no se confirma | Valor sin fuente o en contradicción: «pendiente de verificar» y salida a la Mesa de Dudas | hoy |
+
+### 10.6 Crear informe independiente y trabajos independientes
+| # | Necesidad | Criterio | Backend |
+|---|---|---|---|
+| N20 | Elegir servicios: supervisión STP, levantamiento de supervisión, estructural, visual, dimensional, esclerometría | Cada servicio dice si está **disponible hoy** o es **desarrollo futuro**; no declara implementados los formatos HV | — (texto) |
+| N21 | Aportar datos y fuentes | Los datos que falten quedan «pendiente de verificar»; las fuentes se listan con su nombre | D-c |
+| N22 | Revisar el pedido y preparar el trabajo sin crear obra de seguimiento | Paso de revisión antes de preparar; el trabajo no aparece en «Mis obras» | D-c |
+| N23 | El trabajo conserva fuentes, dudas, documentos, versiones e historial y se puede vincular después a una obra | Visible en la ficha del trabajo; vincular no duplica registros | D-c |
+
+### 10.7 Transversales
+| # | Necesidad | Criterio | Backend |
+|---|---|---|---|
+| N24 | Estados vacío, cargando, error y «pendiente de verificar» en cada bloque | Los 4 estados diseñados y distintos entre sí; el error dice qué falló y ofrece reintentar | — |
+| N25 | Escritorio (1280, 1920) y móvil (375) | Sin desplazamiento horizontal; objetivos táctiles ≥ 44 px en móvil | — |
+| N26 | Temas, teclado, contraste y sin conexión | Temas que se ofrezcan con contraste ≥ 4.5:1 en texto; foco visible; 0 peticiones a internet | — |
+| N27 | Trazabilidad | Todo dato muestra su origen (plano, visita, cálculo) o queda «pendiente de verificar» | — |

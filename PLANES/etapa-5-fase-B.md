@@ -7,7 +7,8 @@ Plan madre: `PLANES/etapa-5.md` (decisiones D5–D8, tareas B0–B5). Este archi
 - Zona: `FRONTEND/**`, `DESIGN.md`, `PLANES/etapa-5-fase-B.md`, `PLANES/etapa-5-inventario-ui.md`, `PLANES/etapa-5-reportes/B*.md`. **No tocar `BACKEND/**`** (ni rutas, ni respuestas, ni `main.py`): lo que haga falta se pide al Director.
 - Sin compilación (D5): varios archivos, Vue y Tailwind locales en `FRONTEND/vendor/`, funciona **sin internet**. El tablero viejo queda en `FRONTEND/clasico/index.html` (abre en `/clasico/`) hasta el cierre.
 - Nada de lo que hace hoy el tablero puede perderse (paridad con B0). Textos en español. Lo que falta se muestra como "pendiente de verificar"; nunca datos de ingeniería inventados.
-- Máximo **2 Ejecutores trabajando a la vez** en esta fase. Ejecutores `fresh`, en worktree propio, Sonnet medio (Haiku bajo para lo mecánico).
+- **1 Ejecutor a la vez** en esta fase (plan v3); máximo **3 sesiones de CATDIC-WEB trabajando a la vez** entre las fases A y B. Ejecutores `fresh`, en worktree propio, Sonnet medio (Haiku bajo para lo mecánico).
+- Lo que necesite backend nuevo es la **Fase D** (D-a bandeja común, D-b indicadores tras D15, D-c trabajos independientes): se pide al Director, no se simula. En pantalla se rotula y queda «pendiente de verificar».
 - Git: solo commits locales en ramas `claude/etapa5-*`. Ningún push ni cambio en el checkout principal. Una tarea que depende de otra sale de la rama de la anterior.
 - Para ver el tablero: backend desde el worktree con una **copia** de la BD (`CATDIC_DB_PATH` en el scratch), puerto ≠ 8000. Nunca se commitean PDFs, capturas ni `*.db`.
 - Hecho de la fase: paridad completa con B0 en el navegador, sin peticiones a internet, `break-ui` sin roturas abiertas, suite del backend igual (943 pasan; 2 fallan por Dropbox).
@@ -16,21 +17,35 @@ Plan madre: `PLANES/etapa-5.md` (decisiones D5–D8, tareas B0–B5). Este archi
 | Tarea | Qué | Quién | Rama | Estado |
 |---|---|---|---|---|
 | B0 | Inventario funcional del tablero actual → `PLANES/etapa-5-inventario-ui.md` | Ejecutor Sonnet `b0-inventario` (archivado) | `claude/etapa5-b0-inventario-fb8728` (`effa03a`, traído aquí con cherry-pick) | **aceptada** |
-| B1 | Navegación + 3 maquetas (principal y "Confirmar datos del plano") en `FRONTEND/maquetas/{expediente,plano,obra}/` + `FRONTEND/maquetas/NOTAS-DESIGN.md` | Líder | esta rama | **hecha** |
-| — | **Puerta de Steven:** elige dirección (vía Director) | Steven | — | esperando |
-| B2 | Base: estructura de `FRONTEND/`, `vendor/` local, tokens, armazón con navegación, cliente API, `/clasico/` | Ejecutor | — | bloqueada por la puerta |
-| B3a | Obras y tablero | Ejecutor | — | pendiente |
-| B3b | Obra: planos, datos de la obra, visor y recuadros | Ejecutor | — | pendiente |
-| B3c | Confirmar datos del plano | Ejecutor | — | pendiente |
-| B3d | Cola de visitas, subir visita/Dropbox, avance del procesador (cubre T10b) | Ejecutor | — | pendiente |
-| B3e | Mesa de Dudas | Ejecutor | — | pendiente |
+| B1 (16/11) | Navegación + 3 maquetas en `FRONTEND/maquetas/{expediente,plano,obra}/` + `NOTAS-DESIGN.md` | Líder | esta rama | antecedente (sustituida por B1 v3) |
+| B1 v3 | 3 estilos sobre la organización D6, 5 pantallas, en `FRONTEND/maquetas/v2/` + `NOTAS.md`; B0 §10 «Necesidades nuevas»; `PRODUCT.md` al día | Líder | esta rama | **hecha, esperando auditoría del Director** |
+| — | **Puerta de Steven:** elige estilo (vía Director) | Steven | — | esperando |
+| B2 | Base: estructura de `FRONTEND/`, `vendor/` local, tokens, armazón con navegación D6, cliente API, `/clasico/` | Ejecutor | — | bloqueada por la puerta |
+| B3a | Inicio y Mis obras | Ejecutor | — | pendiente |
+| B3b | Obra: Resumen, Planos y ficha, visor y recuadros | Ejecutor | — | pendiente |
+| B3c | Revisión de planos (confirmar datos del plano) | Ejecutor | — | pendiente |
+| B3d | Visitas y trabajos: cola, subir visita/Dropbox, avance del procesador (cubre T10b) | Ejecutor | — | pendiente |
+| B3e | Bandeja de trabajo y Mesa de Dudas (la ruta común es Fase D-a) | Ejecutor | — | pendiente |
 | B3f | Órdenes de trabajo | Ejecutor | — | pendiente |
+| B3g | Informes y Crear informe (solo lo que ya genera el sistema; lo demás «disponible más adelante»; guardar trabajos es Fase D-c) | Ejecutor | — | pendiente |
 | B4 | Movimiento y pulido (`animate`, `choreograph`, `emil-design-eng`), `prefers-reduced-motion` | Ejecutor + Líder | — | pendiente |
 | B5 | `break-ui`, teclado, contraste, 1280/1920, paridad con B0, cierre | Líder + Ejecutor | — | pendiente |
 
 Hueco reservado en la navegación: "Lectura asistida" (Fase C, no es de esta fase).
 
+## B1 v3 (plan aprobado el 19/11) — hecha, esperando auditoría y puerta
+- Organización fija (D6): Inicio · Mis obras · Bandeja de trabajo · Informes · Configuración + «Crear informe»; en la obra: Resumen · Visitas y trabajos · Planos y ficha · Avance · Informes · Cierre.
+- Entregable: 2–3 estilos visuales sobre esa misma organización, 5 pantallas (Inicio, Resumen de obra, Bandeja, Revisión de planos, Crear informe independiente), datos sintéticos rotulados, estados vacío/cargando/error/pendiente, escritorio y móvil. Indicadores siempre «pendiente de verificar» (D15), nunca 0 %. Cada estilo dice qué skill aportó qué decisión y qué patrón toma de Procore/Autodesk/PlanRadar/Fieldwire.
+- Lugar: `FRONTEND/maquetas/v2/` (un HTML por estilo + `datos.js`, `app.js`, `base.css`, `estilo-*.css`). Las maquetas del 16/11 quedan como antecedente.
+- B0 se amplía con la sección 10 «Necesidades nuevas» (criterios propios; lo que pide backend va a la Fase D, no se simula).
+- Reglas nuevas: 1 ejecutor a la vez; máx. 3 sesiones de CATDIC-WEB a la vez entre fases A y B.
+- Resultado: A **Hormigón** (asignado por el sorteo de `impeccable`, `seed:b9414461f55ae1b3`), B **Plano sellado** (elección del skill), C **Tablero de obra** (retador competitivo). Detalle en `FRONTEND/maquetas/v2/NOTAS.md`.
+- Pendiente al elegir: telemetría del sorteo (`--from b429ec8dc7555d53ac6ca00d75b3dc17 --scope direction --mode operate --kind <assigned|pick|challenger>`), contrato de dirección y `DESIGN.md` (se escribe en B2).
+- Necesidades de Fase D que salen de B1 (B0 §10): D-a ruta común de la Bandeja, vencimientos y actividad reciente; D-b indicadores (tras D15); D-c guardar trabajos independientes.
+
 ## Bitácora (lo más nuevo arriba)
+- 19/11/2026 · Líder: **B1 v3 hecha.** 3 estilos en `FRONTEND/maquetas/v2/` (un HTML por estilo + `datos.js`, `app.js`, `base.css`, `estilo-*.css`, `index.html` para elegir, `NOTAS.md`). Verificación con Playwright a 1280, 1920 y 375, en claro y oscuro: sin desbordes, 0 peticiones fuera de `file:` y 0 errores de consola. El orden de Tab es correcto. Los estados vacío, cargando y error se probaron, igual que C4 en conflicto y los pasos de Crear informe. `impeccable detect`: quedan 2 avisos *advisory* justificados, la retícula de B y el rayado de A. B0 ampliado con la §10 (N1–N27, columna de backend). `FRONTEND/PRODUCT.md` actualizado con D6. Avisado el Director para la auditoría.
+- 19/11/2026 · Líder: plan v3 traído con merge de `origin/claude/etapa5-plan` (`e853215`). Leído el comentario de Steven en el PR 31 (por la API REST: `gh pr view` falla por permisos del token). B1 se rehace.
 - 16/11/2026 · Líder: **B1 hecha, parada en la puerta de Steven.** 3 maquetas: A Expediente (sorteo de `impeccable`), B Plano (la que el skill elige), C Obra (continuidad oscuro + amarillo). Revisadas con Playwright a 1280 y 1920: sin desbordes, 0 peticiones externas. Sustituciones declaradas: `FRONTEND/PRODUCT.md` inferido sin entrevista (la fase no permite hablar con Steven) y la página de decisión de `impeccable` sustituida por el reporte al Director. Pendiente al elegir: aviso de telemetría del sorteo (`--from 373b84e9ba2a0560b6dd64bec7b5e4cd`), contrato de dirección y `DESIGN.md`.
 - 16/11/2026 · Líder: B0 revisado contra `FRONTEND/index.html`: 93 apariciones / 86 nombres `data-*` (los 86 en la sección 6), 23 `fetch(`, 46 botones, 6 modales; líneas de muestra correctas. Aceptado y Ejecutor archivado. Para B2: el tablero usa `API = 'http://localhost:8000'` fijo; el nuevo debe usar rutas relativas.
 - 16/11/2026 · Líder: fase arrancada. Leídos `etapa-5.md`, `CLAUDE.md`, `COLABORACION.md`. B0 lanzado; B1 en curso.
