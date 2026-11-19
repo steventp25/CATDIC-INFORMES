@@ -62,12 +62,12 @@ def _dato(dato, donde: str, existentes, fijo: bool = False) -> Dict:
         raise PropuestaInvalida(f"{donde}: debe ser un objeto.")
     evidencia = dato.get("evidencia", "literal")
     valor = dato.get("valor")
+    if evidencia not in EVIDENCIAS:  # contrato §5.1: desconocida → hoja rechazada, también con valor null
+        raise PropuestaInvalida(f"{donde}: evidencia {evidencia!r} desconocida.")
     if valor is None and isinstance(dato.get("duda"), str) and dato["duda"].strip():
-        # valor null + duda: igual que siempre, con cualquier evidencia
+        # valor null + duda: igual que siempre, con cualquiera de las evidencias conocidas
         return {"valor": None, "citas": _citas(dato.get("citas", []), donde, existentes), "duda": dato["duda"],
                 "evidencia": "literal"}
-    if evidencia not in EVIDENCIAS:
-        raise PropuestaInvalida(f"{donde}: evidencia {evidencia!r} desconocida.")
     if fijo and (evidencia in ("zona", "conversion") or "zona" in dato or "conversion" in dato):
         raise PropuestaInvalida(f"{donde}: la identidad del elemento solo admite 'literal' o 'partes'.")
     if evidencia == "conversion" and valor is None and "conversion" in dato:
@@ -357,7 +357,7 @@ def _revisar_zona(dato: Dict, hoja: Optional[Dict]) -> Dict:
     lectura = _colapsar(dato["valor"])
     return {"valor": lectura, "evidencia": "zona",
             "fuente": {"evidencia": "zona", "zona": zona, "lectura": lectura, "citas": list(dato.get("citas", []))},
-            "duda": f"IA: revisión visual: Claude leyó '{lectura}' en la zona {zona}; no hay texto vectorial que lo "
+            "duda": f"IA: revisión visual: la IA leyó '{lectura}' en la zona {zona}; no hay texto vectorial que lo "
                     f"compruebe. Confírmalo mirando el recorte."}
 
 

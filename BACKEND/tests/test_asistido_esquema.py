@@ -292,7 +292,11 @@ def test_evidencias_buenas_se_normalizan_y_partes_no_piden_citas():  # SINTÉTIC
 
 
 def test_null_con_duda_vale_con_cualquier_evidencia():  # SINTÉTICO
-    for ev in ("literal", "partes", "zona", "conversion", "otra"):
+    for ev in ("literal", "partes", "zona", "conversion"):
         d = {"valor": None, "duda": "no se ve", "evidencia": ev}
         assert _prop_con(d)["elementos"][0]["campos"]["x"]["duda"] == "no se ve"
         assert _rev(d, "x")["valor"] is None and _rev(d, "x")["duda"] == "no se ve"
+
+
+def test_evidencia_desconocida_rechaza_la_hoja_aunque_el_valor_sea_null():  # SINTÉTICO (revisión del Líder)
+    _intenta({"valor": None, "duda": "no se ve", "evidencia": "otra"})
