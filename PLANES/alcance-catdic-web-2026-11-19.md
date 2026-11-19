@@ -17,15 +17,19 @@ No usar las tablas de estado antiguas de `COLABORACION.md`, los borradores local
 
 ## 2. Lo que Steven confirmó
 
+**Corrección de Steven, 19/11/2026:** los puntos **1 y 3** son las bases que mantiene fijas. Los demás registran la orientación discutida y pueden variar; no tratarlos como decisiones irrevocables. Siguen vigentes las reglas de ingeniería y las restricciones de gasto mientras no se autorice cambiarlas.
+
 1. **CATDIC-WEB es el sistema principal**, con herramientas especializadas, incluido GPR. La finalidad es que lo usen sus compañeros y jefes para organizar el trabajo y ampliarlo después con otros módulos.
 2. Steven plantea distinguir **Gestión de proyectos, Generación de informes y Teoría/contenido técnico**. La separación exacta y sus límites siguen como propuesta de producto, no como módulos construidos.
 3. **«Claude me hace mis informes completamente. Lo que quiero hacer es llevarlo a CATDIC-WEB».** La referencia funcional debe ser un trabajo completo que ya salió bien: entradas, instrucciones, preguntas, revisiones y documento final.
 4. **La interpretación y extracción de datos de los planos la hará una IA.** Steven quiere retirar el enfoque de interpretar planos mediante patrones rígidos de texto o disposición, porque los planos no se organizan igual.
 5. **El programa genera los informes** a partir de los datos extraídos y revisados. La IA participa en interpretar y preparar información; no sustituye las reglas matemáticas ni las comprobaciones del programa.
-6. **En campo utilizan Report and Run.** Toman muchas fotos y registran ubicaciones o un recorrido para identificar elementos. Steven considera registrar nombre del elemento y ejes en futuras visitas; todavía no se eligió una interfaz ni un protocolo nuevo.
+6. **En campo utilizan Report and Run.** Ya se identificaban elementos en el reporte o se ubicaban sobre una planta dibujando sus posiciones. No describir esas prácticas como funciones nuevas pendientes de introducir. Steven aportará un ejemplo para comprobar cómo se conservan las asociaciones en los archivos disponibles; su interpretación concreta queda pendiente de verificar.
 7. **La cuenta de Claude de CATDIC es Claude Pro** y se usa para desarrollar. Steven quiere evitar que la producción de informes agote ese cupo. Se mantiene la restricción de **no pagar adicional**; no se autorizaron claves API ni servicios nuevos.
 8. Steven propuso que los compañeros usen su propia IA con un prompt preparado por el programa, y contempló introducir información a mano, señalando la dificultad de transcribirla toda. Son alternativas a concretar; no se ha aprobado una conexión central compartida.
-9. Steven indica que **GPR está básicamente completado** y quiere comenzar a ensamblar módulos. Es su valoración actual; este traspaso no certifica ni reabre el cierre técnico de GPR.
+9. Steven indica que **el visor GPR seguirá actualizándose, pero tiene suficiente forma para evaluar una posible integración**. No exigir que cese su desarrollo para integrarlo ni presentar la integración como implementada o aprobada técnicamente por este documento.
+
+**Cuenta de CATDIC:** su posible uso como IA del proyecto sigue abierto, ya que CATDIC paga la cuenta. No confundir titularidad o pago con el mecanismo técnico permitido para integrar una suscripción. Evaluar opciones y cupo; no dar por descartada esa cuenta ni por autorizados gasto adicional, API o uso compartido de credenciales.
 
 ## 3. Producto y módulos: organización propuesta
 
@@ -45,7 +49,7 @@ No confundir módulos de negocio con botones independientes ni con servidores ob
 
 Teoría debe poder **preparar contenido**, no ser solo una biblioteca. Plantillas y datos conocidos pueden llenarse sin IA; descripciones particulares pueden escribirse o redactarse con ayuda. Interpretaciones y conclusiones requieren fuentes y revisión técnica. La forma concreta de edición está por acordar.
 
-### Navegación ya acordada, que hay que conservar
+### Navegación anterior, abierta a revisión
 
 La instrucción de Steven en el [PR 31](https://github.com/steventp25/CATDIC-WEB/pull/31#issuecomment-6927916623) establece:
 
@@ -55,9 +59,13 @@ La instrucción de Steven en el [PR 31](https://github.com/steventp25/CATDIC-WEB
 - Informes y trabajos independientes, con fuentes, dudas, versiones e historial, vinculables posteriormente a una obra.
 - Tres indicadores: avance por entrepisos, expediente completo y documentación al día. Sus evidencias y unidades siguen pendientes; no inventar porcentajes ni sustituir cobertura por número de archivos o visitas.
 
-Los módulos deben encajar en esa organización. La nueva conversación no elige una maqueta ni declara implementadas esas pantallas.
+**Steven aclara que esta navegación puede variar:** la considera insuficientemente sólida. La lista anterior es un antecedente, no una restricción para el nuevo diseño. Proponer la estructura según los recorridos reales por obra, permisos y tareas. No se ha elegido una nueva maqueta ni se declaran implementadas esas pantallas.
 
 ## 4. IA para los planos: qué cambia y qué se conserva
+
+**Alcance de la extracción solicitado por Steven:** la IA debe preparar lo que el usuario necesite, tanto de planos como de visitas disponibles. La interacción planteada es un diálogo que pregunte qué extraer y de qué fuentes o visitas; sus controles y límites siguen por diseñar. No limitar el producto a una extracción fija idéntica para todas las obras ni interpretar «lo que necesite» como autorización para inventar datos o extraer información no presente.
+
+**Recorrido propuesto:** elegir obra → solicitar información → seleccionar o confirmar planos, revisiones y visitas → IA prepara datos y dudas con fuentes → revisión humana → reutilizar en visor, contenido técnico e informes. Mostrar lo ya preparado y los faltantes para evitar repetir análisis. Validar este recorrido con el ejemplo real de Report and Run cuando Steven lo aporte.
 
 **Dirección confirmada:** reemplazar la interpretación basada en patrones de tablas, posiciones o expresiones regulares por interpretación de IA que pueda trabajar con hojas distintas, relaciones entre plantas/detalles y contexto.
 
@@ -136,6 +144,26 @@ Preservar la generación sin IA una vez disponibles los datos revisados. Los pas
 
 La cuestión de servidor, persistencia, cuentas y publicación sigue registrada en el [issue 32](https://github.com/steventp25/CATDIC-WEB/issues/32). Evaluar el servidor de la empresa y la concurrencia antes de elegir alojamiento o migrar datos. Este documento no decide Vercel, una base nueva ni un despliegue.
 
+## 7.1. Decisión de Steven: organización y trazabilidad comunes con Dropbox
+
+**Actualización continua:** Steven señala que diariamente se incorporan archivos a Dropbox. La organización no puede ser una importación única. El diseño debe contemplar detectar incorporaciones y cambios, reconciliar el índice y señalar fuentes nuevas o modificadas y resultados afectados, sin aprobarlos automáticamente ni sobrescribir información revisada. Frecuencia, mecanismos de sincronización y gestión de conflictos quedan por definir; no se declara implementada esta capacidad.
+
+**Confirmado el 19/11/2026:** aplicar en Dropbox y CATDIC-WEB una metodología común de organización y trazabilidad, tomando aspectos de ISO 19650, ISO 9001 y gestión documental. El objetivo es encontrar y utilizar información de las obras con la menor fricción posible. Esto no declara conformidad ni certificación con esas normas.
+
+La obra es el contexto principal: sus planos, visitas, elementos, resultados e informes deben poder relacionarse. La organización debe aprovechar la adaptación BIM ya existente en Diseño y los circuitos de Supervisión y Levantamiento, sin exigir al usuario memorizar rutas de carpetas.
+
+**Aplicación propuesta, pendiente de diseño y validación:**
+
+- Identidad estable de obra y documentos, con equivalencias para nombres y códigos existentes; buscar por nombre conocido, elemento, nivel, ejes, fecha, tipo y estado cuando esos datos estén disponibles y verificados.
+- Resultados de búsqueda con contexto, revisión, procedencia y acceso al original, respetando los permisos de cada persona. Distinguir documento vigente, histórico y pendiente de revisión sin deducir autorización únicamente de su carpeta.
+- Relacionar fuente y revisión → interpretación o medición → revisión humana → resultado → informe emitido. Registrar quién cambió qué, cuándo y por qué; conservar lo emitido y permitir identificar qué resultados necesitan reevaluación si cambia una fuente.
+- Diferenciar preparación, revisión, autorización de emisión y entrega. Registrar discrepancias, responsables, correcciones y cierre con evidencia.
+- Evitar copias y captura duplicada. Indexar los archivos existentes y resolver cambios de ruta sin perder su historial; el mecanismo concreto queda por diseñar.
+
+**Siguiente paso recomendado:** probar en una obra real un recorrido de búsqueda desde CATDIC-WEB hasta el documento original y desde un informe hasta sus evidencias. Comprobar recuperación de la revisión adecuada, contexto, permisos, tiempo de búsqueda y esfuerzo de mantenimiento. No fijar metas sin una línea base.
+
+La decisión aprueba la dirección metodológica, no una migración masiva ni cambios de nombres o ubicaciones. Las reglas actuales de solo lectura de Dropbox permanecen vigentes hasta autorizar una intervención concreta. No se autoriza gasto, despliegue ni reanudación de fases detenidas.
+
 ## 8. Estado técnico que Claude debe distinguir del objetivo
 
 | Área | Verificado en `main` | No afirmar como terminado |
@@ -173,7 +201,7 @@ Consultada el 19/11/2026. Son referencias de comportamiento y condiciones, no he
 2. Describir brevemente ese recorrido y qué hará la IA frente a qué hará el programa. Proponer la salida mínima que permita guardar datos con sus fuentes, corregirlos y generar el documento.
 3. Presentar un primer intercambio concreto y revisable para un caso real: preparar trabajo → IA del usuario → importar propuesta → revisar → generar. Medir omisiones, datos mal asociados, dudas omitidas, esfuerzo del compañero y tiempo total frente al resultado ya conocido. No presentar este piloto como aprobado o ejecutado por este documento.
 4. Contrastar también visitas difíciles (por ejemplo, las ya reconocidas #17, #18 y #20) antes de generalizar: contexto entre etiquetas, fotos sin rótulo, orden no cronológico y contradicciones. Una prueba inicial correcta no acredita todos los tipos de visita.
-5. Actualizar las tareas afectadas de Etapas 2, 3, 4 y 5 con dependencias y estado explícito. Coordinar con el PR 31 sin sobrescribir el trabajo de sus ramas. Mantener la navegación aprobada y pedir decisiones solo cuando cambien el alcance.
+5. Actualizar las tareas afectadas de Etapas 2, 3, 4 y 5 con dependencias y estado explícito. Coordinar con el PR 31 sin sobrescribir el trabajo de sus ramas. Revisar la navegación anterior conforme a la aclaración de Steven y pedir decisiones solo cuando cambien el alcance.
 
 **Pendientes reales:** caso de referencia y sus instrucciones; alcance exacto del primer piloto; IA/cuentas autorizadas de los compañeros; formato de intercambio y nivel de revisión; integración concreta de GPR; permisos y alojamiento; elección visual que siga pendiente. No volver a preguntar si se usa Report and Run, si Claude ya produce los informes, si Pro comparte cupo ni si se autoriza pagar adicional: esas respuestas ya constan.
 
