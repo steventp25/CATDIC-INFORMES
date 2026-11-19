@@ -96,7 +96,6 @@
             '<p class="vacio-t">Esta pestaña todavía no está construida.</p>' +
             '<p>{{ contenido.texto }}</p>' +
             '<p v-if="contenido.tarea">La construye la tarea <span class="num">{{ contenido.tarea }}</span><template v-if="contenido.tarea2"> y la <span class="num">{{ contenido.tarea2 }}</span></template> de la Fase B.</p>' +
-            '<a class="enlace" href="/clasico/">Mientras tanto: tablero clásico<Icono nombre="flecha"/></a>' +
           '</div>' +
         '</section>' +
       '</div>'

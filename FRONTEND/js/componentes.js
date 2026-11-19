@@ -91,7 +91,6 @@
           '<p class="vacio-t">Esta pantalla todavía no está construida.</p>' +
           '<p v-if="descripcion">{{ descripcion }}</p>' +
           '<p>La construye la tarea <span class="num tarea">{{ tarea }}</span> de la Fase B.</p>' +
-          '<a class="enlace" href="/clasico/">Mientras tanto: tablero clásico<Icono nombre="flecha"/></a>' +
         '</section>' +
       '</div>'
   };
