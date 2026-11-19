@@ -37,8 +37,8 @@ lectura-asistida/
    "nivel_rango": {"valor": "FUNDACIONES @ E-3", "citas": [76]},
    "ejes": {"valor": null, "duda": "El cuadro de columnas no da ejes (D11)."},
    "campos": {
-     "b": {"valor": "0.60", "citas": [70]},
-     "h": {"valor": "1.50", "citas": [32]},
+     "b_m": {"valor": "0.60", "citas": [70]},
+     "h_m": {"valor": "1.50", "citas": [32]},
      "acero_longitudinal": {"valor": "36∅1\"", "citas": [3]},
      "estribos": {"valor": "9 EST. ∅3/8\" @0.10", "citas": [1, 2]}
    },
@@ -85,7 +85,7 @@ Otras claves:
 
 ## 7. Campos por tipo (`campos`, en el orden de D10)
 Las claves se fijan en cada apartado de la skill (A4a–A4d) y se añaden aquí cuando se escriban.
-- **COLUMNA (A4a):** `b`, `h`, `acero_longitudinal`, `estribos`. El estribo puede citar dos textos (cantidad y diámetro + separación).
+- **COLUMNA (A4a):** `b_m` (lado horizontal de la sección dibujada), `h_m` (lado vertical), `acero_longitudinal`, `estribos` (puede citar dos textos); `seccion` solo si viene en un único texto `bXh`. Nombres alineados con `test_validador_diseno.py`. Detalle en `.claude/skills/extraer-plano/referencias/columnas.md`.
 - **LOSA (A4b):** `H` y `tipo_losa` (como enlace con la tabla de aplicación). Las dimensiones y el acero salen de la tabla que ya lee T6n (doble lectura).
 - **MURO H.A. (A4c):** `espesor`, `longitud`, `borde_<k>.longitud`, `borde_<k>.acero`, `borde_<k>.estribos` (k = 1, 2, 3, rotulados en el recorte de DETALLE), `alma.ASV`, `alma.ASH`, `alma.ganchos`.
 - **PORTICO, por tramo (A4d):** se fija en A4d (acero superior e inferior, adicionales con su largo, zonas de estribos, llamada de sección como enlace).
