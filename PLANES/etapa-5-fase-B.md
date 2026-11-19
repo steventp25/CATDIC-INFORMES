@@ -23,7 +23,7 @@ Plan madre: `PLANES/etapa-5.md` (decisiones D5–D8, tareas B0–B5). Este archi
 | B1 v3 | 3 estilos sobre la organización D6, 5 pantallas, en `FRONTEND/maquetas/v2/` + `NOTAS.md`; B0 §10 «Necesidades nuevas»; `PRODUCT.md` al día | Líder | esta rama | **auditada y aprobada (19/11)** |
 | — | **Puerta de Steven:** elige estilo (vía Director) | Steven | — | **resuelta 19/11: «Plano sellado»** |
 | B2 | Base: estructura de `FRONTEND/`, `vendor/` local, tokens del estilo B, armazón con navegación D6, cliente API, `/clasico/` (encargo `PLANES/etapa-5-reportes/B2-brief.md`) | Ejecutor Sonnet (subagente, en este worktree) + revisión del Líder | esta rama (`d254519`…`485b3ea`, Líder `a7a1f3f`, `078d4f3`, prueba de backend) | **aprobada por el Director (19/11)** |
-| B3a | Inicio y Mis obras, con Nueva obra (encargo `PLANES/etapa-5-reportes/B3a-brief.md`) | Ejecutor Sonnet (subagente, en este worktree) | esta rama | **en curso** |
+| B3a | Inicio y Mis obras, con Nueva obra (encargo `PLANES/etapa-5-reportes/B3a-brief.md`) | Ejecutor Sonnet (subagente, en este worktree) + revisión del Líder | esta rama (`ddca35f`, `30bea9a`, `6f6d73a`, `69ed72f`, Líder: corrección móvil) | **hecha, esperando auditoría y que Steven la vea** |
 | B3d | **(2.º)** Visitas y trabajos: **Procesar cola** con el seguimiento del trabajo (polling cada 2 s), **Sincronizar desde Dropbox** con su resultado (Z8), cola de visitas de todas las obras (Z15) y de cada obra, subir visita / conectar Dropbox (M3), avance del procesador (cubre T10b) | Ejecutor | — | pendiente |
 | B3e | **(3.º)** **Mesa de Dudas** completa (M1: por visita y por obra, responder, conflictos) y Bandeja de trabajo con lo que hay hoy (la ruta común es Fase D-a) | Ejecutor | — | pendiente |
 | B3b | **(4.º)** Obra: Resumen, Avance, Cierre, Planos y ficha (cambiar plano con el formulario de B3a, datos de la obra M5), visor y recuadros (M4) | Ejecutor | — | pendiente |
@@ -56,6 +56,22 @@ Hueco reservado en la navegación: "Lectura asistida" (Fase C, no es de esta fas
 - **19/11/2026 · Estilo visual:** «Plano sellado» (respuesta textual de Steven, relayada por el Director). Se construye con el estilo B de `FRONTEND/maquetas/v2/` (`plano.html`, `estilo-plano.css`). Hormigón y Tablero quedan como antecedente, sin borrarlos. Telemetría del sorteo de `impeccable` enviada (`--kind pick`: «choice recorded»).
 
 ## Bitácora (lo más nuevo arriba)
+- 19/11/2026 · Líder: **B3a hecha, esperando auditoría.** El Ejecutor Sonnet entregó `ddca35f` (fuera los enlaces al clásico), `30bea9a` (Inicio y `js/datos.js`), `6f6d73a` (Mis obras y `FormularioPlanos`) y `69ed72f` (informe `PLANES/etapa-5-reportes/B3a.md`).
+
+  Pruebas del Ejecutor:
+  - Suite: 944 pasan y 2 fallan (Dropbox).
+  - Playwright a 5 anchos y 2 temas: 0 peticiones externas, 0 errores y sin desbordes.
+  - Diálogo «Nueva obra»: foco atrapado y reintento de solo la subida.
+  - Estados y peor caso probados.
+
+  Revisión del Líder:
+  - Sin cambios en `BACKEND/`, `clasico/`, `vendor/` ni `maquetas/`. 0 menciones al clásico y 0 URLs externas.
+  - Corregido que el tipo de fila se partía a 375 px.
+
+  Abierto:
+  1. «Tablas por confirmar» queda «pendiente de verificar · Fase D-a», porque `/tablas-extraidas` no dice cuáles están confirmadas. Hace falta un campo o un conteo en backend.
+  2. «Órdenes abiertas» muestra el número real sin enlace hasta B3f.
+  3. «Visitas en cola» enlaza a la Bandeja, que llena B3d.
 - 19/11/2026 · Director: aprobado el orden B3a → B3d → B3e → B3b → B3c → B3f → B3g → B3h. Es decisión del Director: Steven todavía no la confirmó, y si la cambia se avisa. Lugar de la cola:
   - Inicio: bloque «Cola de visitas» con Procesar cola y Sincronizar desde Dropbox. **Condición:** enlaza a la vista completa de la Bandeja, para no tener dos listas que se desincronicen.
   - Bandeja de trabajo: la cola de todas las obras.
