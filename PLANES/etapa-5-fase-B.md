@@ -20,8 +20,8 @@ Plan madre: `PLANES/etapa-5.md` (decisiones D5–D8, tareas B0–B5). Este archi
 | B0 | Inventario funcional del tablero actual → `PLANES/etapa-5-inventario-ui.md` | Ejecutor Sonnet `b0-inventario` (archivado) | `claude/etapa5-b0-inventario-fb8728` (`effa03a`, traído aquí con cherry-pick) | **aceptada** |
 | B1 (16/11) | Navegación + 3 maquetas en `FRONTEND/maquetas/{expediente,plano,obra}/` + `NOTAS-DESIGN.md` | Líder | esta rama | antecedente (sustituida por B1 v3) |
 | B1 v3 | 3 estilos sobre la organización D6, 5 pantallas, en `FRONTEND/maquetas/v2/` + `NOTAS.md`; B0 §10 «Necesidades nuevas»; `PRODUCT.md` al día | Líder | esta rama | **hecha, esperando auditoría del Director** |
-| — | **Puerta de Steven:** elige estilo (vía Director) | Steven | — | esperando |
-| B2 | Base: estructura de `FRONTEND/`, `vendor/` local, tokens, armazón con navegación D6, cliente API, `/clasico/` | Ejecutor | — | bloqueada por la puerta |
+| — | **Puerta de Steven:** elige estilo (vía Director) | Steven | — | **resuelta 19/11: «Plano sellado»** |
+| B2 | Base: estructura de `FRONTEND/`, `vendor/` local, tokens del estilo B, armazón con navegación D6, cliente API, `/clasico/` | Ejecutor | esta rama | en preparación |
 | B3a | Inicio y Mis obras | Ejecutor | — | pendiente |
 | B3b | Obra: Resumen, Planos y ficha, visor y recuadros | Ejecutor | — | pendiente |
 | B3c | Revisión de planos (confirmar datos del plano) | Ejecutor | — | pendiente |
@@ -44,7 +44,11 @@ Hueco reservado en la navegación: "Lectura asistida" (Fase C, no es de esta fas
 - Pendiente al elegir: telemetría del sorteo (`--from b429ec8dc7555d53ac6ca00d75b3dc17 --scope direction --mode operate --kind <assigned|pick|challenger>`), contrato de dirección y `DESIGN.md` (se escribe en B2).
 - Necesidades de Fase D que salen de B1 (B0 §10): D-a ruta común de la Bandeja, vencimientos y actividad reciente; D-b indicadores (tras D15); D-c guardar trabajos independientes.
 
+## Decisiones de Steven
+- **19/11/2026 · Estilo visual:** «Plano sellado» (respuesta textual de Steven, relayada por el Director). Se construye con el estilo B de `FRONTEND/maquetas/v2/` (`plano.html`, `estilo-plano.css`). Hormigón y Tablero quedan como antecedente, sin borrarlos. Telemetría del sorteo de `impeccable` enviada (`--kind pick`: «choice recorded»).
+
 ## Bitácora (lo más nuevo arriba)
+- 19/11/2026 · Director: Steven eligió «Plano sellado». Se abre la puerta de B2.
 - 19/11/2026 · Director: `e07e54a` verificado a 1024 y 800 px; corrección aprobada. B1 v3 auditada. La fase queda parada en la puerta hasta que Steven elija estilo.
 - 19/11/2026 · Líder: corregido el defecto de la auditoría de B1 v3. A 768–1279 px, «Prioridades» se aplastaba a una palabra por línea. Ahora las filas se acomodan al ancho de su caja con container queries: apiladas por debajo de 640 px, 4 columnas desde ahí y tabla de 6 en la Bandeja desde 880 px. La obra se ve también en Inicio y el cajetín de A y C tiene celdas más anchas. Validado de 375 a 1920 px, con 1024 y 768, en las 5 pantallas de los 3 estilos: sin texto aplastado, sin desbordes, 0 peticiones externas y 0 errores.
 - 19/11/2026 · Director: ramas reducidas a 3 además de `main` (las demás borradas, con respaldo; la de B0 ya estaba copiada aquí). La Fase B trabaja solo en `claude/etapa5-fase-b-0020e1`; los Ejecutores trabajan en este worktree, por turnos, sin ramas nuevas.
