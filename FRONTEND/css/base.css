@@ -1,0 +1,179 @@
+/* CATDIC-WEB · Etapa 5 · B2 — estructura del tablero nuevo (estilo «Plano sellado»).
+   Adaptada de FRONTEND/maquetas/v2/base.css + estilo-plano.css, sin la barra de la maqueta.
+   Los colores y fuentes salen de css/tokens.css. Sin red, sin compilación. */
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; scrollbar-color: var(--borde-fuerte) transparent; }
+body {
+  margin: 0; background-color: var(--fondo); color: var(--tinta);
+  font: 400 0.9375rem/1.5 var(--f-texto); font-variant-numeric: tabular-nums;
+  /* papel con retícula muy leve */
+  background-image: linear-gradient(var(--reticula) 1px, transparent 1px), linear-gradient(90deg, var(--reticula) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+::selection { background: var(--seleccion); color: var(--tinta); }
+a { color: inherit; }
+h1, h2, h3 { margin: 0; font-family: var(--f-titulo); line-height: 1.2; text-wrap: balance; }
+h1 { font-size: 1.625rem; font-weight: var(--peso-h1, 650); letter-spacing: var(--track-h1, -0.01em); }
+h2 { font-size: 1.0625rem; font-weight: 650; }
+h3 { font-size: 0.9375rem; font-weight: 650; }
+p { margin: 0; }
+.num { font-family: var(--f-dato); font-variant-numeric: tabular-nums; }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.ico { width: 1.15em; height: 1.15em; flex: none; fill: none; stroke: currentColor; stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round; vertical-align: -0.2em; }
+:focus-visible { outline: 2px solid var(--foco); outline-offset: 2px; border-radius: 2px; }
+main:focus, h1:focus { outline: none; }
+h1:focus-visible { outline: 2px solid var(--foco); outline-offset: 4px; }
+.saltar { position: absolute; left: -999px; top: 8px; z-index: 50; background: var(--superficie); color: var(--tinta); padding: 8px 12px; border: 1px solid var(--borde-fuerte); }
+.saltar:focus { left: 8px; }
+[v-cloak] { display: none; }
+
+/* ---- armazón ---- */
+.app { display: grid; grid-template-columns: var(--riel-ancho) minmax(0, 1fr); min-height: 100vh; }
+.riel {
+  grid-row: 1 / span 2; background: var(--riel-fondo); color: var(--riel-tinta);
+  display: flex; flex-direction: column; gap: var(--esp-4); padding: var(--esp-5) var(--esp-3);
+  position: sticky; top: 0; height: 100vh; overflow-y: auto;
+}
+.marca { display: flex; flex-direction: column; text-decoration: none; padding: 0 var(--esp-2); }
+.marca-n { font: var(--peso-marca, 700) 1.25rem/1 var(--f-titulo); letter-spacing: var(--track-marca, 0.04em); text-transform: uppercase; }
+.marca-s { font-size: 0.75rem; color: var(--riel-tinta-2); margin-top: 4px; }
+.nav { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+.nav a {
+  display: flex; align-items: center; gap: 10px; min-height: 40px; padding: 0 var(--esp-2);
+  text-decoration: none; color: var(--riel-tinta-2); border-radius: var(--radio);
+  transition: background-color 150ms ease, color 150ms ease;
+}
+.nav a:hover { color: var(--riel-tinta); background: var(--riel-hover); }
+.nav a[aria-current="page"] { color: var(--riel-tinta); background: var(--riel-activo); font-weight: 600; }
+.riel :focus-visible, .cabeza-movil :focus-visible, .nav-inferior :focus-visible { outline-color: var(--riel-tinta); }
+.riel-pie { margin-top: auto; font-size: 0.75rem; color: var(--riel-tinta-2); padding: 0 var(--esp-2); }
+.cabeza-movil, .nav-inferior { display: none; }
+main { padding: var(--esp-5) clamp(16px, 3vw, 40px) 64px; min-width: 0; }
+.pagina { max-width: 1440px; display: grid; gap: var(--esp-5); }
+
+/* ---- botones ---- */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 40px; padding: 0 16px;
+  font: 600 0.875rem/1 var(--f-texto); text-decoration: none; border-radius: var(--radio); border: 1px solid transparent; cursor: pointer;
+  transition: transform 140ms var(--ease-out), background-color 150ms ease, border-color 150ms ease;
+}
+.btn:active:not(:disabled) { transform: scale(0.97); }
+.btn:disabled { cursor: not-allowed; opacity: 1; background: var(--deshab-fondo); color: var(--deshab-tinta); border-color: var(--borde); }
+.btn-pri { background: var(--acento); color: var(--sobre-acento); }
+.btn-pri:hover:not(:disabled) { background: var(--acento-hover); }
+.btn-sec { background: var(--superficie); color: var(--tinta); border-color: var(--borde-fuerte); }
+.btn-sec:hover:not(:disabled) { background: var(--superficie-2); }
+.btn-crear { background: var(--crear-fondo); color: var(--crear-tinta); margin: 0 var(--esp-1); }
+.btn-crear:hover { background: var(--crear-hover); }
+.enlace { display: inline-flex; align-items: center; gap: 6px; font-weight: 600; font-size: 0.875rem; color: var(--enlace); text-decoration: none; }
+.enlace:hover { text-decoration: underline; text-underline-offset: 3px; }
+
+/* ---- etiquetas de estado ----
+   «pendiente de verificar»: recuadro discontinuo, sin relleno, como lo «por definir» en un plano.
+   «Fase D»: etiqueta discontinua redondeada; dice qué necesita backend nuevo y no se simula. */
+.pendiente { font-style: normal; font-weight: 600; color: var(--pend-tinta); background: var(--pend-fondo); border: 1px dashed var(--pend-borde); padding: 0 6px; border-radius: 2px; white-space: nowrap; }
+.fase-d { display: inline-flex; align-items: center; font: 600 0.75rem/1.2 var(--f-texto); color: var(--fased-tinta); border: 1px dashed var(--fased-borde); padding: 3px 8px; border-radius: 999px; white-space: nowrap; }
+.ayuda { font-size: 0.8125rem; color: var(--tinta-2); }
+.bajada { color: var(--tinta-2); max-width: 70ch; }
+
+/* ---- cajas y cabeceras ---- */
+.pagina-cabeza { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--esp-2) var(--esp-4); }
+.caja { container: caja / inline-size; background: var(--superficie); border: 1px solid var(--borde-fuerte); border-radius: var(--radio-caja); padding: var(--esp-4) var(--esp-5); box-shadow: var(--sombra); min-width: 0; }
+.caja > h2, .caja > h3 { margin-bottom: var(--esp-3); }
+.caja-cabeza { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--esp-2); margin-bottom: var(--esp-3); }
+.caja-cabeza h2, .caja > h2 { text-transform: uppercase; letter-spacing: 0.08em; font-size: 0.875rem; }
+.caja-cabeza h2 { margin: 0; }
+.miga { display: inline-flex; align-items: center; gap: 6px; font-size: 0.875rem; color: var(--enlace); text-decoration: none; font-weight: 600; }
+.miga:hover { text-decoration: underline; text-underline-offset: 3px; }
+.aviso { display: flex; gap: var(--esp-3); align-items: flex-start; justify-content: space-between; padding: var(--esp-3) var(--esp-4); background: var(--aviso-fondo); border: 1px solid var(--sel-borde); }
+
+/* ---- filas de pendientes: se acomodan a SU caja (container query), no a la ventana ----
+   Apiladas por debajo de 640 px de caja, 4 columnas desde ahí. Las usa B3 (Inicio, Resumen, Bandeja). */
+.filas { list-style: none; margin: 0; padding: 0; }
+.fila { border-top: 1px solid var(--borde); }
+.fila:first-child { border-top: 0; }
+.fila-a {
+  display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "tipo dias" "donde donde" "motivo motivo" "sig sig";
+  gap: 2px var(--esp-3); padding: 10px var(--esp-2); text-decoration: none; color: inherit; border-radius: var(--radio);
+  transition: background-color 150ms ease;
+}
+@container caja (min-width: 640px) {
+  .fila-a { grid-template-columns: minmax(150px, 0.9fr) minmax(0, 1.4fr) minmax(0, 1.6fr) auto; grid-template-areas: "tipo donde motivo dias" "tipo sig sig dias"; }
+}
+.fila-a:hover { background: var(--superficie-2); }
+.f-tipo { grid-area: tipo; font-weight: var(--peso-tipo, 650); }
+.f-donde { grid-area: donde; color: var(--tinta-2); font-size: 0.875rem; }
+.f-motivo { grid-area: motivo; }
+.f-sig { grid-area: sig; color: var(--enlace); font-weight: 600; font-size: 0.875rem; }
+.f-dias { grid-area: dias; color: var(--tinta-2); font-size: 0.8125rem; text-align: right; }
+
+/* ---- cabecera de obra: cajetín (rejilla de celdas con línea de tinta, como el rótulo de la hoja) ---- */
+.obra-cabeza { display: grid; gap: var(--esp-3); }
+.obra-titulo { display: grid; gap: 4px; justify-items: start; }
+.cajetin { margin: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); border: 1.5px solid var(--tinta); background: var(--superficie); }
+.cajetin > div { min-width: 0; padding: 6px 10px 8px; border-right: 1px solid var(--tinta); border-bottom: 1px solid var(--tinta); margin: 0 -1px -1px 0; }
+.cajetin dt { font-size: 0.6875rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: var(--tinta-2); }
+.cajetin dd { margin: 0; font-weight: 600; font-family: var(--f-dato); font-size: 0.9375rem; overflow-wrap: anywhere; }
+.cajetin .pendiente { white-space: normal; font-family: var(--f-texto); font-size: 0.8125rem; }
+.pestanas { display: flex; gap: 2px; overflow-x: auto; border-bottom: 1px solid var(--borde-fuerte); scrollbar-width: thin; }
+.pestanas a { flex: none; padding: 10px 14px; text-decoration: none; color: var(--tinta-2); font-weight: 600; font-size: 0.875rem; border-bottom: 3px solid transparent; margin-bottom: -1px; }
+.pestanas a:hover { color: var(--tinta); }
+.pestanas a[aria-current="page"] { color: var(--tinta); border-bottom-color: var(--pestana-activa); }
+
+/* ---- estados de un bloque: cargando, vacío, error ---- */
+.cargando { display: grid; gap: 10px; padding: var(--esp-2) 0; }
+.hueso { display: block; height: 18px; border-radius: 3px; background: var(--hueso); width: calc(100% - var(--i) * 9%); animation: latido 1.2s ease-in-out infinite; animation-delay: calc(var(--i) * 80ms); }
+@keyframes latido { 50% { opacity: 0.45; } }
+.error { display: flex; gap: var(--esp-3); align-items: flex-start; padding: var(--esp-3); border-radius: var(--radio); background: var(--error-fondo); color: var(--tinta); }
+.error > .ico { color: var(--alerta); width: 22px; height: 22px; }
+.error-t, .vacio-t { font-weight: 700; margin-bottom: 4px; }
+.error p { margin-bottom: 6px; }
+.error .btn { margin-top: 4px; }
+.vacio { display: grid; gap: 6px; justify-items: start; padding: var(--esp-4) 0; }
+.vacio .btn, .vacio .enlace { margin-top: 6px; }
+.estado-lista { display: grid; gap: var(--esp-3); }
+.ok { color: var(--ok-tinta); font-weight: 600; }
+
+/* ---- configuración ---- */
+.rejilla-cfg { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr)); gap: var(--esp-5); align-items: start; }
+.opciones { border: 0; margin: 0; padding: 0; min-width: 0; display: grid; gap: 6px; }
+.opciones legend { padding: 0; margin-bottom: var(--esp-2); font-weight: 650; }
+.opcion { display: flex; align-items: center; gap: 10px; min-height: 40px; padding: 4px 12px; border: 1px solid var(--borde-fuerte); border-radius: var(--radio); cursor: pointer; }
+.opcion:hover { background: var(--superficie-2); }
+.opcion:has(input:checked) { border-color: var(--sel-borde); background: var(--sel-fondo); }
+.opcion input { width: 20px; height: 20px; accent-color: var(--acento); margin: 0; }
+.datos { margin: 0; display: grid; gap: 6px; }
+.datos > div { display: flex; gap: var(--esp-3); justify-content: space-between; border-top: 1px solid var(--borde); padding-top: 6px; }
+.datos > div:first-child { border-top: 0; padding-top: 0; }
+.datos dt { color: var(--tinta-2); }
+.datos dd { margin: 0; font-weight: 600; text-align: right; }
+
+/* ---- pantallas que construye B3 ---- */
+.pantalla-b3 { display: grid; gap: var(--esp-3); max-width: 70ch; }
+.pantalla-b3 .tarea { font: 600 0.75rem/1 var(--f-dato); letter-spacing: 0.06em; }
+
+/* ---- adaptación ---- */
+@media (max-width: 899px) {
+  .app { grid-template-columns: minmax(0, 1fr); padding-bottom: 72px; }
+  .riel { display: none; }
+  .cabeza-movil { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 8px 16px; background: var(--riel-fondo); color: var(--riel-tinta); position: sticky; top: 0; z-index: 5; }
+  .cabeza-movil .btn-crear { margin: 0; min-height: 44px; }
+  .cabeza-movil .marca { min-height: 44px; justify-content: center; }
+  .nav-inferior {
+    display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); position: fixed; inset: auto 0 0 0; z-index: 5;
+    background: var(--riel-fondo); border-top: 1px solid var(--riel-hover); padding: 4px 2px calc(4px + env(safe-area-inset-bottom));
+  }
+  .nav-inferior a { display: grid; justify-items: center; gap: 3px; min-height: 52px; align-content: center; text-decoration: none; color: var(--riel-tinta-2); font-size: 0.6875rem; font-weight: 600; text-align: center; border-radius: var(--radio); }
+  .nav-inferior a .ico { width: 22px; height: 22px; }
+  .nav-inferior a[aria-current="page"] { color: var(--riel-tinta); background: var(--riel-activo); }
+  main { padding: var(--esp-4) 16px 32px; }
+  .caja { padding: var(--esp-3) var(--esp-4); }
+  .btn, .opcion, .pestanas a, .miga, .enlace { min-height: 44px; }
+  .pestanas a, .miga, .enlace { display: inline-flex; align-items: center; }
+  h1 { font-size: 1.375rem; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; }
+  .btn:active:not(:disabled) { transform: none; }
+}
+@media (hover: none) { .fila-a:hover { background: transparent; } }
