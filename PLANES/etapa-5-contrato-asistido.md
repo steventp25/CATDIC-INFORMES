@@ -67,6 +67,29 @@ Otras claves:
 5. Un dato que no cumple la regla → se guarda sin valor (`"pendiente de verificar"`) y se abre una duda `IA:` que dice qué propuso Claude y qué dice el texto citado.
 6. La fuente de cada valor guarda: página, hoja, `n` citados, texto literal de cada cita y la unión de sus bbox.
 
+### 5.1 Evidencias (v4, decisión 8; A3d)
+Un dato puede traer la clave opcional `evidencia`. Si no la trae, es `"literal"` y todo lo de arriba sigue igual. Para cualquier evidencia:
+- Sin evidencia válida, el dato no tiene valor.
+- Nada nace `confirmado`.
+- Un dato con `evidencia` desconocida, o que no trae las claves de su evidencia, deja **la hoja rechazada**, como una cita mala.
+- `id_elemento`, `nivel_rango` y `ejes` solo admiten `literal` o `partes`: la identidad del elemento no sale de una lectura visual ni de una conversión. Si traen `zona` o `conversion`, la hoja se rechaza.
+
+| `evidencia` | Claves del dato | Qué comprueba el importador | Qué guarda |
+|---|---|---|---|
+| `"literal"` (a) | `valor`, `citas` | La regla 1–4 de arriba. | El trozo literal y la fuente del punto 6. |
+| `"partes"` (b) | `valor`, `partes: [{"valor", "citas"}…]` (2 o más), sin `citas` propias | Cada parte se ancla por la regla literal en **sus** citas. El `valor` del dato, con los espacios colapsados, es igual a los literales de las partes unidos por un espacio. | Esa unión. La fuente lleva cada parte con sus citas, textos y bbox, y la unión de todas las bbox. |
+| `"zona"` (c) | `valor` (la lectura), `zona: [x0,y0,x1,y1]` en pt del marco visual, `citas` opcionales | `x0<x1`, `y0<y1` y la caja cabe en la hoja (`ancho_pt`, `alto_pt` de `textos.json`). | El valor leído con la fuente `{"zona", "lectura", "citas"}`. Además abre **siempre** una duda `IA: revisión visual: …` con la zona y la lectura. |
+| `"conversion"` (d) | `conversion: {"regla", "entradas": [{"valor", "citas"}…]}` y `valor` opcional | Cada entrada se ancla por la regla literal. El **programa** aplica la regla a los literales anclados. Si la IA puso `valor` y no es igual al resultado, no hay valor y se abre una duda. | El resultado del programa. La fuente lleva la regla, las entradas (literal, citas, textos, bbox) y la unión de las bbox. |
+
+Reglas de conversión del programa (`esquema.REGLAS_CONVERSION`). Son las únicas, cada una con pruebas, y fuera de ellas no hay conversión:
+- **`decimales_2`:** 1 entrada, un número decimal con punto, con 0, 1 o 2 decimales. Lo devuelve con 2 decimales, rellenando ceros (`1.5` → `1.50`). Si trae más de 2 decimales no se redondea: la regla falla.
+- **`cm_a_m`:** 1 entrada, un entero de centímetros, con o sin `cm` pegado. Lo devuelve en metros con 2 decimales (`60` → `0.60`, `125cm` → `1.25`).
+- **`suma`:** 2 o más entradas, todas números decimales con punto. Las suma con aritmética decimal exacta y las da con el mayor número de decimales de las entradas (`0.30` + `1.20` → `1.50`).
+
+Si la regla no existe, una entrada no se ancla o la regla falla, el dato queda sin valor y se abre una duda `IA:` que dice qué falló.
+
+Además, la fuente de todo valor importado lleva `lector`, copiado de la propuesta (A4-paquete: el modelo o proveedor que la hizo).
+
 ## 6. Cómo se guarda (A3)
 - Clave: `(proyecto_id, id_elemento, nivel_rango, ejes)`, como hoy. El `nivel_rango` se guarda **como está impreso** (`FUNDACIONES @ E-3`, `NPT= 3.60`). La expansión a niveles la hace el backend con las equivalencias del usuario, nunca Claude.
 - **EJES (D11):** en columnas, muros y pórticos que el detalle no ubica, va `"pendiente de verificar"`. En losas va siempre `—`. Claude **nunca** deduce el cruce mirando la planta. Un tramo de pórtico sí lo trae impreso (eje del pórtico + ejes de los extremos) y se escribe con `formatear_campo_ejes('tramo_portico', …)`.
