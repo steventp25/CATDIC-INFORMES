@@ -75,7 +75,13 @@ Otras claves:
 - **Doble lectura (decisión 3):** en un campo que ya escribió el extractor T6n (tablas de aplicación), A3 no escribe nada. Compara: si difiere, abre una duda `IA:`; si coincide, anota una comprobación «coincide con T6n».
 - Antes de importar, el sha256 de `propuesta.json` se compara con el de `textos.json` y con el del vectorial vigente. Si alguno es distinto, la hoja no se carga.
 - Importar dos veces la misma propuesta no cambia nada (idempotente). Un campo `confirmado` nunca se toca.
-- **Pendiente del Director:** cómo se reutilizan `_escribir_elemento` y `_abrir_duda` de `extractor.py`, que hoy fijan el origen `T6n`. Propuesta: un parámetro opcional `origen` con el valor de hoy por defecto.
+- **Reutilización del extractor (aprobada por el Director el 19/11):** `_escribir_elemento` y `_abrir_duda` reciben un parámetro opcional `origen`.
+  - Sin el parámetro, nada cambia: ni el texto, ni la fuente, ni la auditoría.
+  - Las pruebas actuales del extractor pasan sin tocarlas.
+  - Se mantiene la regla de choque: una fila de otro extractor, o ya confirmada, nunca se sobrescribe, tampoco con origen IA.
+  - Va en un commit aparte, «extractor: parámetro origen opcional».
+  - A3 lo llama con `origen="IA:claude-code"` (fuente) y `"IA:"` (prefijo de duda).
+  - `_cerrar_dudas_viejas` no se toca: en esta versión, las dudas `IA:` se cierran en la Mesa, no al reimportar.
 
 ## 7. Campos por tipo (`campos`, en el orden de D10)
 Las claves se fijan en cada apartado de la skill (A4a–A4d) y se añaden aquí cuando se escriban.
