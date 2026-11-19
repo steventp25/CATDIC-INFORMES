@@ -56,6 +56,12 @@ Hueco reservado en la navegación: "Lectura asistida" (Fase C, no es de esta fas
 - **19/11/2026 · Estilo visual:** «Plano sellado» (respuesta textual de Steven, relayada por el Director). Se construye con el estilo B de `FRONTEND/maquetas/v2/` (`plano.html`, `estilo-plano.css`). Hormigón y Tablero quedan como antecedente, sin borrarlos. Telemetría del sorteo de `impeccable` enviada (`--kind pick`: «choice recorded»).
 
 ## Bitácora (lo más nuevo arriba)
+- 19/11/2026 · Director: aprobado el orden B3a → B3d → B3e → B3b → B3c → B3f → B3g → B3h. Es decisión del Director: Steven todavía no la confirmó, y si la cambia se avisa. Lugar de la cola:
+  - Inicio: bloque «Cola de visitas» con Procesar cola y Sincronizar desde Dropbox. **Condición:** enlaza a la vista completa de la Bandeja, para no tener dos listas que se desincronicen.
+  - Bandeja de trabajo: la cola de todas las obras.
+  - Cada obra: su cola, en «Visitas y trabajos».
+
+  Los botones y el enlace los añade B3d en Inicio. El logo y el título «Control Taller» de B0 §9 se marcan «sustituido por D6». Steven quiere ver cada pantalla en cuanto esté: se avisa al Director al cerrar cada tarea de B3.
 - 19/11/2026 · Director: Steven no quiere volver a ver el tablero clásico. Hecho:
   - Pedido al Ejecutor de B3a, que trabaja en `FRONTEND/`, un commit aparte que quita las 3 menciones: `componentes.js`, `obra.js` y el `noscript` de `index.html`.
   - B3 reordenado: B3a → B3d → B3e → B3b → B3c → B3f → B3g.
