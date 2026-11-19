@@ -9,7 +9,7 @@
     { id: 'obras', href: '#/obras', texto: 'Mis obras', corto: 'Obras', icono: 'obras' },
     { id: 'bandeja', href: '#/bandeja', texto: 'Bandeja de trabajo', corto: 'Bandeja', icono: 'bandeja' },
     { id: 'informes', href: '#/informes', texto: 'Informes', corto: 'Informes', icono: 'informes' },
-    { id: 'configuracion', href: '#/configuracion', texto: 'Configuración', corto: 'Ajustes', icono: 'config' }
+    { id: 'configuracion', href: '#/configuracion', texto: 'Configuración', corto: 'Configuración', icono: 'config' }
   ];
   var TITULOS = { inicio: 'Inicio', obras: 'Mis obras', bandeja: 'Bandeja de trabajo', informes: 'Informes', configuracion: 'Configuración', 'crear-informe': 'Crear informe', obra: 'Obra' };
 

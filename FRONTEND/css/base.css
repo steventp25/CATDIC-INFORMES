@@ -21,8 +21,8 @@ p { margin: 0; }
 .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 .ico { width: 1.15em; height: 1.15em; flex: none; fill: none; stroke: currentColor; stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round; vertical-align: -0.2em; }
 :focus-visible { outline: 2px solid var(--foco); outline-offset: 2px; border-radius: 2px; }
-main:focus, h1:focus { outline: none; }
-h1:focus-visible { outline: 2px solid var(--foco); outline-offset: 4px; }
+/* El <h1> recibe el foco al cambiar de pantalla (para lectores de pantalla), pero no es interactivo: sin marco. */
+main:focus, h1:focus, h1:focus-visible { outline: none; }
 .saltar { position: absolute; left: -999px; top: 8px; z-index: 50; background: var(--superficie); color: var(--tinta); padding: 8px 12px; border: 1px solid var(--borde-fuerte); }
 .saltar:focus { left: 8px; }
 [v-cloak] { display: none; }
@@ -164,6 +164,8 @@ main { padding: var(--esp-5) clamp(16px, 3vw, 40px) 64px; min-width: 0; }
     background: var(--riel-fondo); border-top: 1px solid var(--riel-hover); padding: 4px 2px calc(4px + env(safe-area-inset-bottom));
   }
   .nav-inferior a { display: grid; justify-items: center; gap: 3px; min-height: 52px; align-content: center; text-decoration: none; color: var(--riel-tinta-2); font-size: 0.6875rem; font-weight: 600; text-align: center; border-radius: var(--radio); }
+  /* En pantallas de 320–359 px, «Configuración» (nombre aprobado en D6) cabe en su quinto de barra con letra algo menor */
+  @media (max-width: 359px) { .nav-inferior a { font-size: 0.6rem; letter-spacing: -0.01em; } }
   .nav-inferior a .ico { width: 22px; height: 22px; }
   .nav-inferior a[aria-current="page"] { color: var(--riel-tinta); background: var(--riel-activo); }
   main { padding: var(--esp-4) 16px 32px; }
