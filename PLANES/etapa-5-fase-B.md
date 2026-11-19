@@ -22,7 +22,7 @@ Plan madre: `PLANES/etapa-5.md` (decisiones D5–D8, tareas B0–B5). Este archi
 | B1 (16/11) | Navegación + 3 maquetas en `FRONTEND/maquetas/{expediente,plano,obra}/` + `NOTAS-DESIGN.md` | Líder | esta rama | antecedente (sustituida por B1 v3) |
 | B1 v3 | 3 estilos sobre la organización D6, 5 pantallas, en `FRONTEND/maquetas/v2/` + `NOTAS.md`; B0 §10 «Necesidades nuevas»; `PRODUCT.md` al día | Líder | esta rama | **hecha, esperando auditoría del Director** |
 | — | **Puerta de Steven:** elige estilo (vía Director) | Steven | — | **resuelta 19/11: «Plano sellado»** |
-| B2 | Base: estructura de `FRONTEND/`, `vendor/` local, tokens del estilo B, armazón con navegación D6, cliente API, `/clasico/` (encargo `PLANES/etapa-5-reportes/B2-brief.md`) | Ejecutor Sonnet (subagente, en este worktree) | esta rama | **en curso** |
+| B2 | Base: estructura de `FRONTEND/`, `vendor/` local, tokens del estilo B, armazón con navegación D6, cliente API, `/clasico/` (encargo `PLANES/etapa-5-reportes/B2-brief.md`) | Ejecutor Sonnet (subagente, en este worktree) + revisión del Líder | esta rama (`d254519`…`485b3ea`, Líder `a7a1f3f`, `078d4f3`) | **hecha, esperando auditoría del Director** |
 | B3a | Inicio y Mis obras | Ejecutor | — | pendiente |
 | B3b | Obra: Resumen, Planos y ficha, visor y recuadros | Ejecutor | — | pendiente |
 | B3c | Revisión de planos (confirmar datos del plano) | Ejecutor | — | pendiente |
@@ -32,6 +32,8 @@ Plan madre: `PLANES/etapa-5.md` (decisiones D5–D8, tareas B0–B5). Este archi
 | B3g | Informes y Crear informe (solo lo que ya genera el sistema; lo demás «disponible más adelante»; guardar trabajos es Fase D-c) | Ejecutor | — | pendiente |
 | B4 | Movimiento y pulido (`animate`, `choreograph`, `emil-design-eng`), `prefers-reduced-motion` | Ejecutor + Líder | — | pendiente |
 | B5 | `break-ui`, teclado, contraste, 1280/1920, paridad con B0, cierre | Líder + Ejecutor | — | pendiente |
+
+Sin asignar: las pestañas **Avance** y **Cierre** de la obra no tienen tarea B3 (en B2 dicen «hay que asignarla»). Propuesta del Líder al Director: que entren en B3b junto con Resumen.
 
 Hueco reservado en la navegación: "Lectura asistida" (Fase C, no es de esta fase).
 
@@ -49,6 +51,22 @@ Hueco reservado en la navegación: "Lectura asistida" (Fase C, no es de esta fas
 - **19/11/2026 · Estilo visual:** «Plano sellado» (respuesta textual de Steven, relayada por el Director). Se construye con el estilo B de `FRONTEND/maquetas/v2/` (`plano.html`, `estilo-plano.css`). Hormigón y Tablero quedan como antecedente, sin borrarlos. Telemetría del sorteo de `impeccable` enviada (`--kind pick`: «choice recorded»).
 
 ## Bitácora (lo más nuevo arriba)
+- 19/11/2026 · Líder: **B2 hecha, esperando auditoría.** El Ejecutor Sonnet entregó 5 commits (`d254519`…`485b3ea`, informe en `PLANES/etapa-5-reportes/B2.md`). Contenido:
+  - `/clasico/` idéntico byte a byte al `index.html` anterior.
+  - Armazón nuevo con Vue local, scripts clásicos, tokens de Plano sellado en claro, oscuro y del sistema, cliente API y enrutador por hash.
+  - Las 7 pantallas con su estado vacío honesto, más 2 lecturas reales: Configuración y la cabecera de obra.
+  - Playwright a 375–1920 px en claro y oscuro: 0 peticiones externas del tablero nuevo, sin desbordes, Tab y Atrás correctos.
+
+  Revisión del Líder:
+  - Sin cambios en `BACKEND/`. No hay URLs `http` en los archivos nuevos.
+  - Corregido «Ajustes» → «Configuración» en la barra móvil, que cabe a 320 px, y el marco de foco del `<h1>` (`a7a1f3f`).
+  - Escrito `FRONTEND/DESIGN.md` (`078d4f3`).
+
+  Abierto:
+  1. Suite 942/3/3: falla además `test_frontend_servido.py::test_raiz_entrega_el_tablero_local`, que espera el tablero viejo en `/`. Es backend y se pide al Director.
+  2. Avance y Cierre sin tarea B3.
+  3. Contraste sin medir con herramienta (va a B5).
+  4. Al probar `/clasico/`, el navegador pidió una vez sus 3 CDN (Tailwind, Vue en unpkg, Font Awesome). Lo pide esa página por sí sola; no se descargó nada y el tablero nuevo no hace peticiones externas.
 - 19/11/2026 · Líder: Steven autorizó, vía Director, la descarga de Vue: «Sí, descarga Vue». Bajado `vue.global.prod.min.js` 3.5.13 de cdnjs a `FRONTEND/vendor/vue/` (154 807 bytes, SHA-256 `220ffd8a…92fe`, con README). También aprobado: solo Vue, sin Tailwind, y `/clasico/` con el `index.html` actual tal cual. Respondido al Director qué envía la telemetría de `impeccable`: una consulta GET a impeccable.style/api/roll con alcance, modo, clave aleatoria y contador, sin archivos del proyecto, según declara el programa.
 - 19/11/2026 · Director: Steven eligió «Plano sellado». Se abre la puerta de B2.
 - 19/11/2026 · Director: `e07e54a` verificado a 1024 y 800 px; corrección aprobada. B1 v3 auditada. La fase queda parada en la puerta hasta que Steven elija estilo.
