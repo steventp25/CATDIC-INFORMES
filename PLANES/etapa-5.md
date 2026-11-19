@@ -1,5 +1,6 @@
 # Etapa 5 — Claude razona los planos (sin llave) + rediseño total del tablero
-Estado: **APROBADO** (Steven, 16/11/2026: "Apruebo con propuestas"). Sin llave de API, con su suscripción de Claude y sin ningún pago adicional. Fase 0 en curso.
+Estado: **APROBADO** (Steven, 16/11/2026: "Apruebo con propuestas"). Sin llave de API, con su suscripción de Claude y sin ningún pago adicional.
+**v3 APROBADA (Steven, 19/11/2026: "Apruebo y súbelo"):** incorpora la instrucción de Steven publicada en el PR 31 (organización de la Fase B) y el resultado de A1, con las propuestas D10–D14. Se reanudan las fases A y B.
 
 Base del plan: `origin/main` en `b5f7d26` (no el checkout local, que está atrasado; ver "Puesta al día de git").
 Método: skill `gestion-proyectos` (Director → Líderes de fase → Ejecutores), integrada con este sistema de `PLANES/` y con `COLABORACION.md`. No se crea `.proyecto/`: el estado vive aquí.
@@ -22,9 +23,13 @@ Método: skill `gestion-proyectos` (Director → Líderes de fase → Ejecutores
   - **D4:** los planos escaneados quedan fuera de esta etapa.
   - **D5:** frontend sin compilación, con Vue y Tailwind copiados localmente.
   - **D6:** sin referencia dada; B1 trae 2–3 maquetas.
-  - **D7:** nadie más toca `FRONTEND/` durante la Fase B; T10b pasa a ser B3d. Falta que Steven diga si Codex sigue revisando los PR.
+  - **D7:** nadie más toca `FRONTEND/` durante la Fase B; T10b pasa a ser B3d.
   - **D8:** ejecutores "fresh" en esta etapa.
-  - **D9:** orden columnas → muros y zapatas → pórticos → losas.
+  - **D9:** orden columnas → muros y zapatas → pórticos → losas (A1 propone cambiarlo: ver D10).
+- 16/11/2026: "Sí, Codex revisa" → **D7 completa:** Codex sigue revisando los PR.
+- 16–17/11/2026: CATDIC-WEB es el sistema principal y GPR su herramienta de escaneos; primero se completa GPR y la integración viene después (`PLANES/alcance-gpr.md`). La Etapa 5 se detuvo mientras tanto.
+- Instrucción publicada en el PR 31 (comentario de Steven): skills de diseño por momento, referencias oficiales (Procore, Autodesk, PlanRadar, Fieldwire) y **organización aprobada**. Se incorpora en la Fase B (abajo). Aclara que **no aprueba implementación ni fusión**.
+  - **D6 sustituida:** ya hay referencia organizativa aprobada. Navegación: **Inicio · Mis obras · Bandeja de trabajo · Informes · Configuración**, con **Crear informe** siempre a mano. Dentro de cada obra: **Resumen · Visitas y trabajos · Planos y ficha · Avance · Informes · Cierre**. Las 3 maquetas del 16/11 fueron ilustrativas y con datos ficticios; el estilo visual se explora respetando esta organización.
 
 ## Objetivo (palabras de Steven)
 1. Que **Claude razone los planos y extraiga toda la información** — ahora sin llave: con su suscripción.
@@ -32,7 +37,7 @@ Método: skill `gestion-proyectos` (Director → Líderes de fase → Ejecutores
 
 **Criterio de terminado:**
 - Para una obra con plano vigente, Steven pide la lectura (desde el tablero se preparan las hojas; una sesión de Claude Code las lee) y al importar aparecen propuestas para columnas, muros, zapatas, pórticos por tramo y losas, cada valor con su hoja y recuadro de origen y **todas en `pendiente_de_verificar`**; lo que Claude no pudo anclar o dudó llega a la Mesa de Dudas. La app sigue funcionando sin internet y sin Claude igual que hoy.
-- El tablero nuevo cubre el 100 % del inventario funcional del actual (B0), funciona sin internet, pasa `break-ui` y la suite `py -3.14 -m pytest -q` sigue en verde.
+- El tablero nuevo sigue la organización aprobada, cubre el 100 % del inventario funcional del actual (B0) y los criterios de las pantallas nuevas, funciona sin internet, en escritorio y en móvil, pasa `break-ui`, y la suite `py -3.14 -m pytest -q` no tiene más fallos que los 2 conocidos de Dropbox.
 
 ## Estado de partida (verificado el 16/11/2026 en `origin/main`)
 - **Extracción actual, sin IA:** `BACKEND/plano/lector_plano.py` (módulo puro: texto visible del vectorial + bbox, con PyMuPDF) y `BACKEND/plano/extractor.py` (regex por posición). Solo cubre tablas de aplicación: acero en losa, zapata de muro de lindero, f'c por rango y losa aligerada de P16. Cada valor lleva fuente (archivo, revisión, página, hoja, bbox), queda `pendiente_de_verificar`, pasa por `importadores/validador_diseno.py` y se confirma por lote (`plano/confirmacion.py`, tabla `tablas_extraidas`) o uno por uno en la Mesa de Dudas.
@@ -62,22 +67,32 @@ El trabajo se parte en tres piezas. Solo la del medio es Claude; las otras dos s
 7. **El plano no se modifica:** se comprueba el sha256 del vectorial al preparar y al importar; si el plano cambió, la propuesta no se importa.
 
 ### Fase B — cómo se rehace el tablero
-1. **Primero inventario, luego diseño, luego código.** Nada del tablero actual se pierde: B0 lista cada pantalla, acción, ruta y gancho `data-*`, y esa lista es la prueba de paridad al final.
-2. **Steven elige la dirección visual** entre 2–3 maquetas antes de escribir la interfaz real (B1). El resultado se fija en `DESIGN.md`.
-3. **Se parte el archivo único** en módulos y componentes para que varias sesiones puedan trabajar sin pisarse, y **todo queda local** (sin CDN), que ya era un pendiente del traspaso.
-4. **Backend intacto:** la Fase B no cambia rutas ni respuestas de la API. Lo que necesite del backend lo pide al Director.
-5. La pantalla en vivo del procesador (Etapa 3 · T10b) y la pantalla de lectura asistida se construyen dentro del tablero nuevo, no en el viejo.
+1. **Primero inventario, luego diseño, luego código.** Nada del tablero actual se pierde: B0 lista cada pantalla, acción, ruta y gancho `data-*`, y esa lista es la prueba de paridad al final. Las necesidades nuevas (Inicio, Bandeja, Resumen de obra, Crear informe independiente) llevan sus propios criterios de aceptación, aparte de la paridad.
+2. **La organización ya está aprobada** (D6, arriba). Lo que Steven elige en B1 es el **estilo visual** sobre esa organización. El resultado se fija en `DESIGN.md`.
+3. **Se parte el archivo único** en módulos y componentes para que varias sesiones puedan trabajar sin pisarse, y **todo queda local** (sin CDN).
+4. **Backend: sin cambios ocultos.** Lo que ya existe se usa por sus rutas actuales. Lo que necesite datos o rutas nuevas (indicadores, bandeja común, trabajos independientes) **no se simula**: se convierte en tarea de backend aparte (Fase D), coordinada por el Director. Mientras no exista, la pantalla muestra «pendiente de verificar» o «disponible más adelante», nunca un número inventado.
+5. **Bandeja común sin duplicar:** Cola, Mesa de Dudas, extracción y Órdenes conservan sus pantallas especializadas, pero sus pendientes aparecen también en la Bandeja leyendo los mismos registros, no copias.
+6. **Contexto de obra:** al navegar dentro de una obra no se pierde la obra elegida.
+7. **Capacidades disponibles contra futuras:** los servicios previstos (supervisión STP, levantamiento de supervisión, estructural, visual, dimensional, esclerometría) se muestran distinguiendo lo que ya genera el sistema de lo que es desarrollo futuro. Esto **no** declara implementados los formatos HV ni amplía la Etapa 5.
+8. **Skills de diseño por momento** (instrucción de Steven): organización y diseño con `impeccable` y `ui-ux-pro-max`; legibilidad e interacción con `emil-design-eng` y `apple-design`; movimiento, solo si ayuda, con `animate`, `choreograph` y `animation-performance`; validación con `break-ui` y las revisiones de `impeccable`. Cada propuesta dice **qué skills aplicó y qué decisión aportó cada una**; no basta con nombrarlas.
+9. **Referencias** (adaptar patrones, no copiar funciones ajenas al alcance): Procore (resumen de obra y pendientes), Autodesk Project Home (trabajo asignado y acceso directo desde Inicio), PlanRadar (pendiente junto al plano; planos por edificio, nivel y versión), Fieldwire (expediente con fuentes, fotos, respuestas, estado y documentos). Cada propuesta explica qué patrón adapta y por qué ayuda al flujo CATDIC. Los enlaces están en el comentario de Steven en el PR 31.
+10. La pantalla en vivo del procesador (Etapa 3 · T10b) y la pantalla de lectura asistida se construyen dentro del tablero nuevo, no en el viejo.
 
 ## Fases
 
 | Fase | Alcance | Zona de archivos | Depende de | Modo | Estado |
 |---|---|---|---|---|---|
 | **0 · Cimientos** | git al día, ajuste de la especificación | `PLANES/`, `CLAUDE.md` + `AGENTS.md` | Aprobación de Steven | **directo** | T0.1 hecha · T0.2 no hace falta · T0.3 pendiente (no bloquea A ni B) |
-| **A · Claude razona los planos** | reconocimiento, preparar hojas, importar con anclaje, skill `extraer-plano`, rutas, prueba real | `BACKEND/plano/asistido/**` (nuevo), `.claude/skills/extraer-plano/` (nuevo), `BACKEND/tests/test_asistido_*.py` | Fase 0 | **líder** (Opus) | pendiente |
-| **B · Rediseño del tablero** | inventario, dirección visual, base, pantallas, movimiento, prueba de rotura | `FRONTEND/**`, `DESIGN.md` | Fase 0 | **líder** (Opus) | pendiente |
+| **A · Claude razona los planos** | reconocimiento, preparar hojas, importar con anclaje, skill `extraer-plano`, rutas, prueba real | `BACKEND/plano/asistido/**` (nuevo), `.claude/skills/extraer-plano/` (nuevo), `BACKEND/tests/test_asistido_*.py` | Fase 0 | **líder** (Opus) | A1 y A2 hechas · puerta de A1 resuelta (D10–D13) · sigue A2-ajustes y A3 |
+| **B · Rediseño del tablero** | inventario, estilo visual sobre la organización aprobada, base, pantallas, movimiento, prueba de rotura | `FRONTEND/**`, `DESIGN.md` | Fase 0 | **líder** (Opus) | B0 hecha · B1 **se rehace** con la organización aprobada |
 | **C · Integración** | pantalla "Lectura asistida" contra las rutas reales, auditoría de integración, prueba completa en el navegador | `FRONTEND/**` (solo esa pantalla), `PLANES/` | A5 y B3 | **directo** | pendiente |
+| **D · Datos nuevos del tablero** | lo que las pantallas nuevas necesitan del backend: bandeja común, indicadores, trabajos independientes | `BACKEND/tablero/**` (nuevo), pruebas | D-a: B1 elegida · D-b: D15 · D-c: B1 elegida | ejecutor-backend, coordinado por el Director | aprobada (D14); pendiente |
 
-**Paralelismo:** la Fase 0 va sola y primero. Después **A y B corren a la vez**: no comparten ningún archivo (`main.py` se toca solo en la Fase 0; si A o B necesitan otro cambio ahí, lo piden al Director). La Fase C va al final. Para cuidar el cupo de la suscripción: **máximo 3 sesiones trabajando a la vez en total**, no 4 por nivel.
+**Paralelismo:** **A y B corren a la vez**: no comparten ningún archivo (`main.py` solo recibe las líneas `include_router` de A5 y de la Fase D, que coordina el Director). La Fase C va al final. La Fase D no empieza hasta que Steven defina lo que le toca. Para cuidar el cupo de la suscripción: **máximo 3 sesiones trabajando a la vez en total**.
+
+**Ramas de partida:** mientras el PR 31 no esté fusionado, toda rama de la etapa sale de `claude/etapa5-plan`; cuando Steven lo fusione, sale de `main`. Una tarea que depende de otra sale de la rama de la anterior.
+
+**Pruebas:** la suite de referencia tiene 2 fallos conocidos que dependen del contenido de Dropbox (ver "Reglas de convivencia"). Esos dos no bloquean; **cualquier otro fallo sí bloquea** la tarea.
 
 **Nadie más toca `FRONTEND/` mientras dure la Fase B** (ni Codex ni tareas de las Etapas 2–4); ver D7.
 
@@ -105,12 +120,20 @@ El trabajo se parte en tres piezas. Solo la del medio es Claude; las otras dos s
 - Qué hacer: con el vectorial vigente de Terra Living, probar 4–6 hojas elegidas con Steven: una tabla que el extractor actual ya lee y Steven ya confirmó (sirve de control) y hojas que hoy no se leen (cuadro de columnas, detalle de muro, elevación de un pórtico con su banda de estribos, zapatas). Probar 2–3 resoluciones de imagen. Medir por hoja: aciertos contra el plano, valores sin ancla, tiempo y consumo de cupo.
 - Hecho cuando: el informe trae la tabla de resultados por hoja, la resolución recomendada, cuántas hojas caben razonablemente por sesión y la lista de tipos de elemento ordenada por fiabilidad. El Director lo contrasta con el plano real. Nada se escribe en la BD ni en Dropbox.
 - **Puerta:** Steven ve el informe antes de A3 y A4.
+- **Estado: HECHA (16/11)** · rama `claude/etapa5-fase-a-3da668` · informe `PLANES/etapa-5-reconocimiento-asistido.md`. El Director comprobó en el PDF real que los textos citados existen (pp. 7, 14, 21 y 34); no repasó valor por valor.
+  - **Se lee bien, con todo anclado al texto del plano:** columnas (60/60 valores comprobados), losas por su etiqueta en planta (20/20, y la tabla de acero 22/22, igual que el extractor actual), muros (24/24 en MH4) y pórticos con recorte por nivel (16/16 en un nivel).
+  - **Se lee mal:** fundaciones con *drops* (el mismo ID tiene distinto H1 y las secciones no nombran el *drop*).
+  - **Hallazgos:** el cuadro de columnas no da ejes; los pórticos traen el nivel como `NPT= 3.60`, así que hace falta una equivalencia NPT ↔ nivel que dé Steven; en MH4 las cotas parciales suman 3.81 y el total dice 3.80 (irá como duda); 3 de 6 hojas traen notas de «plano anterior» (irán como duda, nunca se aplican).
+  - **Resolución:** hoja a 72 ppp para orientarse y recortes a 150 ppp para leer.
+  - **Cupo (cuenta Pro):** Terra Living completo cabe en unas 1,5–2 ventanas de 5 h; sesiones lectoras cortas y nuevas, un pórtico por sesión.
+  - Las preguntas de la puerta están en D10–D13.
 
 #### A2 — Preparar hojas
 - Ejecutor: ejecutor-backend (Sonnet) · Archivos: `BACKEND/plano/asistido/__init__.py`, `preparar.py`, `BACKEND/tests/test_asistido_preparar.py`.
 - Qué hacer: para una obra y una lista de páginas, escribir en la carpeta local de la obra (`CATDIC_DATOS_RAIZ`, nunca en Dropbox ni en el repositorio) `pNN/hoja.png` y `pNN/textos.json` (número, texto, bbox, hoja), más un `manifiesto.json` con el sha256 del vectorial. Reutiliza `lector_plano` sin modificarlo. Solo lee capas visibles.
 - Hecho cuando: pruebas `# SINTÉTICO` con un PDF pequeño; preparar dos veces da el mismo resultado; el plano no cambia (sha256 antes y después).
 - Puede ir en paralelo con A1.
+- **Estado: HECHA (16/11)** · rama `claude/etapa5-a2-preparar-3d8018` (`41396f8`), 8 pruebas pasan según el Líder. **Ajustes tras la puerta:** 72 ppp, un `textos.txt` compacto, recortes en `zonas/` y un manifiesto que acumule lotes.
 
 #### A3 — Importar con anclaje
 - Ejecutor: ejecutor-backend (Sonnet) · Archivos: `BACKEND/plano/asistido/esquema.py`, `importar.py`, pruebas.
@@ -120,7 +143,7 @@ El trabajo se parte en tres piezas. Solo la del medio es Claude; las otras dos s
 
 #### A4 — Skill `extraer-plano` (el procedimiento que sigue Claude al leer)
 - Ejecutor: Líder de la fase (Opus) · Archivos: `.claude/skills/extraer-plano/SKILL.md` y sus referencias por tipo de elemento.
-- Qué hacer: el procedimiento paso a paso para la sesión lectora: qué archivos abrir, cómo citar, qué hacer ante duda (marcarla, nunca rellenar), las reglas de §4.2–§4.4 y el formato exacto de salida. Un apartado por tipo, en el orden que salga de A1 (propuesta): **A4a** columnas · **A4b** muros y zapatas · **A4c** pórticos por tramo (§4.3, con el control cruzado `S + losa = Hv`) · **A4d** losas y lo que falte.
+- Qué hacer: el procedimiento paso a paso para la sesión lectora: qué archivos abrir, cómo citar, qué hacer ante duda (marcarla, nunca rellenar), las reglas de §4.2–§4.4 y el formato exacto de salida. Un apartado por tipo, en el orden que decida Steven en D10. Propuesta tras A1: **A4a** columnas · **A4b** losas · **A4c** muros · **A4d** pórticos por tramo (§4.3, con el control cruzado `S + losa = Hv`) · fundaciones al final y según D12.
 - Hecho cuando (cada apartado): una sesión nueva, solo con la skill, lee las hojas de A1 de ese tipo y al importar quedan 0 valores sin ancla guardados; el Director contrasta una muestra contra el plano.
 
 #### A5 — Rutas
@@ -143,25 +166,47 @@ El trabajo se parte en tres piezas. Solo la del medio es Claude; las otras dos s
 #### B0 — Inventario funcional (solo lectura)
 - Ejecutor: ejecutor-frontend (Sonnet) · informe `PLANES/etapa-5-inventario-ui.md`
 - Hecho cuando: están listadas todas las pantallas, modales, acciones, estados (cargando, vacío, error), rutas que usa cada una y los 86 `data-*`. El Director lo contrasta con `index.html`.
+- **Estado: HECHA (16/11)** · rama `claude/etapa5-fase-b-0020e1`. Se amplía en B1 con una sección de **necesidades nuevas** y sus criterios propios (Inicio, Bandeja, Resumen de obra, Crear informe independiente).
 
-#### B1 — Dirección de diseño (puerta de Steven)
-- Ejecutor: Líder de la fase (Opus) con `impeccable`, `ui-ux-pro-max` y `apple-design`.
-- Qué hacer: proponer la navegación (hoy todo es una página con modales; propuesta: barra lateral con Obras, Cola de visitas, Mesa de Dudas, Planos y datos de diseño, Órdenes) y 2–3 maquetas de la pantalla principal y de "Confirmar datos del plano", con datos reales de ejemplo. Escribir `DESIGN.md` (color, tipografía, espaciado, componentes, movimiento).
-- **Puerta:** Steven elige. Sin elección no empieza B2.
+#### B1 — Estilo visual sobre la organización aprobada (puerta de Steven)
+- Ejecutor: Líder de la fase (Opus), aplicando las skills del punto 8 de las decisiones de la Fase B.
+- **Rehacer** las propuestas del 16/11 (A · Expediente, B · Plano, C · Obra): eran ilustrativas, con datos ficticios y otra navegación. Se conservan como antecedente; no se borran.
+- Qué hacer: 2–3 estilos visuales, todos con la **misma organización aprobada** (D6), con estas pantallas:
+  - **Inicio:** prioridades, dudas, revisiones, entregas y próximas acciones.
+  - **Resumen de obra:** los tres indicadores y los pendientes.
+  - **Bandeja:** pendientes de obras y de trabajos independientes.
+  - **Revisión de planos:** lista de elementos propuestos a la izquierda, plano al centro, y a la derecha los datos propuestos con sus fuentes y acciones. Desde la revisión de visitas, acceso a la foto y la etiqueta originales.
+  - **Crear informe independiente:** elegir servicios, aportar datos y fuentes, revisar el pedido y preparar el trabajo sin crear una obra de seguimiento.
+- **Indicadores** (Resumen de obra):
+  1. Avance por entrepisos = entrepisos ejecutados y confirmados / total previsto en planos.
+  2. Expediente completo = unidades documentales completadas / alcance documental final confirmado.
+  3. Documentación al día = unidades completadas y exigibles / total exigible hasta el avance actual.
+  - Sus definiciones de fondo son de Steven (D15). Hasta entonces la maqueta los muestra «pendiente de verificar». **La falta de datos no se muestra como 0 %**, y no se usan número de archivos, versiones o visitas como sustituto.
+- **Datos:** sintéticos y rotulados como tales. Cada pantalla muestra sus estados vacío, cargando, error y «pendiente de verificar».
+- Cada propuesta explica qué skills aplicó, qué decisión aportó cada una y qué patrón adapta de las referencias.
+- Adaptación responsive desde el principio (escritorio y móvil).
+- **Puerta:** Steven elige el estilo. Sin elección no empieza B2. Después se escribe `DESIGN.md` con lo construido.
 
 #### B2 — Base
 - Ejecutor: ejecutor-frontend (Sonnet) · Archivos: estructura nueva de `FRONTEND/` (según D5), librerías locales en `FRONTEND/vendor/`, tokens de diseño, armazón con navegación, cliente de la API.
 - Hecho cuando: el armazón abre en `http://localhost:8000` **sin internet** y el tablero viejo sigue disponible en `/clasico` hasta el cierre de la fase.
 
 #### B3 — Pantallas (una tarea por pantalla, cada una en sus propios archivos)
-- B3a Obras y tablero · B3b Obra: planos, datos de la obra, visor y recuadros · B3c Confirmar datos del plano · B3d Cola de visitas, subir visita/Dropbox y avance del procesador (cubre T10b) · B3e Mesa de Dudas · B3f Órdenes de trabajo.
-- Hecho cuando (cada una): todas sus filas del inventario B0 marcadas y probadas en el navegador contra una **copia** de la BD; cero errores en consola.
+- B3a Inicio y Mis obras · B3b Obra: Resumen, Planos y ficha, visor y recuadros · B3c Revisión de planos (confirmar datos del plano) · B3d Visitas y trabajos: cola, subir visita/Dropbox y avance del procesador (cubre T10b) · B3e Bandeja de trabajo y Mesa de Dudas · B3f Órdenes de trabajo · B3g Informes y Crear informe (solo con lo que ya genera el sistema; lo demás, «disponible más adelante»).
+- Lo que dependa de la Fase D se construye con su estado «pendiente de verificar» y se conecta cuando D esté.
+- Hecho cuando (cada una): todas sus filas del inventario B0 y sus criterios nuevos marcados y probados en el navegador contra una **copia** de la BD; cero errores en consola.
 
 #### B4 — Movimiento y pulido
 - Skills: `animate`, `choreograph`, `emil-design-eng`, `animation-performance`; revisión con `review` de `impeccable`. Respeta `prefers-reduced-motion`.
 
 #### B5 — Prueba de rotura y cierre
-- `break-ui` con datos extremos (nombres de obra larguísimos, 0 visitas, 500 dudas, IDs con prima `A'`, campos `"pendiente de verificar"`), teclado y contraste, anchos 1280 y 1920. Paridad completa con B0. Se retira `/clasico` solo con el visto bueno de Steven.
+- `break-ui` con datos extremos (nombres de obra larguísimos, 0 visitas, 500 dudas, IDs con prima `A'`, campos `"pendiente de verificar"`), teclado y contraste, en escritorio (1280 y 1920) y móvil (375), con los temas disponibles y sin conexión. Paridad completa con B0 más los criterios nuevos. Se retira `/clasico` solo con el visto bueno de Steven.
+
+### Fase D — Datos nuevos del tablero (aprobada en D14)
+- **D-a Bandeja común:** una ruta de solo lectura que junta los pendientes de Cola, Mesa de Dudas, extracción y Órdenes **desde sus tablas**, sin copiarlos.
+- **D-b Indicadores:** las tres cuentas del Resumen de obra, **solo cuando Steven defina** qué cuenta como entrepiso ejecutado y qué es una unidad documental (D15). Sin definición, la ruta devuelve «pendiente de verificar», nunca 0.
+- **D-c Trabajos independientes:** un trabajo sin obra de seguimiento que conserva fuentes, dudas, documentos, versiones e historial y que puede vincularse después a una obra. Necesita tablas nuevas: la BD real se respalda antes y las pruebas usan `CATDIC_DB_PATH`.
+- Cada una con su PR, revisión de Codex y auditoría del Director.
 
 ### Fase C — Integración (directo)
 - **C1** Pantalla "Lectura asistida": estado por hoja, botón Preparar, la frase exacta que hay que decirle a Claude Code para que lea, botón Importar, y el resultado que lleva a Confirmar datos y a la Mesa de Dudas. Las propuestas de Claude se distinguen a la vista de las del extractor por posición.
@@ -170,7 +215,7 @@ El trabajo se parte en tres piezas. Solo la del medio es Claude; las otras dos s
 ## Modelos y sesiones (skill `gestion-proyectos` §3)
 | Rol | Modelo | Esfuerzo |
 |---|---|---|
-| Director | `claude-fable-5-2` hoy; `claude-opus-5-5` alto desde el 17/11/2026 | alto |
+| Director | `claude-opus-5-5` (desde el 17/11/2026) | alto |
 | Líder de fase A y B | `claude-opus-5-5` | alto |
 | Ejecutor estándar | `claude-sonnet-5-5` | medio |
 | Ejecutor mecánico (mover archivos, librerías locales) | `claude-haiku-5-5` | bajo |
@@ -203,17 +248,19 @@ Mientras tanto la Etapa 5 no depende de esto: todas las sesiones trabajan en wor
 - **Perder funciones al rediseñar.** Mitigación: inventario B0, paridad en B5, tablero viejo en `/clasico` hasta el final.
 - **Choque con Codex o con tareas de las Etapas 2–4** en `FRONTEND/` o `main.py`. Mitigación: congelación de D7 y Fase 0 primero.
 - **`CLAUDE.md` y `AGENTS.md` desincronizados.** Se cambian juntos en T0.3.
+- **Pantallas nuevas que aparentan funcionar sin datos detrás** (indicadores, bandeja, trabajos independientes). Mitigación: Fase D aparte, «pendiente de verificar» visible, falta de datos ≠ 0 %.
+- **El alcance crece sin decidirlo** (formatos HV, GPR dentro del tablero). Mitigación: «Crear informe» solo ofrece lo que ya se genera; lo demás se rotula como futuro.
 
-## Decisiones que quedan para Steven
-- **D1 · Git:** ¿apruebas la puesta al día de arriba (respaldo → comparar → `main` al día)? ¿O dejo el checkout como está y solo trabajo en worktrees?
-- ~~D2 · Privacidad~~ — resuelta (16/11): sin servicios nuevos.
-- ~~D3 · Gasto~~ — resuelta (16/11): sin llave y sin pago adicional.
-- **D4 · Planos sin vectorial (escaneados):** ¿entran en esta etapa? Si entran, sus valores no tienen ancla y se confirmarían siempre uno por uno, nunca por lote. Propuesta: fuera de esta etapa.
-- **D5 · Cómo se arma el frontend:** (a) **sin compilación**: varios archivos, Vue y Tailwind copiados localmente, se sigue abriendo con `INICIAR_CATDIC.bat` — propuesta; o (b) con Vite (Node ya está instalado): mejor para componentes, pero agrega un paso de compilación en cada cambio.
-- **D6 · Estilo:** ¿hay alguna referencia que te guste (una app, una web), sigue el tema oscuro, se mantienen el amarillo y el nombre "Control Taller"? Si no dices nada, B1 te trae 2–3 opciones.
-- **D7 · Codex:** ¿sigue revisando los PR? ¿Y aceptas que nadie más toque `FRONTEND/` mientras dure la Fase B (T10b pasa a ser B3d)?
-- **D8 · Sesiones:** la skill nueva lanza ejecutores "fresh"; tu regla del 09/11 era lanzarlos con "fork". ¿Vale la skill nueva para esta etapa? Propuesta: sí (fresh, gasta menos cupo).
-- **D9 · Orden de tipos en A4:** propuesta columnas → muros y zapatas → pórticos → losas. ¿O hay un tipo que te urja más?
+## Decisiones
+Resueltas: D1 (git al día, hecha), D2, D3, D4 (escaneados fuera), D5 (sin compilación), D6 (organización aprobada en el PR 31), D7 (Codex revisa; nadie más toca `FRONTEND/`), D8 (fresh), D9 (sustituida por D10).
+**D10–D14 aprobadas como se proponen abajo** (19/11/2026). **Sigue abierta: D15.**
+
+- **D10 · Orden de lectura (Fase A):** A1 propone columnas → losas → muros → pórticos → fundaciones, en lugar de D9, porque las losas se leen mejor de lo esperado y las fundaciones peor.
+- **D11 · Ejes de columnas y muros:** los detalles no los dan. Propuesta: guardar el diseño por ID + rango de nivel con EJES «pendiente de verificar», y cruzarlo con la visita por ID + nivel. La alternativa (que Claude deduzca el cruce mirando la planta) es cercanía visual: va contra el error 11 y la Regla de Oro.
+- **D12 · Fundaciones con *drops*:** propuesta: en esta etapa solo el espesor de la platea y la tabla de f'c; los *drops* van a la Mesa de Dudas.
+- **D13 · Cupo:** propuesta: la prueba real (A6) por lotes a lo largo de varios días, para no frenar la Fase B ni a GPR.
+- **D14 · Fase D (datos nuevos del tablero):** ¿entra en la Etapa 5? Propuesta: **sí la bandeja común** (solo lee registros que ya existen); **los indicadores, solo cuando definas D15**; **los trabajos independientes, en la maqueta B1 ahora y en el backend después de que elijas el estilo**, porque necesitan tablas nuevas.
+- **D15 · Definiciones de los indicadores** (las marcaste tú como pendientes; no se inventan): qué evidencia permite contar un entrepiso como ejecutado, qué es el cierre documental y cómo se definen y ponderan las unidades documentales. No bloquean B1: allí salen «pendiente de verificar».
 
 ## Verificación
 - **Fase 0:** suite en verde; ninguna dependencia nueva en `requirements.txt`.
@@ -224,11 +271,15 @@ Mientras tanto la Etapa 5 no depende de esto: todas las sesiones trabajan en wor
 ## Fuera de alcance de esta etapa
 - Cualquier llave de API o servicio de pago (Claude, Gemini u otro).
 - Etapa 4 (formatos HV) y CATDIC-STP (T9, aplazada).
+- La integración de GPR (sus resultados revisados entran por los formatos HV de la Etapa 4; ver `PLANES/alcance-gpr.md`).
 - Que Claude lea visitas a obra o fotos de campo (Capa 2).
 - Usuarios y roles.
 - Cambios en los generadores de PDF.
 
 ## Bitácora (lo más nuevo arriba)
+- 19/11/2026 · Steven: "Apruebo y súbelo" → v3 aprobada con D10–D14; se reanudan las fases A y B.
+- 19/11/2026 · Director: plan v3. Incorpora la instrucción de Steven del PR 31 (organización aprobada, pantallas de B1, indicadores, skills por momento, referencias, criterios de aceptación) y el resultado de A1. Nueva Fase D para los datos que el tablero nuevo necesita del backend. Abre D10–D15. Las fases A y B siguen detenidas hasta que Steven apruebe esta versión.
+- 17/11/2026 · Steven: prioridad total a GPR; los frentes de CATDIC-WEB quedan detenidos.
 - 16/11/2026 · Director: lanzados el Líder de la Fase A (`fase-a`, local_46deab67-ae1c-4dca-bfca-6f212dba54b4) y el de la Fase B (`fase-b`, local_2cc916eb-b786-4d9e-89da-18e171df236c), Opus, worktrees desde `claude/etapa5-plan`. Puertas pendientes: A1 (reconocimiento) y B1 (maquetas).
 - 16/11/2026 · Director: T0.1 hecha. Respaldo en `C:\Users\Steve\CATDIC-RESPALDOS\etapa5-2026-11-16` (planes locales, skills, BD) y en `git stash` ("respaldo-etapa5-2026-11-16"). Los 4 archivos locales de `PLANES/` eran superconjuntos de `origin/main` (Evaluaciones 5–13 de la Etapa 2, 23 de la Etapa 3 y decisiones de Steven sin subir): se rescatan en la rama `claude/etapa5-plan`. Checkout principal en `main` = `b5f7d26`.
 - 16/11/2026 · Steven aprueba el plan con las propuestas.
