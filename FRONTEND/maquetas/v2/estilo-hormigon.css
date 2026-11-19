@@ -55,7 +55,7 @@ body { background-image: radial-gradient(rgb(0 0 0 / 0.035) 1px, transparent 1.2
 .f-tipo, .cajetin dt, .cubo h3, .el-t { font-family: var(--f-titulo); text-transform: uppercase; letter-spacing: 0.04em; font-size: 0.8125rem; }
 /* cajetín como placa de colado: franja de concreto con divisiones */
 .cajetin { background: var(--superficie); border: 1px solid var(--borde-fuerte); border-radius: var(--radio); }
-.cajetin > div { padding: 8px 16px; border-left: 1px solid var(--borde); flex: 1 1 140px; }
+.cajetin > div { padding: 8px 16px; border-left: 1px solid var(--borde); flex: 1 1 170px; }
 .cajetin > div:first-child { border-left: 0; }
 .cajetin dd { font-family: var(--f-dato); font-size: 1rem; }
 .pendiente { border: 1px solid var(--pend-borde); }

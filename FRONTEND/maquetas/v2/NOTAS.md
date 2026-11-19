@@ -121,6 +121,19 @@ Las tres comparten la estructura (`base.css`), el comportamiento (`app.js`) y lo
 | Espécimen bitmap Emigre | Descartado | Ver la etiqueta «tal cual» o «leída» |
 | Datamatics (Ikeda) | Descartado | El elemento elegido en foco y el resto atenuado |
 
+## Corrección tras la auditoría del Director (19/11/2026)
+- **Defecto:** en el rango 768–1279 px, la lista «Prioridades» de Inicio quedaba con una palabra por línea. El riel y la columna lateral le dejaban unos 390 px a una fila de 4 columnas.
+- **Arreglo:** cada `.caja` es un contenedor (`container: caja / inline-size`) y las filas se acomodan al ancho de su caja, no al de la ventana:
+  - menos de 640 px: fila apilada (tipo y antigüedad arriba; debajo, obra, dónde, motivo y siguiente paso);
+  - desde 640 px: 4 columnas;
+  - en la Bandeja, desde 880 px: tabla de 6 columnas.
+- La obra o el trabajo se ve ahora también en Inicio. Antes quedaba oculta.
+- El cajetín de los estilos A y C usa celdas más anchas: «Rev. 3 vigente (12/10/2026)» ya no se parte en tres líneas a 960 px.
+- **Nueva validación:** 1279, 1200, 1024, 960, 900, 899, 800, 768 y 375 px, más 1280, 1440 y 1920 px. Se probaron los 3 estilos en las 5 pantallas, más la Bandeja filtrada por obra. Resultado:
+  - ningún texto queda con menos de unos 14 caracteres por línea en 3 líneas o más;
+  - no hay desplazamiento horizontal;
+  - 0 peticiones externas y 0 errores de consola.
+
 ## Validación hecha (Playwright, 19/11/2026)
 - Tamaños: 1280×800, 1920×1080 y 375×812, en tema claro y oscuro.
 - Cobertura: 3 estilos × 5 pantallas = 75 capturas, más estados, pasos de Crear informe y C4 en conflicto.

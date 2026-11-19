@@ -106,14 +106,23 @@ main { padding: var(--esp-5) clamp(16px, 3vw, 40px) 64px; min-width: 0; }
 .filas { list-style: none; margin: 0; padding: 0; }
 .fila { border-top: 1px solid var(--borde); }
 .fila:first-child { border-top: 0; }
+/* Las filas se acomodan al ancho de SU caja (container query), no al de la ventana:
+   la misma lista vive en la columna principal de Inicio, en el Resumen y en la Bandeja,
+   y el ancho que le queda cambia con el riel y la columna lateral (768–1279 px es una laptop). */
+.caja { container: caja / inline-size; }
 .fila-a {
-  display: grid; grid-template-columns: minmax(130px, 0.9fr) minmax(0, 1.4fr) minmax(0, 1.6fr) auto; grid-template-areas: "tipo donde motivo dias" "tipo sig sig dias";
+  display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "tipo dias" "donde donde" "motivo motivo" "sig sig";
   gap: 2px var(--esp-3); padding: 10px var(--esp-2); text-decoration: none; color: inherit; border-radius: var(--radio);
   transition: background-color 150ms ease;
 }
+.f-obra { grid-area: obra; font-size: 0.875rem; font-weight: 600; }
+.fila-a.con-obra { grid-template-areas: "tipo dias" "obra obra" "donde donde" "motivo motivo" "sig sig"; }
+@container caja (min-width: 640px) {
+  .fila-a { grid-template-columns: minmax(150px, 0.9fr) minmax(0, 1.4fr) minmax(0, 1.6fr) auto; grid-template-areas: "tipo donde motivo dias" "tipo sig sig dias"; }
+  .fila-a.con-obra { grid-template-areas: "tipo obra motivo dias" "tipo donde sig dias"; }
+}
 .fila-a:hover { background: var(--superficie-2); }
 .f-tipo { grid-area: tipo; font-weight: var(--peso-tipo, 650); display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; }
-.f-obra { display: none; }
 .f-donde { grid-area: donde; color: var(--tinta-2); font-size: 0.875rem; }
 .f-motivo { grid-area: motivo; }
 .f-sig { grid-area: sig; color: var(--enlace); font-weight: 600; font-size: 0.875rem; display: inline-flex; gap: 6px; align-items: center; }
@@ -125,12 +134,11 @@ main { padding: var(--esp-5) clamp(16px, 3vw, 40px) 64px; min-width: 0; }
 .cubo h3 { font-size: 0.8125rem; text-transform: var(--caja-cubo, uppercase); letter-spacing: 0.06em; color: var(--tinta-2); padding: 0 var(--esp-2) 6px; border-bottom: 1px solid var(--borde-fuerte); display: flex; gap: 8px; }
 .cubo-vencido h3 { color: var(--alerta-tinta); }
 
-/* bandeja: tabla de 6 columnas en escritorio ancho */
+/* bandeja: tabla de 6 columnas cuando su caja es ancha */
 .guia { font-size: 0.8125rem; color: var(--tinta-2); margin-bottom: var(--esp-2); }
 .tabla-cab { display: none; }
-@media (min-width: 1200px) {
-  .filas-bandeja .fila-a, .tabla-cab { grid-template-columns: 170px minmax(140px, 1fr) minmax(140px, 1fr) minmax(180px, 1.6fr) minmax(170px, 1fr) 80px; grid-template-areas: "tipo obra donde motivo sig dias"; align-items: center; }
-  .filas-bandeja .f-obra { display: block; grid-area: obra; }
+@container caja (min-width: 880px) {
+  .filas-bandeja .fila-a.con-obra, .tabla-cab { grid-template-columns: 150px minmax(120px, 1fr) minmax(120px, 1fr) minmax(160px, 1.6fr) minmax(150px, 1fr) 72px; grid-template-areas: "tipo obra donde motivo sig dias"; align-items: center; }
   .tabla-cab { display: grid; gap: var(--esp-3); padding: 0 var(--esp-2) 6px; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--tinta-2); border-bottom: 1px solid var(--borde-fuerte); }
   .tabla-cab span:last-child { text-align: right; }
 }
@@ -308,9 +316,6 @@ legend { font: 650 1.0625rem/1.3 var(--f-titulo); margin-bottom: var(--esp-3); p
   .nav-inferior a[aria-current="page"] { color: var(--riel-tinta); background: var(--riel-activo); }
   main { padding: var(--esp-4) 16px 32px; }
   .caja { padding: var(--esp-3) var(--esp-4); }
-  .fila-a { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "tipo dias" "donde donde" "motivo motivo" "sig sig"; }
-  .filas-bandeja .f-obra { display: block; grid-column: 1 / -1; grid-row: 2; font-size: 0.875rem; font-weight: 600; }
-  .filas-bandeja .f-donde { grid-row: 3; } .filas-bandeja .f-motivo { grid-row: 4; } .filas-bandeja .f-sig { grid-row: 5; }
   .f-sig, .conteos a, .el-b, .seg button { min-height: 44px; }
   .seg-movil { display: flex; width: 100%; }
   .seg-movil button { flex: 1; justify-content: center; }

@@ -81,7 +81,7 @@
     var nuevo = p.nuevo && !vistos[p.id];
     var bloq = p.tipo === 'Duda bloqueante';
     return '<li class="fila' + (nuevo ? ' es-nuevo' : '') + (bloq ? ' es-bloq' : '') + '" data-id="' + p.id + '">' +
-      '<a class="fila-a" href="#/abrir/' + p.id + '" data-visto="' + p.id + '">' +
+      '<a class="fila-a' + (conObra ? ' con-obra' : '') + '" href="#/abrir/' + p.id + '" data-visto="' + p.id + '">' +
       '<span class="f-tipo">' + (bloq ? ico('alerta', 'ico-bloq') : '') + esc(p.tipo) + (nuevo ? ' <span class="marca-nuevo">Nuevo</span>' : '') + '</span>' +
       (conObra ? '<span class="f-obra">' + lugar + (p.origen === 'trabajo' ? ' <span class="etq">Trabajo independiente</span>' : '') + '</span>' : '') +
       '<span class="f-donde">' + esc(p.donde) + '</span>' +
