@@ -22,9 +22,9 @@ Plan madre: `PLANES/etapa-5.md` (decisiones D5–D8, tareas B0–B5). Este archi
 | B1 (16/11) | Navegación + 3 maquetas en `FRONTEND/maquetas/{expediente,plano,obra}/` + `NOTAS-DESIGN.md` | Líder | esta rama | antecedente (sustituida por B1 v3) |
 | B1 v3 | 3 estilos sobre la organización D6, 5 pantallas, en `FRONTEND/maquetas/v2/` + `NOTAS.md`; B0 §10 «Necesidades nuevas»; `PRODUCT.md` al día | Líder | esta rama | **hecha, esperando auditoría del Director** |
 | — | **Puerta de Steven:** elige estilo (vía Director) | Steven | — | **resuelta 19/11: «Plano sellado»** |
-| B2 | Base: estructura de `FRONTEND/`, `vendor/` local, tokens del estilo B, armazón con navegación D6, cliente API, `/clasico/` (encargo `PLANES/etapa-5-reportes/B2-brief.md`) | Ejecutor Sonnet (subagente, en este worktree) + revisión del Líder | esta rama (`d254519`…`485b3ea`, Líder `a7a1f3f`, `078d4f3`) | **hecha, esperando auditoría del Director** |
-| B3a | Inicio y Mis obras | Ejecutor | — | pendiente |
-| B3b | Obra: Resumen, Planos y ficha, visor y recuadros | Ejecutor | — | pendiente |
+| B2 | Base: estructura de `FRONTEND/`, `vendor/` local, tokens del estilo B, armazón con navegación D6, cliente API, `/clasico/` (encargo `PLANES/etapa-5-reportes/B2-brief.md`) | Ejecutor Sonnet (subagente, en este worktree) + revisión del Líder | esta rama (`d254519`…`485b3ea`, Líder `a7a1f3f`, `078d4f3`, prueba de backend) | **aprobada por el Director (19/11)** |
+| B3a | Inicio y Mis obras, con Nueva obra (encargo `PLANES/etapa-5-reportes/B3a-brief.md`) | Ejecutor Sonnet (subagente, en este worktree) | esta rama | **en curso** |
+| B3b | Obra: Resumen, Avance, Cierre, Planos y ficha, visor y recuadros | Ejecutor | — | pendiente |
 | B3c | Revisión de planos (confirmar datos del plano) | Ejecutor | — | pendiente |
 | B3d | Visitas y trabajos: cola, subir visita/Dropbox, avance del procesador (cubre T10b) | Ejecutor | — | pendiente |
 | B3e | Bandeja de trabajo y Mesa de Dudas (la ruta común es Fase D-a) | Ejecutor | — | pendiente |
@@ -33,7 +33,7 @@ Plan madre: `PLANES/etapa-5.md` (decisiones D5–D8, tareas B0–B5). Este archi
 | B4 | Movimiento y pulido (`animate`, `choreograph`, `emil-design-eng`), `prefers-reduced-motion` | Ejecutor + Líder | — | pendiente |
 | B5 | `break-ui`, teclado, contraste, 1280/1920, paridad con B0, cierre | Líder + Ejecutor | — | pendiente |
 
-Sin asignar: las pestañas **Avance** y **Cierre** de la obra no tienen tarea B3 (en B2 dicen «hay que asignarla»). Propuesta del Líder al Director: que entren en B3b junto con Resumen.
+Las pestañas **Avance** y **Cierre** de la obra entran en **B3b** con Resumen (Director, 19/11). Sus indicadores muestran «pendiente de verificar» hasta D15, sin números inventados.
 
 Hueco reservado en la navegación: "Lectura asistida" (Fase C, no es de esta fase).
 
@@ -51,6 +51,12 @@ Hueco reservado en la navegación: "Lectura asistida" (Fase C, no es de esta fas
 - **19/11/2026 · Estilo visual:** «Plano sellado» (respuesta textual de Steven, relayada por el Director). Se construye con el estilo B de `FRONTEND/maquetas/v2/` (`plano.html`, `estilo-plano.css`). Hormigón y Tablero quedan como antecedente, sin borrarlos. Telemetría del sorteo de `impeccable` enviada (`--kind pick`: «choice recorded»).
 
 ## Bitácora (lo más nuevo arriba)
+- 19/11/2026 · Director: **B2 aprobada.** Respuestas:
+  1. Excepción coordinada: el Líder puede tocar solo `BACKEND/tests/test_frontend_servido.py`. La prueba vieja pasa a `/clasico/` y una nueva comprueba que `/` entrega el tablero nuevo con `vendor/vue/`. Hecho; la suite queda en 944 pasan, 2 fallan (Dropbox) y 3 se omiten.
+  2. Avance y Cierre entran en B3b; las pestañas ya lo dicen.
+  3. Las CDN de `/clasico/` se retiran en B5.
+
+  El SHA-256 de Vue ya estaba completo en su README. Se abre B3a con su encargo.
 - 19/11/2026 · Líder: **B2 hecha, esperando auditoría.** El Ejecutor Sonnet entregó 5 commits (`d254519`…`485b3ea`, informe en `PLANES/etapa-5-reportes/B2.md`). Contenido:
   - `/clasico/` idéntico byte a byte al `index.html` anterior.
   - Armazón nuevo con Vue local, scripts clásicos, tokens de Plano sellado en claro, oscuro y del sistema, cliente API y enrutador por hash.

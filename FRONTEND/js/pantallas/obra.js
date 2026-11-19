@@ -13,9 +13,9 @@
     resumen: { titulo: 'Resumen', tarea: 'B3b', texto: 'Aquí irán los indicadores y los pendientes de la obra. Los tres indicadores se calculan en la Fase D-b, tras la decisión D15, y nunca se mostrarán como 0 %.' },
     visitas: { titulo: 'Visitas y trabajos', tarea: 'B3d', texto: 'Aquí irán la cola de visitas, subir una visita o conectar Dropbox, y el avance del procesador.' },
     planos: { titulo: 'Planos y ficha', tarea: 'B3b', tarea2: 'B3c', texto: 'Aquí irán los planos, la ficha de la obra, el visor con recuadros y la revisión de los datos del plano.' },
-    avance: { titulo: 'Avance', tarea: '', texto: 'Ninguna tarea de B3a a B3g tiene asignada esta pestaña todavía; hay que asignarla.' },
+    avance: { titulo: 'Avance', tarea: 'B3b', texto: 'Aquí irá el avance por entrepisos de la obra. Se calcula en la Fase D-b, tras la decisión D15; hasta entonces se muestra «pendiente de verificar» y nunca 0 %.' },
     informes: { titulo: 'Informes', tarea: 'B3g', texto: 'Aquí irán los informes de la obra que ya genera el sistema.' },
-    cierre: { titulo: 'Cierre', tarea: '', texto: 'Ninguna tarea de B3a a B3g tiene asignada esta pestaña todavía; hay que asignarla.' }
+    cierre: { titulo: 'Cierre', tarea: 'B3b', texto: 'Aquí irá lo que falta para cerrar la obra: expediente completo y documentación al día. Ambos se calculan en la Fase D-b, tras la decisión D15; hasta entonces se muestran «pendiente de verificar».' }
   };
 
   C.pantallas['obra'] = {
