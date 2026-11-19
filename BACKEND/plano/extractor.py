@@ -558,8 +558,8 @@ def _validar(prop: Dict) -> Dict:
 ORIGEN_DUDA = f"{EXTRACTOR}:"  # prefijo de campo_afectado: distingue las dudas del extractor de las de la obra (T4n)
 
 
-def _abrir_duda(conn, proyecto_id: str, id_elemento: str, campo: str, texto: str) -> bool:
-    campo = ORIGEN_DUDA + campo
+def _abrir_duda(conn, proyecto_id: str, id_elemento: str, campo: str, texto: str, origen: str = ORIGEN_DUDA) -> bool:
+    campo = origen + campo
     ya = conn.execute("""SELECT 1 FROM dudas_y_hallazgos WHERE proyecto_id = ? AND visita_id IS NULL AND id_elemento = ?
                          AND campo_afectado = ? AND resuelta = 0""", (proyecto_id, id_elemento, campo)).fetchone()
     if ya:
@@ -642,7 +642,8 @@ def aplicar_certificacion(t: Dict, cert: Optional[Dict]):
                            for c in t["comprobaciones"]]
 
 
-def _escribir_elemento(conn, proyecto_id: str, plano: Dict, prop: Dict, v: Dict, ahora: str) -> Tuple[str, Optional[str]]:
+def _escribir_elemento(conn, proyecto_id: str, plano: Dict, prop: Dict, v: Dict, ahora: str,
+                      origen: str = EXTRACTOR) -> Tuple[str, Optional[str]]:
     """
     Inserta o actualiza una propuesta. Devuelve (resultado, uid): 'nuevo', 'actualizado', 'sin_cambios' o 'choque'.
     Un campo `confirmado` de la fila existente nunca se toca, salvo el que el usuario dio en "Datos de la obra"
@@ -653,7 +654,7 @@ def _escribir_elemento(conn, proyecto_id: str, plano: Dict, prop: Dict, v: Dict,
     norm = v["norm"]
     clave = (proyecto_id, norm["id_elemento"], norm["nivel_rango"], norm["ejes"])
     datos = norm["datos_diseno_json"]
-    fuente = {"extractor": EXTRACTOR, "plano_id": plano["id"], "archivo": plano["vectorial_archivo"],
+    fuente = {"extractor": origen, "plano_id": plano["id"], "archivo": plano["vectorial_archivo"],
               "revision": plano["revision"], "etiqueta_revision": plano["etiqueta_revision"],
               "sha256": plano["vectorial_sha256"], "tabla": prop["tabla"], "bbox_id": prop["bbox_id"],
               "valores": {c: d["fuente"] for c, d in prop["datos"].items()}}
@@ -678,7 +679,7 @@ def _escribir_elemento(conn, proyecto_id: str, plano: Dict, prop: Dict, v: Dict,
                                    if v["estado"].get(f"datos_diseno.{c}") == CONFIRMADO]
         return "nuevo", uid
     fuente_previa = json.loads(previo["fuente_json"] or "{}")
-    if fuente_previa.get("extractor") != EXTRACTOR or fuente_previa.get("plano_id") != plano["id"] \
+    if fuente_previa.get("extractor") != origen or fuente_previa.get("plano_id") != plano["id"] \
             or fuente_previa.get("tabla") != prop["tabla"]:
         return "choque", previo["uid"]
     estado_prev = json.loads(previo["estado_campos_json"] or "{}")
