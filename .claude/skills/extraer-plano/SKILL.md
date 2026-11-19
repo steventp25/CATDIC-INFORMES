@@ -38,7 +38,7 @@ Formato exacto en `PLANES/etapa-5-contrato-asistido.md` §4. Lo esencial:
 
 ```json
 {"version": 1, "archivo": "<de textos.json>", "sha256": "<de textos.json>", "pagina": 14, "hoja": "13",
- "lector": "claude-code", "skill": "extraer-plano@1",
+ "lector": "anthropic:<tu modelo>", "skill": "extraer-plano@1",
  "elementos": [{"tipo_elemento": "COLUMNA", "zona": [x0, y0, x1, y1],
    "id_elemento": {"valor": "C1", "citas": [74]},
    "nivel_rango": {"valor": "FUNDACIONES @ E-3", "citas": [76]},
@@ -54,6 +54,8 @@ Cómo se escribe cada dato:
 - `valor: null` siempre lleva `duda`: qué falta y por qué.
 - `nivel_rango` va **como está impreso** (`FUNDACIONES @ E-3`, `E-12 @ TECHO`, `NPT= 3.60`). Pasarlo a niveles lo hace el backend.
 - `zona` es el recuadro del dibujo del elemento, en pt; se usa para el recorte de DETALLE.
+- `lector` es `<proveedor>:<modelo>` (p. ej. `anthropic:claude-opus-5-5`): se guarda en la fuente de cada valor.
+- **Evidencias (contrato §5.1):** si un valor no está en un solo texto, usa `partes` (varios textos unidos por un espacio); si solo está dibujado, `zona` (abre siempre una duda de revisión visual); si hace falta convertir o sumar, `conversion` con una regla del programa (`decimales_2`, `cm_a_m`, `suma`). Tú nunca conviertes. `id_elemento`, `nivel_rango` y `ejes` solo con `literal` o `partes`.
 - `comprobaciones`: lo que verificaste sin inventar (barras dibujadas = cantidad del rótulo; cotas parciales que suman el total). Si algo no cuadra, va además como `duda`.
 - Escribe la propuesta de cada hoja **en cuanto la termines**, antes de pasar a la siguiente: así se retoma donde quedó.
 
@@ -64,6 +66,11 @@ Desde `BACKEND`: `python ../.claude/skills/extraer-plano/revisar.py "<carpeta>/p
 
 ## Paso 5 — Informar
 Al final del lote, di por hoja: cuántos elementos, cuántos valores, cuántos `null` y cuántas dudas, más lo que no pudiste leer. No importes tú: la importación la lanza el usuario desde el backend (`plano.asistido.importar.importar_hoja`).
+
+## Paquete para la IA de un compañero (v4, decisión 9)
+Si la lectura la hace otra IA (la cuenta de un compañero, sin Claude Code), arma el lote desde `BACKEND`:
+`python -m plano.asistido.paquete "<pdf vectorial vigente>" "<carpeta de lectura>" --paginas 14`
+Deja `lotes/p14/` con `INSTRUCCIONES.md` autocontenido (lo esencial de esta skill y del formato), la hoja, sus textos y recortes en cuadrícula a 150 ppp. La propuesta que devuelva esa IA se guarda en `pNN/propuesta.json` y se revisa igual (Paso 4). Si cambias esta skill, cambia también `BACKEND/plano/asistido/instrucciones_lote.md`.
 
 ## Por tipo de elemento (orden D10)
 Lee la referencia del tipo antes de empezar sus hojas:

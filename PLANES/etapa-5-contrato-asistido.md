@@ -30,7 +30,7 @@ lectura-asistida/
 
 ```json
 {"version": 1, "archivo": "…pdf", "sha256": "…", "pagina": 14, "hoja": "13",
- "lector": "claude-code", "skill": "extraer-plano@1",
+ "lector": "anthropic:claude-opus-5-5", "skill": "extraer-plano@1",
  "elementos": [
   {"tipo_elemento": "COLUMNA", "zona": [180, 70, 760, 600],
    "id_elemento": {"valor": "C1", "citas": [74]},
@@ -47,6 +47,8 @@ lectura-asistida/
  "dudas_hoja": [{"texto": "Nota de modificación: …", "citas": [161, 162]}],
  "comprobaciones": [{"descripcion": "Barras dibujadas = 36", "resultado": "cuadra", "citas": [3]}]}
 ```
+
+`lector` es `<proveedor>:<modelo>` de la IA que hizo la propuesta (v4, decisión 9; sin formato forzado: si no se sabe el modelo, solo el proveedor). El paquete para la IA de un compañero lo arma `python -m plano.asistido.paquete` (A4-paquete).
 
 Cada **dato** (`id_elemento`, `nivel_rango`, `ejes` y cada campo) es `{"valor": str|null, "citas": [n…], "duda": str?}`:
 - `valor` es una cadena tal como sale del plano. Claude no hace conversiones, unidades ni cálculos.
