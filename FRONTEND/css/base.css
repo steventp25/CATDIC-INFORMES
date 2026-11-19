@@ -93,7 +93,8 @@ main { padding: var(--esp-5) clamp(16px, 3vw, 40px) 64px; min-width: 0; }
 .fila { border-top: 1px solid var(--borde); }
 .fila:first-child { border-top: 0; }
 .fila-a {
-  display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "tipo dias" "donde donde" "motivo motivo" "sig sig";
+  /* Apilada: el tipo (rótulo corto) toma su ancho y la antigüedad cede, para que «pendiente de verificar» no parta el tipo en dos líneas */
+  display: grid; grid-template-columns: auto minmax(0, 1fr); grid-template-areas: "tipo dias" "donde donde" "motivo motivo" "sig sig";
   gap: 2px var(--esp-3); padding: 10px var(--esp-2); text-decoration: none; color: inherit; border-radius: var(--radio);
   transition: background-color 150ms ease;
 }
@@ -105,7 +106,7 @@ main { padding: var(--esp-5) clamp(16px, 3vw, 40px) 64px; min-width: 0; }
 .f-donde { grid-area: donde; color: var(--tinta-2); font-size: 0.875rem; }
 .f-motivo { grid-area: motivo; }
 .f-sig { grid-area: sig; color: var(--enlace); font-weight: 600; font-size: 0.875rem; }
-.f-dias { grid-area: dias; color: var(--tinta-2); font-size: 0.8125rem; text-align: right; }
+.f-dias { grid-area: dias; justify-self: end; color: var(--tinta-2); font-size: 0.8125rem; text-align: right; }
 
 /* ---- cabecera de obra: cajetín (rejilla de celdas con línea de tinta, como el rótulo de la hoja) ---- */
 .obra-cabeza { display: grid; gap: var(--esp-3); }
