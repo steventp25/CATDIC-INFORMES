@@ -24,13 +24,13 @@ Plan madre: `PLANES/etapa-5.md` (decisiones D5–D8, tareas B0–B5). Este archi
 | — | **Puerta de Steven:** elige estilo (vía Director) | Steven | — | **resuelta 19/11: «Plano sellado»** |
 | B2 | Base: estructura de `FRONTEND/`, `vendor/` local, tokens del estilo B, armazón con navegación D6, cliente API, `/clasico/` (encargo `PLANES/etapa-5-reportes/B2-brief.md`) | Ejecutor Sonnet (subagente, en este worktree) + revisión del Líder | esta rama (`d254519`…`485b3ea`, Líder `a7a1f3f`, `078d4f3`, prueba de backend) | **aprobada por el Director (19/11)** |
 | B3a | Inicio y Mis obras, con Nueva obra (encargo `PLANES/etapa-5-reportes/B3a-brief.md`) | Ejecutor Sonnet (subagente, en este worktree) + revisión del Líder | esta rama (`ddca35f`, `30bea9a`, `6f6d73a`, `69ed72f`, Líder: corrección móvil) | **hecha, esperando auditoría y que Steven la vea** |
-| B3d | **(2.º, en curso; encargo `PLANES/etapa-5-reportes/B3d-brief.md`)** Visitas y trabajos: **Procesar cola** con el seguimiento del trabajo (polling cada 2 s), **Sincronizar desde Dropbox** con su resultado (Z8), cola de visitas de todas las obras (Z15) y de cada obra, subir visita / conectar Dropbox (M3), avance del procesador (cubre T10b) | Ejecutor | — | pendiente |
+| B3d | **(2.º; en pausa desde el 20/11, sin empezar; encargo `PLANES/etapa-5-reportes/B3d-brief.md`)** Visitas y trabajos: **Procesar cola** con el seguimiento del trabajo (polling cada 2 s), **Sincronizar desde Dropbox** con su resultado (Z8), cola de visitas de todas las obras (Z15) y de cada obra, subir visita / conectar Dropbox (M3), avance del procesador (cubre T10b) | Ejecutor | — | pendiente |
 | B3e | **(3.º)** **Mesa de Dudas** completa (M1: por visita y por obra, responder, conflictos) y Bandeja de trabajo con lo que hay hoy (la ruta común es Fase D-a) | Ejecutor | — | pendiente |
 | B3b | **(4.º)** Obra: Resumen, Avance, Cierre, Planos y ficha (cambiar plano con el formulario de B3a, datos de la obra M5), visor y recuadros (M4) | Ejecutor | — | pendiente |
 | B3c | **(5.º)** Revisión de planos: confirmar datos del plano (M6) | Ejecutor | — | pendiente |
 | B3f | **(6.º)** Órdenes de trabajo (kanban Z16) | Ejecutor | — | pendiente |
 | B3g | **(7.º)** Informes y Crear informe (solo lo que ya genera el sistema; lo demás «disponible más adelante»; guardar trabajos es Fase D-c) | Ejecutor | — | pendiente |
-| B3h | **Retiro del clásico:** checklist de paridad de B0 §9 completa en el tablero nuevo; se borran `FRONTEND/clasico/` y `test_clasico_entrega_el_tablero_anterior` (esta prueba es de `BACKEND/`: pide excepción al Director) | Líder + Ejecutor | — | pendiente |
+| B3h | **(SIN AUTORIZACIÓN: Steven, 20/11, «Conserva el tablero clásico»)** Retiro del clásico: checklist de paridad de B0 §9 completa en el tablero nuevo; se borran `FRONTEND/clasico/` y `test_clasico_entrega_el_tablero_anterior` (esta prueba es de `BACKEND/`: pide excepción al Director) | Líder + Ejecutor | — | pendiente |
 | B4 | Movimiento y pulido (`animate`, `choreograph`, `emil-design-eng`), `prefers-reduced-motion` | Ejecutor + Líder | — | pendiente |
 | B5 | `break-ui`, teclado, contraste, 1280/1920, paridad con B0, cierre | Líder + Ejecutor | — | pendiente |
 
@@ -56,6 +56,15 @@ Hueco reservado en la navegación: "Lectura asistida" (Fase C, no es de esta fas
 - **19/11/2026 · Estilo visual:** «Plano sellado» (respuesta textual de Steven, relayada por el Director). Se construye con el estilo B de `FRONTEND/maquetas/v2/` (`plano.html`, `estilo-plano.css`). Hormigón y Tablero quedan como antecedente, sin borrarlos. Telemetría del sorteo de `impeccable` enviada (`--kind pick`: «choice recorded»).
 
 ## Bitácora (lo más nuevo arriba)
+- 20/11/2026 · Director: **Fase B en pausa.** Steven aprobó empezar F0 del plan «Fundación inicial» (`PLANES/fundacion-inicial.md`, PR 33). Su punto 2: «Pausa la ejecución de A y B mientras haces esa reconciliación».
+  - No se arranca B3d ni ningún Ejecutor nuevo.
+  - B3a se conserva; F1 evaluará qué sirve.
+  - Punto 4 de Steven: «Conserva el tablero clásico. Su eliminación no queda autorizada». **B3h queda sin autorización.** Los enlaces que quitó `ddca35f` se quedan en la rama hasta que se decida en F0/F1.
+
+  Estado al pausar:
+  - El Ejecutor de B3d se cortó por el límite de uso antes de escribir nada: no hay trabajo a medias ni WIP.
+  - Árbol limpio, sin servidores de prueba encendidos.
+  - Última suite (19/11): 944 pasan, 2 fallan (Dropbox), 3 se omiten.
 - 19/11/2026 · Director: B3a delante de Steven; la auditoría formal va después de que la vea. Aprobado:
   1. **Fase D-a suma un campo o conteo de tablas confirmadas** en `/tablas-extraidas`. Mientras tanto, «pendiente de verificar».
   2. Órdenes sin enlace hasta B3f.
