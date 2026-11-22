@@ -97,7 +97,7 @@
               <p v-if="estadoDudas === 'error'" class="ayuda">No se pudieron leer las dudas de esta visita.</p>
               <p v-else-if="!dudasSel.length" class="ayuda">Esta visita no tiene dudas abiertas.</p>
               <ul v-else class="visita-sel-dudas">
-                <li v-for="d in dudasSel" :key="d.id"><span class="etq" :class="d.categoria === 'DUDA_BLOQUEANTE' ? 'etq-acento' : ''">{{ categoria(d) }}</span> {{ d.descripcion_pregunta }}</li>
+                <li v-for="d in dudasSel" :key="d.id"><span class="etq" :class="d.categoria === 'DUDA_BLOQUEANTE' ? 'etq-acento' : ''">{{ categoria(d) }}</span> {{ d.pregunta }}</li>
               </ul>
             </template>
             <p class="ayuda">Mesa de Dudas: la construye B3e. Aquí todavía no se responden las dudas.</p>

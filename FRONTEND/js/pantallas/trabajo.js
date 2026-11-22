@@ -125,6 +125,7 @@
         if (v.fin) return v.estado || 'Terminada';
         return 'Procesando…';
       },
+      hora: function (v) { return C.formato.fechaHora(v) || v; },
       claseVisita: function (v) { return v.error ? 'est-mal' : (v.fin ? C.cola.claseEstado(v.estado) : 'est-cola'); },
       kb: function (b) { return typeof b === 'number' ? Math.max(1, Math.round(b / 1024)).toLocaleString('es') + ' KB' : null; },
       cargar: function () {
@@ -215,7 +216,7 @@
           error-titulo="No se pudo leer el trabajo." :error-mensaje="mensaje" @reintentar="cargar">
           <section class="panel" :class="claseEstado" role="status" aria-live="polite" data-trabajo-estado>
             <div class="panel-cab"><p class="panel-t"><Icono :nombre="iconoEstado"/>{{ textoEstado }}</p></div>
-            <p class="panel-d">Estado: <b>{{ trabajo.estado }}</b><template v-if="trabajo.creado"> · creado {{ trabajo.creado }}</template><template v-if="trabajo.terminado"> · terminado {{ trabajo.terminado }}</template> · {{ eventos.length }} eventos · {{ totalDudas }} dudas</p>
+            <p class="panel-d">Estado: <b>{{ trabajo.estado }}</b><template v-if="trabajo.creado"> · creado {{ hora(trabajo.creado) }}</template><template v-if="trabajo.terminado"> · terminado {{ hora(trabajo.terminado) }}</template> · {{ eventos.length }} eventos · {{ totalDudas }} dudas</p>
             <p v-if="resumenFinal" class="panel-d">{{ resumenFinal }}</p>
             <p v-if="trabajo.error" class="panel-e">{{ trabajo.error }}</p>
             <p v-if="perdido" class="panel-e" role="alert" data-seguimiento-perdido>{{ perdido }} <button type="button" class="btn btn-sec" @click="reintentar">Reintentar el seguimiento</button></p>
