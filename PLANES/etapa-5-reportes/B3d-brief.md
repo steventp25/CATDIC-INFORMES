@@ -4,6 +4,18 @@ Fecha: 19/11/2026. Va después de B3a: el orden de B3 está en `PLANES/etapa-5-f
 
 **Por qué es urgente.** Steven no quiere volver a ver el tablero clásico. Esta tarea trae al tablero nuevo lo que hoy solo hace el clásico con las visitas. Al terminar, nada de esto puede faltar.
 
+## Novedades del 22/11/2026 (reanudación; mandan sobre lo de abajo)
+- **Se reanuda la fase.** Steven, 22/11: «Sí, reanúdala».
+- **Tablero clásico.** Steven, 20/11: «Conserva el tablero clásico. Su eliminación no queda autorizada».
+  - No borres ni edites `FRONTEND/clasico/` ni su prueba (`BACKEND/tests/test_frontend_servido.py`).
+  - Lo que hizo `ddca35f` (quitar los enlaces al clásico) queda como está: no lo reviertas ni lo amplíes.
+  - Sigue sin haber enlaces ni menciones al clásico en el tablero nuevo.
+- **Paquete de CATDIC Campo** (PR #35, rama `claude/paquete-visita-campo`, aún sin fusionar).
+  - Añade `*.catdic-visita.json`: cuando la carpeta de una visita lo trae, Procesar cola lo carga en vez del PDF. El contrato está en `PLANES/paquete-visita-v1.md` de esa rama.
+  - **En B3d no construyas nada para el paquete.** No lo detectes, no lo simules y no lo leas desde el frontend.
+  - En el informe, anota **dónde iría en la cola el aviso «esta visita trae paquete de Campo»**: qué componente, qué columna o línea y qué dato del backend haría falta. Es para una tarea posterior.
+- **Puerto.** El 8765 está ocupado por otro proceso que no es tuyo (puede ser la demo de B3a): **no lo cierres**. Usa el **8766**. Donde abajo dice 8765, léelo como 8766, también en el filtro de peticiones de Playwright.
+
 ## Dónde se trabaja (igual que en B2 y B3a)
 - **Worktree y rama:** `C:\Users\Steve\OneDrive\Desktop\CATDIC-WEB\.claude\worktrees\etapa2-t7n-confirmacion-8210cf`, rama `claude/etapa5-fase-b-0020e1`.
   - No crees ni cambies de rama. Nada de push, merge ni stash.

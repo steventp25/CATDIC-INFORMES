@@ -5,7 +5,7 @@ Plan madre: `PLANES/etapa-5.md` (decisiones D5–D8, tareas B0–B5). Este archi
 
 ## Reglas que mandan en esta fase
 - Zona: `FRONTEND/**`, `DESIGN.md`, `PLANES/etapa-5-fase-B.md`, `PLANES/etapa-5-inventario-ui.md`, `PLANES/etapa-5-reportes/B*.md`. **No tocar `BACKEND/**`** (ni rutas, ni respuestas, ni `main.py`): lo que haga falta se pide al Director.
-- Sin compilación (D5): varios archivos, Vue y Tailwind locales en `FRONTEND/vendor/`, funciona **sin internet**. El tablero viejo queda en `FRONTEND/clasico/index.html` **sin ningún enlace ni mención desde el tablero nuevo** (decisión de Steven, 19/11) y se borra en **B3h**, en cuanto B3 cubra todo lo que hoy solo hace él.
+- Sin compilación (D5): varios archivos, Vue y Tailwind locales en `FRONTEND/vendor/`, funciona **sin internet**. El tablero viejo queda en `FRONTEND/clasico/index.html` **sin ningún enlace ni mención desde el tablero nuevo** (decisión de Steven, 19/11). **No se borra:** Steven, 20/11, «Conserva el tablero clásico. Su eliminación no queda autorizada» (B3h sin autorización).
 - Nada de lo que hace hoy el tablero puede perderse (paridad con B0). Textos en español. Lo que falta se muestra como "pendiente de verificar"; nunca datos de ingeniería inventados.
 - **1 Ejecutor a la vez** en esta fase (plan v3); máximo **3 sesiones de CATDIC-WEB trabajando a la vez** entre las fases A y B. Ejecutores `fresh`, Sonnet medio (Haiku bajo para lo mecánico).
 - **Ramas (Director, 19/11, a pedido de Steven):** solo quedan `main`, `etapa5-plan`, `etapa5-fase-a` y `etapa5-fase-b`. Todo el trabajo de la Fase B va en `claude/etapa5-fase-b-0020e1`. Un Ejecutor trabaja **en el worktree del Líder, sobre esa misma rama, por turnos** (nunca a la vez que el Líder edita) y **no crea ramas nuevas**.
@@ -24,7 +24,7 @@ Plan madre: `PLANES/etapa-5.md` (decisiones D5–D8, tareas B0–B5). Este archi
 | — | **Puerta de Steven:** elige estilo (vía Director) | Steven | — | **resuelta 19/11: «Plano sellado»** |
 | B2 | Base: estructura de `FRONTEND/`, `vendor/` local, tokens del estilo B, armazón con navegación D6, cliente API, `/clasico/` (encargo `PLANES/etapa-5-reportes/B2-brief.md`) | Ejecutor Sonnet (subagente, en este worktree) + revisión del Líder | esta rama (`d254519`…`485b3ea`, Líder `a7a1f3f`, `078d4f3`, prueba de backend) | **aprobada por el Director (19/11)** |
 | B3a | Inicio y Mis obras, con Nueva obra (encargo `PLANES/etapa-5-reportes/B3a-brief.md`) | Ejecutor Sonnet (subagente, en este worktree) + revisión del Líder | esta rama (`ddca35f`, `30bea9a`, `6f6d73a`, `69ed72f`, Líder: corrección móvil) | **hecha, esperando auditoría y que Steven la vea** |
-| B3d | **(2.º; en pausa desde el 20/11, sin empezar; encargo `PLANES/etapa-5-reportes/B3d-brief.md`)** Visitas y trabajos: **Procesar cola** con el seguimiento del trabajo (polling cada 2 s), **Sincronizar desde Dropbox** con su resultado (Z8), cola de visitas de todas las obras (Z15) y de cada obra, subir visita / conectar Dropbox (M3), avance del procesador (cubre T10b) | Ejecutor | — | pendiente |
+| B3d | **(2.º; reanudada el 22/11; encargo `PLANES/etapa-5-reportes/B3d-brief.md`, con las novedades del 22/11)** Visitas y trabajos: **Procesar cola** con el seguimiento del trabajo (polling cada 2 s), **Sincronizar desde Dropbox** con su resultado (Z8), cola de visitas de todas las obras (Z15) y de cada obra, subir visita / conectar Dropbox (M3), avance del procesador (cubre T10b) | Ejecutor Sonnet (subagente, en este worktree) + revisión del Líder | esta rama | **en curso** |
 | B3e | **(3.º)** **Mesa de Dudas** completa (M1: por visita y por obra, responder, conflictos) y Bandeja de trabajo con lo que hay hoy (la ruta común es Fase D-a) | Ejecutor | — | pendiente |
 | B3b | **(4.º)** Obra: Resumen, Avance, Cierre, Planos y ficha (cambiar plano con el formulario de B3a, datos de la obra M5), visor y recuadros (M4) | Ejecutor | — | pendiente |
 | B3c | **(5.º)** Revisión de planos: confirmar datos del plano (M6) | Ejecutor | — | pendiente |
@@ -56,6 +56,12 @@ Hueco reservado en la navegación: "Lectura asistida" (Fase C, no es de esta fas
 - **19/11/2026 · Estilo visual:** «Plano sellado» (respuesta textual de Steven, relayada por el Director). Se construye con el estilo B de `FRONTEND/maquetas/v2/` (`plano.html`, `estilo-plano.css`). Hormigón y Tablero quedan como antecedente, sin borrarlos. Telemetría del sorteo de `impeccable` enviada (`--kind pick`: «choice recorded»).
 
 ## Bitácora (lo más nuevo arriba)
+- 22/11/2026 · Director: **se reanuda la Fase B.** Steven, textual: «Sí, reanúdala».
+  - B3d arranca con su encargo, 1 Ejecutor a la vez, en este worktree y esta rama (ya contiene `main`).
+  - El clásico sigue como lo dejó Steven el 20/11: no se borra `FRONTEND/clasico/` ni su prueba; `ddca35f` no se revierte ni se amplía. B3h sigue sin autorización.
+  - PR #35 (`claude/paquete-visita-campo`, sin fusionar) añade el paquete de CATDIC Campo `*.catdic-visita.json`. En B3d no se construye nada para él; el informe anota dónde iría el aviso «esta visita trae paquete de Campo» en la cola.
+  - B3a sigue esperando que Steven la vea y la auditoría: el Director enseñará B3a y B3d juntas.
+  - Líder: el puerto 8765 está ocupado por otro proceso (PID 42292, sin identificar; no se cierra). El Ejecutor de B3d usa el **8766**. Novedades añadidas al encargo.
 - 20/11/2026 · Director: **Fase B en pausa.** Steven aprobó empezar F0 del plan «Fundación inicial» (`PLANES/fundacion-inicial.md`, PR 33). Su punto 2: «Pausa la ejecución de A y B mientras haces esa reconciliación».
   - No se arranca B3d ni ningún Ejecutor nuevo.
   - B3a se conserva; F1 evaluará qué sirve.
