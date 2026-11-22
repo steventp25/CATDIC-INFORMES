@@ -61,7 +61,7 @@ Los «errores de consola» de las pruebas de error son los 404, 409 y 500 que la
 Simulados con `page.route` (solo en la prueba): el 409, el trabajo fallido, el trabajo en curso, el error de sincronización, los estados de carga y error y el peor caso. Todo lo demás corrió contra el backend real del worktree.
 
 ## Suite del backend
-Desde `BACKEND/`, con las variables al scratch: **942 passed, 7 skipped, 0 failed** (104 s). Las 2 pruebas del Dropbox real quedaron entre las omitidas (no fallaron) porque el Dropbox real no se usa con las rutas aisladas. Resultado en `suiteesultado.txt`.
+Desde `BACKEND/`, con las variables al scratch: **942 passed, 7 skipped, 0 failed** (104 s). Las 2 pruebas del Dropbox real quedaron entre las omitidas (no fallaron) porque el Dropbox real no se usa con las rutas aisladas. Resultado en `suite/resultado.txt`.
 
 ## Búsqueda de «clasico» / «clásico»
 En `FRONTEND/` sin `clasico/`, `maquetas/` ni `vendor/`: **0 resultados**.
