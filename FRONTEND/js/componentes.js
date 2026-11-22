@@ -107,6 +107,19 @@
       if (/^\d{2}\/\d{2}\/\d{4}$/.test(v)) return v;
       return null;
     },
+    // AAAA-MM-DDTHH:MM… (o con espacio) → DD/MM/AAAA HH:MM; sin hora → solo la fecha; otra cosa → null.
+    fechaHora: function (v) {
+      if (typeof v !== 'string') return null;
+      var m = /^(\d{4})-(\d{2})-(\d{2})(?:[T ](\d{2}):(\d{2}))?/.exec(v);
+      if (!m) return null;
+      return m[3] + '/' + m[2] + '/' + m[1] + (m[4] ? ' ' + m[4] + ':' + m[5] : '');
+    },
+    // Hora local de la PC como DD/MM/AAAA HH:MM (la hora de la sincronización).
+    ahoraTexto: function () {
+      var d = new Date();
+      function dos(n) { return (n < 10 ? '0' : '') + n; }
+      return dos(d.getDate()) + '/' + dos(d.getMonth() + 1) + '/' + d.getFullYear() + ' ' + dos(d.getHours()) + ':' + dos(d.getMinutes());
+    },
     // Texto de la BD: vacío o «pendiente de verificar» (lo que escribe el backend) → null (la pantalla lo muestra como pendiente).
     texto: function (v) {
       if (v === null || v === undefined) return null;

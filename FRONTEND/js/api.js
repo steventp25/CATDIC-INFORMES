@@ -47,13 +47,23 @@
   }
 
   /* pedir(metodo, ruta, opciones)
-     opciones: { cuerpo (objeto JSON), formulario (FormData), consulta (objeto), tiempo (ms), respuesta ('json' | 'blob') } */
+     opciones: { cuerpo (objeto JSON), formulario (FormData), consulta (objeto), tiempo (ms), respuesta ('json' | 'blob'),
+               senal (AbortSignal: al abortarla se corta la petición y el error trae `cancelada: true`) } */
   function pedir(metodo, ruta, opciones) {
     var o = opciones || {};
     var control = new AbortController();
     var tiempo = o.tiempo || (metodo === 'GET' ? TIEMPO_LECTURA : TIEMPO_ESCRITURA);
     var agotado = false;
+    var cancelada = false;
     var reloj = setTimeout(function () { agotado = true; control.abort(); }, tiempo);
+    if (o.senal) {
+      var cortar = function () { cancelada = true; control.abort(); };
+      if (o.senal.aborted) cortar(); else o.senal.addEventListener('abort', cortar, { once: true });
+    }
+    function sinRespuesta() {
+      if (cancelada) { var c = error(0, 'La petición se canceló.', null); c.cancelada = true; return c; }
+      return agotado ? error(0, 'El servidor local tardó demasiado en responder.', null) : error(0, 'No se pudo conectar con el servidor local.', null);
+    }
     var init = { method: metodo, signal: control.signal, headers: { 'Accept': 'application/json' } };
     if (o.formulario) {
       init.body = o.formulario; // el navegador pone el boundary del multipart
@@ -76,13 +86,11 @@
         try { return JSON.parse(txt); } catch (e) { throw error(r.status, 'El servidor local respondió algo que no se pudo leer.', null); }
       });
     }, function () {
-      throw agotado
-        ? error(0, 'El servidor local tardó demasiado en responder.', null)
-        : error(0, 'No se pudo conectar con el servidor local.', null);
+      throw sinRespuesta();
     }).then(function (datos) { clearTimeout(reloj); return datos; }, function (e) {
       clearTimeout(reloj);
       if (e && typeof e.estado === 'number') throw e;
-      throw agotado ? error(0, 'El servidor local tardó demasiado en responder.', null) : error(0, 'No se pudo conectar con el servidor local.', null);
+      throw sinRespuesta();
     });
   }
 

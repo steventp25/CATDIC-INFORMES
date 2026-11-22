@@ -36,6 +36,9 @@
   --seg-activo: #16263a; --seg-activo-tinta: #f2f5f8;
   --pestana-activa: #14202e;
   --papel: #fdfdfb; --pl-tinta: #14202e; --pl-tinta-2: #4a5868; --pl-linea: #7d8a98;
+  --est-cola-fondo: #f6edc8; --est-cola-tinta: #5c4608; --est-cola-borde: #b89a2e;
+  --dudas-fondo: #fbe3cf; --dudas-tinta: #8a3b05; --dudas-borde: #c2570c; --dudas-suave: #fdf1e6;
+  --est-rev-fondo: #ece4f6; --est-rev-tinta: #4b2a7a; --est-rev-borde: #8a6bb8;
 }
 
 /* Tema oscuro elegido a mano */
@@ -60,6 +63,9 @@
   --seg-activo: #e6ecf2; --seg-activo-tinta: #0a111a;
   --pestana-activa: #e6ecf2;
   --papel: #0f1823; --pl-tinta: #dde5ee; --pl-tinta-2: #a9b6c4; --pl-linea: #5d7088;
+  --est-cola-fondo: #3a3213; --est-cola-tinta: #f0d98a; --est-cola-borde: #8a7a2e;
+  --dudas-fondo: #43260f; --dudas-tinta: #ffb98a; --dudas-borde: #e0803a; --dudas-suave: #2a1c12;
+  --est-rev-fondo: #2d2142; --est-rev-tinta: #cdb6f2; --est-rev-borde: #6f5a99;
 }
 
 /* Tema oscuro del sistema: solo cuando no hay preferencia guardada */
@@ -85,5 +91,8 @@
     --seg-activo: #e6ecf2; --seg-activo-tinta: #0a111a;
     --pestana-activa: #e6ecf2;
     --papel: #0f1823; --pl-tinta: #dde5ee; --pl-tinta-2: #a9b6c4; --pl-linea: #5d7088;
+    --est-cola-fondo: #3a3213; --est-cola-tinta: #f0d98a; --est-cola-borde: #8a7a2e;
+    --dudas-fondo: #43260f; --dudas-tinta: #ffb98a; --dudas-borde: #e0803a; --dudas-suave: #2a1c12;
+    --est-rev-fondo: #2d2142; --est-rev-tinta: #cdb6f2; --est-rev-borde: #6f5a99;
   }
 }
