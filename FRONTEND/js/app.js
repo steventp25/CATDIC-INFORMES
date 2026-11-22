@@ -11,14 +11,14 @@
     { id: 'informes', href: '#/informes', texto: 'Informes', corto: 'Informes', icono: 'informes' },
     { id: 'configuracion', href: '#/configuracion', texto: 'Configuración', corto: 'Configuración', icono: 'config' }
   ];
-  var TITULOS = { inicio: 'Inicio', obras: 'Mis obras', bandeja: 'Bandeja de trabajo', informes: 'Informes', configuracion: 'Configuración', 'crear-informe': 'Crear informe', obra: 'Obra' };
+  var TITULOS = { inicio: 'Inicio', obras: 'Mis obras', bandeja: 'Bandeja de trabajo', informes: 'Informes', configuracion: 'Configuración', 'crear-informe': 'Crear informe', obra: 'Obra', trabajo: 'Avance del trabajo' };
 
   var Raiz = {
     data: function () { return { nav: NAV, primera: true }; },
     computed: {
       ruta: function () { return C.rutas.ruta; },
       // La obra cuelga de «Mis obras»; Crear informe no es una entrada de la navegación.
-      activa: function () { return this.ruta.nombre === 'obra' ? 'obras' : this.ruta.nombre; },
+      activa: function () { return this.ruta.nombre === 'obra' ? 'obras' : (this.ruta.nombre === 'trabajo' ? 'bandeja' : this.ruta.nombre); },
       pantalla: function () { return C.pantallas[this.ruta.nombre] || null; }
     },
     watch: {

@@ -25,6 +25,11 @@
         return C.datos.prioridades(this.tablero, this.estadoDudas === 'listo' ? this.dudas : null);
       },
       filas: function () { return this.filasTodas.slice(0, LIMITE); },
+      // Solo el resumen: la lista única de visitas es la de la Bandeja (no hay una segunda tabla que pueda desincronizarse).
+      resumenCola: function () {
+        var r = C.cola.resumen(this.visitasTodas);
+        return C.cola.plural(r.total, 'visita', 'visitas') + ' · ' + r.enCola + ' en cola · ' + r.conDudas + ' con dudas';
+      },
       restantes: function () { return Math.max(0, this.filasTodas.length - LIMITE); },
       obrasConPlano: function () {
         var pl = this.planos;
@@ -81,6 +86,14 @@
               <div><dt>Vencen en ≤ 7 días</dt><dd class="cifra-p"><Pendiente/> <FaseD fase="D-a"/></dd></div>
             </dl>
           </Bloque>
+        </section>
+
+        <section class="caja" aria-labelledby="t-cola">
+          <div class="caja-cabeza"><h2 id="t-cola">Cola de visitas</h2><a class="enlace" href="#/bandeja">Ver la cola completa<Icono nombre="flecha"/></a></div>
+          <Bloque :estado="estadoTablero" :huesos="2" error-titulo="Sin datos: no se pudo leer la cola de visitas del backend." :error-mensaje="mensajeTablero" @reintentar="leerTablero">
+            <p class="cola-resumen num" data-cola-resumen>{{ resumenCola }}</p>
+          </Bloque>
+          <AccionesCola @actualizar="recargar"/>
         </section>
 
         <div class="rejilla-inicio">

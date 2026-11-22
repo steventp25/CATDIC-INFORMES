@@ -273,3 +273,127 @@ main { padding: var(--esp-5) clamp(16px, 3vw, 40px) 64px; min-width: 0; }
   .btn:active:not(:disabled) { transform: none; }
 }
 @media (hover: none) { .fila-a:hover { background: transparent; } }
+
+/* ======================================================================================================
+   B3d · Cola de visitas, Procesar cola, Sincronizar, subir visita y avance en vivo
+   Las filas se acomodan a su .caja con container queries (container: caja), no al ancho de la ventana.
+   La fila con dudas se distingue por el borde grueso, el icono y el texto, no solo por el color.
+   ====================================================================================================== */
+.etq-acento { color: var(--dudas-tinta); border-color: var(--dudas-borde); background: var(--dudas-suave); }
+.cola-caja .caja-cabeza { align-items: baseline; }
+.cola-cuenta { font-size: 0.8125rem; font-weight: 600; color: var(--tinta-2); }
+.cola-nota { margin-bottom: var(--esp-3); }
+.cola-sin-dudas { margin-bottom: var(--esp-2); }
+.cola-resumen { font-weight: 600; margin-bottom: var(--esp-3); overflow-wrap: anywhere; }
+
+/* estados de la visita (chip con borde: el texto del estado siempre está escrito) */
+.est { display: inline-flex; align-items: center; gap: 4px; max-width: 100%; padding: 1px 8px; border: 1px solid var(--borde-fuerte); border-radius: 2px; font-size: 0.8125rem; font-weight: 600; background: var(--superficie-2); color: var(--tinta); overflow-wrap: anywhere; }
+.est-sin { background: var(--superficie-2); color: var(--tinta-2); }
+.est-cola { background: var(--est-cola-fondo); color: var(--est-cola-tinta); border-color: var(--est-cola-borde); }
+.est-proc { background: var(--aviso-fondo); color: var(--acento); border-color: var(--sel-borde); }
+.est-dudas { background: var(--dudas-fondo); color: var(--dudas-tinta); border-color: var(--dudas-borde); }
+.est-rev { background: var(--est-rev-fondo); color: var(--est-rev-tinta); border-color: var(--est-rev-borde); }
+.est-ok { background: var(--ok-fondo); color: var(--ok-tinta); border-color: var(--ok-tinta); }
+.est-mal { background: var(--error-fondo); color: var(--alerta-tinta); border-color: var(--alerta); }
+
+.cola { display: grid; border-top: 1px solid var(--borde); }
+.cola-enc { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.cola-f { display: grid; grid-template-columns: minmax(0, 1fr); gap: 4px var(--esp-3); padding: var(--esp-3) var(--esp-2) var(--esp-3) var(--esp-3); border-bottom: 1px solid var(--borde); border-left: 4px solid transparent; min-width: 0; }
+.cola-f:hover { background: var(--superficie-2); }
+.cola-f.con-dudas { border-left-color: var(--dudas-borde); background: var(--dudas-suave); }
+.cola-f.es-sel { outline: 2px solid var(--foco); outline-offset: -2px; }
+.cola-c { min-width: 0; overflow-wrap: anywhere; display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 8px; }
+.cola-c > * { min-width: 0; }
+.cola-r { font-size: 0.6875rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: var(--tinta-2); flex: none; min-width: 3.2rem; }
+.cola-obra { font-weight: 700; }
+.cola-obra a { text-decoration: none; }
+.cola-obra a:hover { text-decoration: underline; text-underline-offset: 3px; }
+.cola-carpeta { font-family: var(--f-dato); font-size: 0.8125rem; }
+.cola-enlace { color: var(--enlace); font-weight: 600; text-underline-offset: 3px; }
+.cola-estado { display: grid; gap: 4px; justify-items: start; align-content: start; }
+.cola-linea { display: flex; gap: 6px; align-items: flex-start; font-size: 0.8125rem; line-height: 1.35; overflow-wrap: anywhere; }
+.cola-linea .ico { margin-top: 0.15em; }
+.cola-linea.bloq { color: var(--dudas-tinta); font-weight: 700; }
+.cola-linea.abiertas { color: var(--dudas-tinta); }
+.cola-linea.pend { color: var(--tinta-2); }
+.cola-mixta { list-style: none; margin: 0; padding: 0; flex-basis: 100%; font-size: 0.8125rem; color: var(--tinta-2); }
+.cola-mixta b { color: var(--tinta); }
+
+/* hay sitio para la tabla: las columnas pasan a ser columnas de verdad */
+@container caja (min-width: 760px) {
+  .cola.sin-obra .cola-enc, .cola.sin-obra .cola-f { grid-template-columns: 3.5rem minmax(0, 2fr) 8rem minmax(8rem, 1fr) minmax(0, 1.6fr); align-items: start; }
+  .cola.sin-obra .cola-r { display: none; }
+  .cola.sin-obra .cola-enc { position: static; width: auto; height: auto; overflow: visible; clip: auto; white-space: normal; display: grid; gap: 4px var(--esp-3); padding: 6px var(--esp-2) 6px var(--esp-3); border-left: 4px solid transparent; border-bottom: 1.5px solid var(--tinta); font-size: 0.6875rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: var(--tinta-2); }
+}
+@container caja (min-width: 900px) {
+  .cola.con-obra .cola-enc, .cola.con-obra .cola-f { grid-template-columns: minmax(0, 1.2fr) 3.5rem minmax(0, 2fr) 8rem minmax(8rem, 1fr) minmax(0, 1.6fr); align-items: start; }
+  .cola.con-obra .cola-r { display: none; }
+  .cola.con-obra .cola-enc { position: static; width: auto; height: auto; overflow: visible; clip: auto; white-space: normal; display: grid; gap: 4px var(--esp-3); padding: 6px var(--esp-2) 6px var(--esp-3); border-left: 4px solid transparent; border-bottom: 1.5px solid var(--tinta); font-size: 0.6875rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: var(--tinta-2); }
+}
+
+/* paneles de estado (trabajo, sincronización, resultado de subir visita, visita seleccionada) */
+.acciones-cola { display: grid; gap: var(--esp-3); margin-top: var(--esp-3); }
+.acc-botones { display: flex; flex-wrap: wrap; gap: var(--esp-3); }
+.pv-botones { margin-bottom: var(--esp-2); }
+.pestana-visitas { display: grid; gap: var(--esp-5); }
+.panel { border: 1px solid var(--borde-fuerte); border-left-width: 5px; background: var(--superficie-2); padding: var(--esp-3) var(--esp-4); display: grid; gap: 6px; min-width: 0; }
+.panel > * { min-width: 0; overflow-wrap: anywhere; }
+.p-ok { border-left-color: var(--ok-tinta); background: var(--ok-fondo); }
+.p-corre { border-left-color: var(--sel-borde); background: var(--aviso-fondo); }
+.p-mal { border-left-color: var(--alerta); background: var(--error-fondo); }
+.p-info { border-left-color: var(--borde-fuerte); }
+.panel-cab { display: flex; justify-content: space-between; align-items: flex-start; gap: var(--esp-3); }
+.panel-t { display: flex; gap: 8px; align-items: flex-start; font-weight: 700; font-size: 0.9375rem; margin: 0; }
+.panel-t .ico { margin-top: 0.15em; }
+.panel-d { font-size: 0.875rem; }
+.panel-e { font-weight: 600; color: var(--alerta-tinta); }
+.panel-acc { display: flex; flex-wrap: wrap; gap: var(--esp-3); align-items: center; }
+.panel-hora { font-size: 0.8125rem; color: var(--tinta-2); }
+.panel-x { padding: 0; width: 40px; flex: none; }
+
+.sync-obra { border-top: 1px solid var(--borde); padding-top: var(--esp-3); display: grid; gap: var(--esp-2); min-width: 0; }
+.sync-cab { display: flex; flex-wrap: wrap; gap: 4px var(--esp-3); align-items: baseline; }
+.sync-nombre { font-weight: 700; overflow-wrap: anywhere; }
+.sync-cont { grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); }
+.sync-cont dd { font-size: 1rem; }
+.cont-alerta { color: var(--dudas-tinta); }
+.sync-lista { font-size: 0.8125rem; }
+.sync-lista summary { cursor: pointer; font-weight: 600; min-height: 32px; display: flex; align-items: center; }
+.sync-lista ul { margin: 4px 0 0; padding-left: var(--esp-4); display: grid; gap: 4px; overflow-wrap: anywhere; }
+.sync-mal summary { color: var(--alerta-tinta); }
+.sync-dudas a { font-weight: 600; }
+.res-visitas { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.res-visitas li { display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: baseline; overflow-wrap: anywhere; }
+.res-carpeta { font-family: var(--f-dato); font-size: 0.8125rem; }
+
+.visita-sel { border: 1.5px solid var(--dudas-borde); background: var(--dudas-suave); padding: var(--esp-3) var(--esp-4); display: grid; gap: var(--esp-2); margin-bottom: var(--esp-3); min-width: 0; }
+.visita-sel .panel-t { overflow-wrap: anywhere; }
+.visita-sel-dudas { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; max-height: 18rem; overflow: auto; font-size: 0.875rem; overflow-wrap: anywhere; }
+
+/* avance en vivo del trabajo */
+.pagina-trabajo .pagina-cabeza { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-end; gap: var(--esp-3); }
+.tr-id { overflow-wrap: anywhere; }
+.tr-visita { display: grid; gap: var(--esp-3); }
+.tr-visita .caja-cabeza { margin-bottom: 0; }
+.tr-elementos, .tr-dudas ul, .tr-avisos, .tr-pdf ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.tr-el { display: flex; flex-wrap: wrap; gap: 2px var(--esp-3); align-items: baseline; padding: 6px 10px; border: 1px solid var(--borde); border-left-width: 4px; overflow-wrap: anywhere; }
+.tr-el-t { font-weight: 600; flex: 1 1 14rem; min-width: 0; }
+.tr-el-e { font-size: 0.8125rem; display: inline-flex; gap: 4px; align-items: baseline; }
+.tr-el-ficha { flex-basis: 100%; font-size: 0.8125rem; color: var(--tinta-2); }
+.el-listo { border-left-color: var(--ok-tinta); }
+.el-corre { border-left-color: var(--sel-borde); background: var(--aviso-fondo); }
+.el-espera { border-left-color: var(--dudas-borde); background: var(--dudas-suave); }
+.el-ant { border-left-color: var(--borde-fuerte); }
+.tr-sub { font-size: 0.8125rem; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 6px; }
+.tr-duda { border: 1px solid var(--dudas-borde); border-left-width: 4px; background: var(--dudas-suave); padding: 6px 10px; display: grid; gap: 2px; overflow-wrap: anywhere; }
+.tr-duda-p { display: flex; gap: 6px; align-items: flex-start; font-weight: 600; }
+.tr-avisos li { display: flex; gap: 6px; align-items: flex-start; font-size: 0.875rem; overflow-wrap: anywhere; }
+.tr-pdf li { font-size: 0.8125rem; overflow-wrap: anywhere; }
+.tr-ruta { font-family: var(--f-dato); }
+
+@media (max-width: 899px) {
+  .acc-botones .btn { flex: 1 1 100%; }
+  .panel-x { width: 44px; min-height: 44px; }
+  .sync-lista summary { min-height: 44px; }
+}
+.cola .pendiente { white-space: normal; font-size: 0.75rem; line-height: 1.3; padding: 0 4px; }
