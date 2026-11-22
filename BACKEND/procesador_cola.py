@@ -31,7 +31,7 @@ from generators import fi_mived, stp_mived
 from generators.comun import localizacion as m3_localizacion
 from generators.comun import salida
 from reglas_ingenieria import PENDIENTE, auditar_archivo_pdf_generado, obtener_ruta_salida_sin_sobrescribir
-from sync import lector_visita
+from sync import lector_visita, paquete_visita
 from sync.escaner_dropbox import SUBRUTA_INFORMES_PROCESADOS, _escanear_informes
 from sync.parser_visitas import CLASE_COMPLETIVO, CLASE_PARCIAL, interpretar_nombre_carpeta_visita
 from sync.sincronizador import (
@@ -504,6 +504,24 @@ class ProcesoVisita:
         return str(pdfs[0].get("ruta") or Path(visita["ruta_carpeta"]) / pdfs[0]["nombre"])
 
     def _correr_lector(self, visita):
+        # Paquete de Campo v1 (PLANES/paquete-visita-v1.md): si la carpeta lo trae, manda sobre el PDF.
+        try:
+            paquete = paquete_visita.buscar_paquete(Path(visita["ruta_carpeta"]))
+        except ValueError as exc:  # más de un paquete: no se elige
+            paquete_visita.rechazar(self.visita_id, str(exc), usuario=self.usuario)
+            self.duda(paquete_visita.CAMPO_PAQUETE, "(visita)", str(exc))
+            return
+        except OSError:
+            paquete = None
+        if paquete is not None:
+            try:
+                r = paquete_visita.cargar_paquete(self.visita_id, paquete, usuario=self.usuario, respaldar=False)
+                _evento(self.trabajo_id, "aviso", {"visita_id": self.visita_id,
+                                                   "texto": f"Visita cargada del paquete de Campo: {r['elementos']} "
+                                                            f"elementos y {r['fotos']} fotos."})
+            except ValueError as exc:  # el importador ya dejó su duda `paquete_visita`
+                self.duda(paquete_visita.CAMPO_PAQUETE, "(visita)", str(exc))
+            return
         if self.pdf_visita is None:
             self.duda(lector_visita.CAMPO_PDF_VISITA, "(visita)",
                       f"La visita '{visita['nombre_carpeta']}' no tiene un único PDF ({len(_lista(visita['archivos_json']))} "
@@ -532,9 +550,13 @@ class ProcesoVisita:
     def _refs(self, ev, candidato=None) -> Dict:
         """Lo que la pantalla necesita para mostrar el plano y la página de la visita junto a la duda."""
         paginas = [f.get("pagina") for f in _lista(ev["fotos_json"])]
-        refs = {"elemento": {"uid": ev["uid"], "orden_en_log": ev["orden_en_log"], "etiqueta": ev["etiqueta_original"],
+        del_paquete = bool(paginas) and not any(paginas)  # cargado del paquete de Campo: sus fotos no tienen página
+        refs ={"elemento": {"uid": ev["uid"], "orden_en_log": ev["orden_en_log"], "etiqueta": ev["etiqueta_original"],
                              "id_elemento": ev["id_elemento"], "nivel": ev["nivel"], "ejes": ev["ejes"]},
-                "visita_pdf": {"ruta": self.pdf_visita, "pagina": ev["orden_en_log"], "paginas": paginas}}
+                # la página real del PDF (con varias fotos por página no coincide con orden_en_log)
+                "visita_pdf": ({"ruta": None, "pagina": None, "paginas": []} if del_paquete else
+                               {"ruta": self.pdf_visita, "pagina": paginas[0] if paginas and paginas[0] else ev["orden_en_log"],
+                                "paginas": paginas})}
         plano = self.contexto["plano"]
         refs["plano"] = {"plano_id": plano["id"] if plano else None, "pagina": None, "bbox": None, "recuadro": None}
         if candidato is not None:
