@@ -1,6 +1,9 @@
 /* CATDIC-WEB · enrutador por hash. El botón Atrás del navegador funciona porque cada pantalla es un hash.
    Generales:  #/inicio  #/obras  #/bandeja  #/informes  #/configuracion  #/crear-informe
    De obra:    #/obra/<id>/<pestaña>   con pestaña = resumen | visitas | planos | avance | informes | cierre
+   Mesa de Dudas (B3e, vista con dirección propia):
+               #/obra/<id>/visitas?visita=<vid>[&duda=<n>]   modo visita
+               #/obra/<id>/resumen?dudas=obra[&duda=<n>]     modo obra (dudas sin visita)
    De trabajo: #/trabajo/<id>          avance en vivo del procesador de la cola (B3d); el id del trabajo va en la ruta
    Una ruta desconocida lleva a Inicio con un aviso (se sustituye en el historial, para que Atrás no vuelva a ella). */
 (function () {
@@ -64,8 +67,16 @@
     PESTANAS: PESTANAS,
     irA: irA,
     hashObra: function (id, pestana) { return '#/obra/' + encodeURIComponent(id) + '/' + (pestana || 'resumen'); },
-    // Una visita dentro de la pestaña «Visitas y trabajos» de su obra (la Mesa de Dudas de B3e se conecta aquí).
-    hashVisita: function (obraId, visitaId) { return '#/obra/' + encodeURIComponent(obraId) + '/visitas?visita=' + encodeURIComponent(visitaId); },
+    // La Mesa de Dudas en modo visita: «Visitas y trabajos» de su obra con ?visita=<id>. Con dudaId abre esa duda (&duda=<id>).
+    hashVisita: function (obraId, visitaId, dudaId) {
+      return '#/obra/' + encodeURIComponent(obraId) + '/visitas?visita=' + encodeURIComponent(visitaId) +
+        (dudaId !== undefined && dudaId !== null && dudaId !== '' ? '&duda=' + encodeURIComponent(dudaId) : '');
+    },
+    // La Mesa de Dudas en modo obra (dudas sin visita): el Resumen de la obra con ?dudas=obra. Con dudaId abre esa duda.
+    hashMesaObra: function (obraId, dudaId) {
+      return '#/obra/' + encodeURIComponent(obraId) + '/resumen?dudas=obra' +
+        (dudaId !== undefined && dudaId !== null && dudaId !== '' ? '&duda=' + encodeURIComponent(dudaId) : '');
+    },
     hashTrabajo: function (id) { return '#/trabajo/' + encodeURIComponent(id); },
     iniciar: function () { window.addEventListener('hashchange', leer); leer(); }
   };

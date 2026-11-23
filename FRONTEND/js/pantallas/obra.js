@@ -93,6 +93,7 @@
         '</header>' +
         '<PestanaVisitas v-if="obra && ruta.pestana === \'visitas\'" :obra="obra" :datos="datos" @actualizar="releer"/>' +
         '<PestanaInformes v-else-if="obra && ruta.pestana === \'informes\'" :obra="obra" :datos="datos" @actualizar="releer"/>' +
+        '<MesaDudas v-else-if="obra && ruta.pestana === \'resumen\' && ruta.consulta && ruta.consulta.dudas === \'obra\'" :obra="obra" :datos="datos" visita-id="" @actualizar="releer"/>' +
         '<section v-else-if="obra" class="caja" :aria-labelledby="\'t-pestana\'">' +
           '<div class="caja-cabeza"><h2 id="t-pestana">{{ contenido.titulo }}</h2></div>' +
           '<div class="vacio">' +

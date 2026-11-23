@@ -2,7 +2,7 @@
    props: obra (fila de `proyectos` del tablero) · datos (respuesta de GET /api/dashboard)
    emite `actualizar` cuando hay datos nuevos: la pantalla de la obra vuelve a leer el tablero sin desmontar esta pestaña.
    Aquí viven, solo en obras de Supervisión: Procesar cola de la obra, «Subir visita» y «Conectar con Dropbox» (M3), la cola
-   de la obra (ColaVisitas) y, si la ruta trae ?visita=<id>, el panel de esa visita (la Mesa de Dudas la construye B3e). */
+   de la obra (ColaVisitas) y, si la ruta trae ?visita=<id>, la Mesa de Dudas de esa visita (MesaDudas, js/mesa-dudas.js). */
 (function () {
   'use strict';
   var C = window.CATDIC = window.CATDIC || {};
@@ -85,23 +85,10 @@
           <ResultadoVisitas v-if="resultado" :resultado="resultado" @cerrar="resultado = null"/>
         </section>
 
+        <MesaDudas v-if="seleccionada" :obra="obra" :datos="datos" :visita-id="seleccionada" @actualizar="actualizar"/>
+
         <ColaVisitas titulo="Cola de visitas de esta obra" estado="listo" :visitas="visitas" :proyectos="[obra]" :dudas="dudasObra"
           :seleccionada="seleccionada" :vacio-texto="vacioTexto">
-          <section v-if="seleccionada" class="visita-sel" aria-labelledby="pv-sel" data-visita-seleccionada>
-            <div class="panel-cab">
-              <h3 id="pv-sel" class="panel-t"><Icono nombre="pregunta"/><template v-if="visitaSel">{{ textoVisita(visitaSel) }}</template><template v-else>Visita <span class="num">{{ seleccionada }}</span></template></h3>
-              <button type="button" class="btn btn-sec panel-x" aria-label="Cerrar el detalle de la visita" @click="quitarSeleccion"><Icono nombre="cerrar"/></button>
-            </div>
-            <p v-if="!visitaSel" class="ayuda">Esta obra no tiene una visita con ese identificador.</p>
-            <template v-else>
-              <p v-if="estadoDudas === 'error'" class="ayuda">No se pudieron leer las dudas de esta visita.</p>
-              <p v-else-if="!dudasSel.length" class="ayuda">Esta visita no tiene dudas abiertas.</p>
-              <ul v-else class="visita-sel-dudas">
-                <li v-for="d in dudasSel" :key="d.id"><span class="etq" :class="d.categoria === 'DUDA_BLOQUEANTE' ? 'etq-acento' : ''">{{ categoria(d) }}</span> {{ d.pregunta }}</li>
-              </ul>
-            </template>
-            <p class="ayuda">Mesa de Dudas: la construye B3e. Aquí todavía no se responden las dudas.</p>
-          </section>
         </ColaVisitas>
 
         <FormularioVisita v-if="dialogo" :modo="dialogo" :proyecto="obra" @hecho="hecho" @cancelar="cerrarDialogo"/>
