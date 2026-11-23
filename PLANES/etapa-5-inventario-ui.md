@@ -427,109 +427,109 @@ No hay imágenes, logos, favicon ni archivos CSS/JS propios: todo está en un ú
 
 ---
 
-## 9. Checklist de paridad (para marcar en B5)
+## 9. Checklist de paridad (marcada en B5b: 76 de 84 cumplen; 8 huecos con su razón)
 
 ### Cabecera y avisos
-- [ ] Logo `CATDIC`, título «Control Taller» e insignia «Web Local v2.0»
-- [ ] Botón «Nueva obra» abre el modal de obra
-- [ ] Botón «Sincronizar desde Dropbox» con estado «Sincronizando…» y deshabilitado mientras corre
-- [ ] Botón «Procesar Cola Visitas» con estado «Procesando…» y deshabilitado mientras corre
-- [ ] Aviso verde de obra creada, con botón cerrar
-- [ ] Recuadro del trabajo de la cola (id, estado, resumen, error; colores por estado; cerrar solo si no corre)
-- [ ] Polling cada 2 s del trabajo hasta que termina; al terminar recarga datos y dudas
-- [ ] Recuadro de resultado de subir visita / conectar Dropbox (título, resumen, filas, «No hay visitas nuevas.», avisos en `<details>`)
-- [ ] Botón «Mesa de Dudas: N» en cada fila del resultado
-- [ ] Error «No se pudo sincronizar con Dropbox» con botón cerrar
-- [ ] Error «No se pudo cargar el tablero»
-- [ ] Error «No se pudo leer la Mesa de Dudas»
-- [ ] Resultado de la sincronización: hora, layout, 7 contadores, avisos, carpetas desaparecidas, omitidas, dudas creadas, tooltip de planos sellados
-- [ ] Carga inicial: dudas abiertas y dashboard
+- [ ] Logo `CATDIC`, título «Control Taller» e insignia «Web Local v2.0» — Hueco: la marca nueva es «CATDIC · Control de obras» (N1) y no hay insignia «Web Local v2.0» ni el título «Control Taller». Lo decide Steven.
+- [x] Botón «Nueva obra» abre el modal de obra — Mis obras · botón «Nueva obra» (`pantallas/obras.js`, abre `FormularioPlanos` en modo nueva); el gancho `data-nueva-obra` pasó al botón del encabezado sin gancho propio.
+- [x] Botón «Sincronizar desde Dropbox» con estado «Sincronizando…» y deshabilitado mientras corre — Inicio y Bandeja · `data-sincronizar` (`cola-acciones.js`), «Sincronizando…» y deshabilitado.
+- [x] Botón «Procesar Cola Visitas» con estado «Procesando…» y deshabilitado mientras corre — Inicio y Bandeja · `data-procesar-cola` (`cola-acciones.js`), «Procesando…» y deshabilitado.
+- [x] Aviso verde de obra creada, con botón cerrar — Mis obras · aviso verde con «Cerrar aviso» y enlace «Abrir la obra nueva» (sustituye a `data-aviso-obra`).
+- [x] Recuadro del trabajo de la cola (id, estado, resumen, error; colores por estado; cerrar solo si no corre) — `data-trabajo-cola` (`cola-acciones.js`).
+- [x] Polling cada 2 s del trabajo hasta que termina; al terminar recarga datos y dudas — Sondeo de 2 s en `cola.js` y `avance-trabajo.js`.
+- [x] Recuadro de resultado de subir visita / conectar Dropbox (título, resumen, filas, «No hay visitas nuevas.», avisos en `<details>`) — `data-resultado-visitas` y `data-visita-nueva` (`cola-acciones.js`).
+- [x] Botón «Mesa de Dudas: N» en cada fila del resultado — `data-abrir-dudas-visita` (renombra `data-abrir-mesa-visita`), enlace a la Mesa de esa visita.
+- [x] Error «No se pudo sincronizar con Dropbox» con botón cerrar — `data-error-sync` (`cola-acciones.js`), «No se pudo sincronizar con Dropbox».
+- [x] Error «No se pudo cargar el tablero» — Inicio, Mis obras y Bandeja usan `Bloque` con «No se pudo cargar el tablero.» y «Reintentar».
+- [x] Error «No se pudo leer la Mesa de Dudas» — Inicio y Mis obras: «No se pudo leer la Mesa de Dudas.».
+- [x] Resultado de la sincronización: hora, layout, 7 contadores, avisos, carpetas desaparecidas, omitidas, dudas creadas, tooltip de planos sellados — `data-resultado-sync` (`cola-acciones.js`): hora, layout, contadores, avisos, carpetas desaparecidas y omitidas, dudas creadas, planos sellados.
+- [x] Carga inicial: dudas abiertas y dashboard — `datos.js`: el dashboard y las dudas abiertas se leen al cargar cada pantalla.
 
 ### Tarjetas y tablas
-- [ ] 5 tarjetas: Proyectos Activos, Órdenes Abiertas, Bloqueadas, Vencen en ≤ 7 Días, Visitas en Cola
-- [ ] Matriz de proyectos con las 7 columnas y sus valores por defecto («—», «Pendiente», «Sin iniciar»)
-- [ ] Celda de plano vigente: revisión, etiqueta, fecha, certificado por, tooltip de sha256, insignia «sin plano»
-- [ ] Botón «Cambiar plano» / «Subir planos»
-- [ ] Botón «Ver plano» (solo con plano)
-- [ ] Botón «Datos de la obra»
-- [ ] Botón «Confirmar datos del plano» (solo con plano)
-- [ ] Botón «Dudas de la obra: N» (solo si hay)
-- [ ] Botones «Subir visita» y «Conectar con Dropbox» / «Dropbox conectado» (solo Supervisión)
-- [ ] Cola de visitas: contador «N visitas · M con dudas», 6 columnas, orden por proyecto/número/carpeta
-- [ ] Fila resaltada con dudas o bloqueantes; clic abre la Mesa
-- [ ] N.º, Fecha y Clase con «pendiente de verificar»; fecha en DD/MM/AAAA; clase Mixta con detalle
-- [ ] Insignias de estado con los 6 colores
-- [ ] Líneas «con N duda(s) bloqueante(s)», «N duda(s) abierta(s) · clic para responder» y «Pendiente: …»
-- [ ] Texto de cola vacía (dos variantes según haya error)
-- [ ] Kanban de OT con 6 columnas, contadores y tarjetas
+- [x] 5 tarjetas: Proyectos Activos, Órdenes Abiertas, Bloqueadas, Vencen en ≤ 7 Días, Visitas en Cola — Inicio · «En números»: Obras activas, Visitas en cola, Órdenes abiertas; «Bloqueadas» y «Vencen en ≤ 7 días» salen «pendiente de verificar · Fase D-a» (N7), nunca 0. Nombres cambiados (Obras activas en lugar de Proyectos Activos).
+- [x] Matriz de proyectos con las 7 columnas y sus valores por defecto («—», «Pendiente», «Sin iniciar») — Mis obras · fichas (no una tabla) con Tipo/Formato, Cliente, Supervisor, Estado del informe, Plano vigente, Visitas, Dudas abiertas y Próxima acción; el dato que falta sale «pendiente de verificar», no «—», «Pendiente» ni «Sin iniciar».
+- [x] Celda de plano vigente: revisión, etiqueta, fecha, certificado por, tooltip de sha256, insignia «sin plano» — Mis obras · celda «Plano vigente»: revisión, fecha, «certificado por», `title` con sha256 e insignia «sin plano vigente».
+- [x] Botón «Cambiar plano» / «Subir planos» — Planos y ficha · `data-abrir-plano-dlg` («Cambiar plano» o «Subir planos»; renombra `data-cambiar-plano`).
+- [x] Botón «Ver plano» (solo con plano) — Planos y ficha · `data-ver-plano`, solo con plano.
+- [x] Botón «Datos de la obra» — Planos y ficha · `data-abrir-datos` (renombra `data-datos-obra`).
+- [x] Botón «Confirmar datos del plano» (solo con plano) — Planos y ficha · `data-confirmar-plano`, solo con plano.
+- [x] Botón «Dudas de la obra: N» (solo si hay) — Mis obras y Planos y ficha · `data-dudas-obra`, solo si hay.
+- [x] Botones «Subir visita» y «Conectar con Dropbox» / «Dropbox conectado» (solo Supervisión) — Visitas y trabajos · `data-abrir-subir` y `data-abrir-dropbox`, «Dropbox conectado», `data-no-supervision` en las demás líneas.
+- [x] Cola de visitas: contador «N visitas · M con dudas», 6 columnas, orden por proyecto/número/carpeta — `cola.js` (Visitas y trabajos y Bandeja): «N visitas · M con dudas»; la cola es una lista de fichas con las mismas columnas, en el orden del backend.
+- [x] Fila resaltada con dudas o bloqueantes; clic abre la Mesa — `cola.js`: la ficha con dudas lleva el enlace a la Mesa (`data-abrir-dudas-visita`); no es la fila entera la que se pulsa.
+- [x] N.º, Fecha y Clase con «pendiente de verificar»; fecha en DD/MM/AAAA; clase Mixta con detalle — `cola.js`: N.º, Fecha (DD/MM/AAAA) y Clase con «pendiente de verificar»; clase Mixta con su detalle.
+- [x] Insignias de estado con los 6 colores — `cola.js` y `componentes.js`: insignias de estado con icono y texto (`.est-*`).
+- [x] Líneas «con N duda(s) bloqueante(s)», «N duda(s) abierta(s) · clic para responder» y «Pendiente: …» — `cola.js`: «con N duda(s) bloqueante(s)», «N duda(s) abierta(s)» y «Pendiente: …».
+- [x] Texto de cola vacía (dos variantes según haya error) — `cola.js`: las dos variantes del texto de cola vacía.
+- [x] Kanban de OT con 6 columnas, contadores y tarjetas — Órdenes · tablero de 6 columnas (Pendiente, Asignada, En proceso, Bloqueada, En revisión, Entregada) con contadores; por debajo de 880 px son pestañas.
 
 ### Mesa de Dudas
-- [ ] Panel lateral, se cierra con X y clic en el fondo
-- [ ] Modo visita y modo obra, con cabeceras distintas
-- [ ] Cargando, vacío (2 textos), error de conexión, conflicto 409, aviso de éxito
-- [ ] Aviso «figura como Procesada pero tiene dudas bloqueantes abiertas»
-- [ ] Tarjeta con categoría, campo/elemento o etiqueta y fotos, fechas de creación y resolución, respuesta
-- [ ] Hallazgo interno: «Marcar revisado»
-- [ ] Campo del plano confirmable: input + «Confirmar valor»
-- [ ] Duda con elemento: textarea + «Guardar respuesta» y avisos de plano / etiqueta
-- [ ] Duda de fecha: input DD/MM/AAAA + «Guardar fecha»
-- [ ] Duda de clase: select + «Guardar clase»
-- [ ] Duda de estado: radios, select de STP candidatos, aviso sin candidatos, «Guardar estado»
-- [ ] Duda de archivos: solo texto informativo
-- [ ] Duda de otro campo: texto «no se responde desde la Mesa de Dudas»
-- [ ] Error por duda y bloqueo del envío doble
-- [ ] Apertura automática de la Mesa si hay dudas nuevas tras sincronizar o subir visita
+- [ ] Panel lateral, se cierra con X y clic en el fondo — Hueco de diseño: la Mesa es una vista de la página con dirección propia (B3e), no un panel lateral; se cierra con «Cerrar» (`data-cerrar-mesa`) y con Atrás, sin clic en el fondo.
+- [x] Modo visita y modo obra, con cabeceras distintas — `mesa-dudas.js`: `data-modo`, `data-mesa-obra` y `data-mesa-cuenta`.
+- [x] Cargando, vacío (2 textos), error de conexión, conflicto 409, aviso de éxito — `mesa-dudas.js`: cargando (`Bloque`), vacío (`data-mesa-vacia`), `data-error-mesa`, `data-conflicto-mesa`, `data-aviso-mesa`.
+- [x] Aviso «figura como Procesada pero tiene dudas bloqueantes abiertas» — `data-aviso-procesada`.
+- [x] Tarjeta con categoría, campo/elemento o etiqueta y fotos, fechas de creación y resolución, respuesta — `data-duda`, categoría, campo o elemento, `data-etiqueta-visita`, fechas y respuesta.
+- [x] Hallazgo interno: «Marcar revisado» — `data-marcar-revisado`.
+- [x] Campo del plano confirmable: input + «Confirmar valor» — `data-valor-campo` y `data-confirmar-campo` (`data-campo-plano` renombra `data-campo-confirmable`).
+- [x] Duda con elemento: textarea + «Guardar respuesta» y avisos de plano / etiqueta — `data-respuesta-texto` y `data-guardar-respuesta`, con `data-aviso-plano` y `data-aviso-etiqueta`.
+- [x] Duda de fecha: input DD/MM/AAAA + «Guardar fecha» — `data-valor-fecha` y `data-guardar-fecha`.
+- [x] Duda de clase: select + «Guardar clase» — `data-valor-clase` y `data-guardar-clase`.
+- [x] Duda de estado: radios, select de STP candidatos, aviso sin candidatos, «Guardar estado» — `data-estado-corresponde`, `data-estado-no`, `data-stp`, `data-stp-unico`, `data-sin-stp`, `data-guardar-estado`.
+- [x] Duda de archivos: solo texto informativo — `data-archivos`.
+- [x] Duda de otro campo: texto «no se responde desde la Mesa de Dudas» — `data-otro`.
+- [x] Error por duda y bloqueo del envío doble — `data-error-duda`; el envío se bloquea mientras se envía.
+- [ ] Apertura automática de la Mesa si hay dudas nuevas tras sincronizar o subir visita — Hueco: la Mesa no se abre sola tras sincronizar o subir una visita; el resultado trae el enlace «Abrir la Mesa de Dudas» (`data-abrir-mesa-sync`, `data-abrir-dudas-visita`). Lo decide Steven.
 
 ### Modal Nueva obra / Cambiar plano
-- [ ] 11 campos de la obra y deshabilitado tras crearla
-- [ ] 2 archivos PDF, revisión, fecha del plano y casilla de certificación
-- [ ] 3 validaciones locales con su texto
-- [ ] Crear obra y subir planos en 2 pasos; reintento solo de la subida si falla
-- [ ] Aviso final con revisión, elementos marcados y aviso de páginas
+- [x] 11 campos de la obra y deshabilitado tras crearla — `formulario-planos.js` (modo nueva): los 11 campos, fijos tras crear la obra. Renombra `data-modal-obra`, `data-enviar-obra` y `data-error-obra`.
+- [x] 2 archivos PDF, revisión, fecha del plano y casilla de certificación — `formulario-planos.js`: PDF vectorial y sellado, revisión, fecha del plano y casilla `data-certifico`.
+- [x] 3 validaciones locales con su texto — `formulario-planos.js`: validaciones locales antes de enviar.
+- [x] Crear obra y subir planos en 2 pasos; reintento solo de la subida si falla — `formulario-planos.js`: POST de la obra y luego POST de los planos; si la subida falla, «Reintentar la subida de planos» repite solo la subida.
+- [x] Aviso final con revisión, elementos marcados y aviso de páginas — Mis obras · aviso con revisión, elementos marcados y aviso de páginas.
 
 ### Modal Subir visita / Conectar con Dropbox
-- [ ] Modo subir: PDF, fotos, número, fecha, elementos, nivel, clase y nota de «Mixta»
-- [ ] Modo dropbox: carpeta, con valor inicial desde `carpeta_dropbox`
-- [ ] Validaciones locales con su texto
-- [ ] Etiquetas del botón en reposo y enviando, en los dos modos
-- [ ] Resultado en el recuadro de resultado y apertura de la Mesa si hay dudas
+- [x] Modo subir: PDF, fotos, número, fecha, elementos, nivel, clase y nota de «Mixta» — `formulario-visita.js` (modo subir): `data-visita-pdf`, `data-visita-fotos`, número, fecha, elementos, nivel, clase y nota de «Mixta».
+- [x] Modo dropbox: carpeta, con valor inicial desde `carpeta_dropbox` — `formulario-visita.js` (modo dropbox): `data-visita-carpeta` con valor inicial de `carpeta_dropbox`.
+- [x] Validaciones locales con su texto — `formulario-visita.js`: validaciones locales y `data-error-visita`.
+- [x] Etiquetas del botón en reposo y enviando, en los dos modos — `formulario-visita.js`: «Subir visita» y «Subiendo y leyendo la visita…», «Conectar y sincronizar» y «Sincronizando y leyendo las visitas…».
+- [ ] Resultado en el recuadro de resultado y apertura de la Mesa si hay dudas — Hueco: el resultado se muestra en el recuadro de resultado, pero la Mesa no se abre sola (ver Mesa de Dudas, último punto).
 
 ### Visor
-- [ ] Selector de hoja y zoom `−`, `+`, «Ajustar» (límites 0.1-8)
-- [ ] Imagen de la hoja y cajas verde / amarilla / azul con etiqueta
-- [ ] Dibujo por arrastre, descarte de arrastres menores de 5 pt
-- [ ] Selector de elemento, avisos sin elementos y `revisar_motivo`
-- [ ] «Proponer recuadros»
-- [ ] Por tipo: radio, estado, detalle, «Usar propuesta», «Confirmar y guardar», «Vista previa» e imagen de la vista previa
-- [ ] Salto automático a la página del recuadro
-- [ ] Error y mensaje del visor, «Cargando la hoja…»
+- [x] Selector de hoja y zoom `−`, `+`, «Ajustar» (límites 0.1-8) — `visor-revision.js`: `data-visor-hoja`, `data-zoom-menos`, `data-zoom`, `data-zoom-mas`, «Ajustar». El zoom se limita al tamaño de la hoja (mínimo ajustado, máximo 4× o 2× el ajuste), no a 0.1–8; teclas + − 0 y pellizco añadidos.
+- [x] Imagen de la hoja y cajas verde / amarilla / azul con etiqueta — `data-hoja-img` y `data-caja` con etiqueta (verde, amarilla, azul).
+- [x] Dibujo por arrastre, descarte de arrastres menores de 5 pt — Dibujo por arrastre en `editor-plano.js`; se descartan arrastres menores de 5 pt.
+- [x] Selector de elemento, avisos sin elementos y `revisar_motivo` — `data-visor-elemento`, aviso sin elementos y `revisar_motivo`.
+- [x] «Proponer recuadros» — `data-proponer`.
+- [x] Por tipo: radio, estado, detalle, «Usar propuesta», «Confirmar y guardar», «Vista previa» e imagen de la vista previa — `data-recuadro`, `data-detalle-recuadro`, `data-usar`, `data-guardar-recuadro`, `data-previa`, `data-previa-img`.
+- [x] Salto automático a la página del recuadro — `visor-revision.js` y `editor-plano.js`: salto a la página del recuadro.
+- [x] Error y mensaje del visor, «Cargando la hoja…» — `data-visor-error`, `data-visor-mensaje` y «Cargando la hoja…».
 
 ### Datos de la obra
-- [ ] 4 grupos con título, ayuda, ejemplo, textarea y «Guardar»
-- [ ] Casilla «Ya escribí todos los de esta lista» (3 grupos) y texto de `techo`
-- [ ] Carga previa de los datos guardados
-- [ ] Mensaje verde / rojo por grupo
+- [x] 4 grupos con título, ayuda, ejemplo, textarea y «Guardar» — `datos-obra.js`: 4 grupos con título, ayuda, ejemplo, textarea (`data-datos`) y «Guardar».
+- [x] Casilla «Ya escribí todos los de esta lista» (3 grupos) y texto de `techo` — `datos-obra.js`: casilla «Ya escribí todos los de esta lista» y el grupo `techo`.
+- [x] Carga previa de los datos guardados — `datos-obra.js`: carga previa (`data-datos-cargando`).
+- [x] Mensaje verde / rojo por grupo — `data-mensaje` por grupo, verde o rojo.
 
 ### Confirmar datos del plano
-- [ ] «Extraer del plano vigente» con mensaje de resultado
-- [ ] Botón «Mesa de Dudas de la obra»
-- [ ] Lista de tablas con nombre, resultado, página/hoja/nivel, «Falla», «No vigente»
-- [ ] Detalle: cabecera, comprobaciones, certificadas
-- [ ] Certificación de notas de modificación (casilla + botón + mensaje)
-- [ ] Recorte del plano con celda resaltada al pasar el ratón por un valor; texto sin recorte
-- [ ] Tabla de valores propuestos con estado confirmado/pendiente y diferencia con la tabla
-- [ ] Confirmación por lote (casilla, identidad pendiente, botón, mensaje de lote)
-- [ ] Tabla roja: texto y botón «Ir a la Mesa de Dudas»; texto «No se puede confirmar»
-- [ ] Estados cargando / vacío / error de cada columna
+- [x] «Extraer del plano vigente» con mensaje de resultado — `confirmar-plano.js`: `data-extraer`, `data-confirmar-mensaje`, `data-confirmar-error`.
+- [x] Botón «Mesa de Dudas de la obra» — `data-mesa-obra` («Mesa de Dudas de la obra»).
+- [x] Lista de tablas con nombre, resultado, página/hoja/nivel, «Falla», «No vigente» — `data-tabla`, resultado, página/hoja/nivel, «Falla», «No vigente».
+- [x] Detalle: cabecera, comprobaciones, certificadas — `data-comprobaciones` y `data-certificada`.
+- [x] Certificación de notas de modificación (casilla + botón + mensaje) — `data-certifico`, `data-certificar-notas` y `data-certificar`.
+- [x] Recorte del plano con celda resaltada al pasar el ratón por un valor; texto sin recorte — `data-recorte`, `data-recorte-img`, `data-resaltado`; texto sin recorte.
+- [x] Tabla de valores propuestos con estado confirmado/pendiente y diferencia con la tabla — `data-campos` con estado y diferencia con la tabla.
+- [x] Confirmación por lote (casilla, identidad pendiente, botón, mensaje de lote) — `data-revisado`, `data-identidad`, `data-confirmar-tabla`, mensaje de lote.
+- [x] Tabla roja: texto y botón «Ir a la Mesa de Dudas»; texto «No se puede confirmar» — `data-tabla-roja`, `data-ir-mesa`, `data-no-confirmable`.
+- [x] Estados cargando / vacío / error de cada columna — `Bloque` en cada columna: cargando, vacío y error.
 
 ### Generales
-- [ ] Las 26 filas (25 rutas con `fetch` y la imagen de la hoja) de la sección 5 con el mismo método y cuerpo
-- [ ] Los 86 `data-*` de la sección 6 (93 apariciones) presentes con el mismo valor
-- [ ] Formato `DD/MM/AAAA` y `DD/MM/AAAA HH:MM`; «pendiente de verificar»
-- [ ] Textos de error y éxito literales de las secciones 3 y 4
-- [ ] Mensajes de red: `El backend no responde en http://localhost:8000…`
-- [ ] Dependencias externas de la sección 8 (o su sustituto, anotado)
-- [ ] Sin pérdida de las capas de apertura (Mesa sobre Confirmar; modales sobre Mesa)
+- [x] Las 26 filas (25 rutas con `fetch` y la imagen de la hoja) de la sección 5 con el mismo método y cuerpo — Las 26 rutas están en uso (comprobado por búsqueda en el código; la imagen de la hoja por `fetch` con respuesta `blob`). El cuerpo de cada una lo revisó cada tarea B3 en su informe.
+- [ ] Los 86 `data-*` de la sección 6 (93 apariciones) presentes con el mismo valor — Hueco: 72 de los 84 ganchos de la sección 6 existen con el mismo nombre; 12 se renombraron: `data-nueva-obra`, `data-aviso-obra`, `data-abrir-mesa-visita`, `data-plano-de`, `data-cambiar-plano`, `data-datos-obra`, `data-subir-visita`, `data-conectar-dropbox`, `data-campo-confirmable`, `data-modal-obra`, `data-error-obra`, `data-enviar-obra` (equivalentes anotados arriba).
+- [x] Formato `DD/MM/AAAA` y `DD/MM/AAAA HH:MM`; «pendiente de verificar» — `componentes.js`: `DD/MM/AAAA` y `DD/MM/AAAA HH:MM`; «pendiente de verificar».
+- [ ] Textos de error y éxito literales de las secciones 3 y 4 — Hueco: no se comparó cada texto uno por uno; se comprobó una muestra de literales (existen) y los de red cambiaron de redacción.
+- [ ] Mensajes de red: `El backend no responde en http://localhost:8000…` — Hueco: el texto «El backend no responde en http://localhost:8000…» se sustituyó por «No se pudo conectar con el servidor local.» (`api.js`), sin el puerto.
+- [x] Dependencias externas de la sección 8 (o su sustituto, anotado) — Sección 8 sustituida: Vue 3.5.13 local en `vendor/`, CSS propio, iconos propios (`iconos.js`), sin fuentes ni librerías externas; 0 peticiones fuera de `127.0.0.1` en la matriz final.
+- [ ] Sin pérdida de las capas de apertura (Mesa sobre Confirmar; modales sobre Mesa) — Hueco de diseño: ya no hay capas apiladas; la Mesa tiene dirección propia y Confirmar es un diálogo. Se pasa de Confirmar a la Mesa por enlace y se vuelve con Atrás.
 
 ## 10. Necesidades nuevas (plan v3, aprobado por Steven el 19/11/2026)
 
@@ -589,3 +589,33 @@ Las secciones 1–9 son la **paridad**: lo que el tablero ya hace y no puede per
 | N25 | Escritorio (1280, 1920) y móvil (375) | Sin desplazamiento horizontal; objetivos táctiles ≥ 44 px en móvil | — |
 | N26 | Temas, teclado, contraste y sin conexión | Temas que se ofrezcan con contraste ≥ 4.5:1 en texto; foco visible; 0 peticiones a internet | — |
 | N27 | Trazabilidad | Todo dato muestra su origen (plano, visita, cálculo) o queda «pendiente de verificar» | — |
+
+### 10.8 Revisión de B5b (24/11/2026)
+
+Estado de cada necesidad en el tablero nuevo. «Fase D-x» = depende del backend de esa fase y la interfaz lo dice, sin simular. «Hueco» = no se hizo y no necesita backend.
+
+| # | Estado | Dónde / por qué |
+|---|---|---|
+| N1 | Hecho | Riel (escritorio) y barra inferior (móvil) con las 5 entradas; la activa lleva `aria-current` y fondo propio, no solo color |
+| N2 | Hecho | «Crear informe» en el riel y en la cabecera móvil de todas las pantallas; alcanzable con Tab |
+| N3 | Hecho | 6 pestañas de la obra; el nombre de la obra queda en el encabezado |
+| N4 | Hecho | La obra y la pestaña van en la dirección (`#/obra/<id>/<pestaña>`); Atrás vuelve a la misma |
+| N5 | Hecho | Cola, Mesa de Dudas, Confirmar datos del plano y Órdenes con su paridad (sección 9) |
+| N6 | Parcial · Fase D-a | Dudas, cola y órdenes enlazan al registro; vencimientos y entregas salen «pendiente de verificar · Fase D-a» |
+| N7 | Hecho | «Bloqueadas» y «Vencen en ≤ 7 días» no se muestran como 0 |
+| N8–N10 | Fase D-b (tras D15) | Resumen · `data-indicadores`: fórmula y razón, «pendiente de verificar», nunca 0 % ni barra vacía |
+| N11 | Hecho | Ningún indicador se calcula con archivos, versiones o visitas |
+| N12 | Parcial · Fase D-a | Pendientes y acciones rápidas reales; la actividad reciente lleva «Fase D-a» |
+| N13 | Parcial · Fase D-a / D-c | La Bandeja junta la cola y las dudas de todas las obras, cada una abre su registro; la ruta común y los trabajos independientes son D-a y D-c |
+| N14 | Hecho | La Bandeja lee los mismos registros que la Mesa y la Cola |
+| N15 | Hueco · Fase D-a | La Bandeja no tiene filtros por obra, tipo y estado; dependen de la ruta común |
+| N16 | Hecho | Confirmar datos del plano: tablas a la izquierda, recorte del plano y valores con fuente (fila, hoja) y acciones |
+| N17 | Hecho | Confirmar pasa a pasos lista → tabla en móvil con la selección conservada (B3c) |
+| N18 | Parcial | La Mesa muestra la etiqueta literal de la visita y la página de las fotos; no muestra la foto original dentro de la Mesa |
+| N19 | Hecho | Valor sin fuente o distinto de la tabla: «pendiente de verificar» con salida a la Mesa |
+| N20 | Hueco (solo texto) | «Crear informe» no lista los servicios (STP, levantamiento de supervisión, estructural, visual, dimensional, esclerometría) con «disponible hoy» o «desarrollo futuro»; hoy solo elige obra y dice que el informe independiente es Fase D-c |
+| N21–N23 | Fase D-c | «Informe independiente, sin obra» lleva «Fase D-c»; no se simula |
+| N24 | Hecho | `Bloque`: vacío, cargando, error y «pendiente de verificar» distintos entre sí |
+| N25 | Hecho | Matriz de B5b a 375, 768, 1024, 1280 y 1920: sin desplazamiento horizontal; objetivos de 44 px en móvil |
+| N26 | Hecho | Temas claro y oscuro con contraste medido (DESIGN.md · Accesibilidad), foco visible, 0 peticiones fuera del servidor |
+| N27 | Parcial | Valores de plano con fuente (fila, hoja); el origen de las cifras de Inicio es el dashboard y no se rotula una por una |
