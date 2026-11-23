@@ -404,3 +404,75 @@ main { padding: var(--esp-5) clamp(16px, 3vw, 40px) 64px; min-width: 0; }
    ====================================================================================================== */
 .avance-trabajo { display: grid; gap: var(--esp-5); min-width: 0; }
 .tr-abrir { font-size: inherit; }
+
+/* pestaña «Informes» de la obra: cada informe es una fila que se acomoda a SU caja (container query).
+   Con dudas y sin archivo se distinguen por el borde completo, el icono y el texto, no solo por el color. */
+.pestana-informes { display: grid; gap: var(--esp-5); }
+.inf { display: grid; border-top: 1px solid var(--borde); }
+.inf-enc { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.inf-f { display: grid; grid-template-columns: minmax(0, 1fr); gap: 6px var(--esp-3); padding: var(--esp-3); border-bottom: 1px solid var(--borde); min-width: 0; }
+.inf-f:hover { background: var(--superficie-2); }
+.inf-f.con-dudas { background: var(--dudas-suave); box-shadow: inset 0 0 0 1.5px var(--dudas-borde); }
+.inf-f.sin-archivo { background: var(--error-fondo); box-shadow: inset 0 0 0 1.5px var(--alerta); }
+.inf-c { min-width: 0; overflow-wrap: anywhere; display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 8px; }
+.inf-c > * { min-width: 0; }
+.inf-formato { font-size: 0.9375rem; }
+.inf-carpeta { font-family: var(--f-dato); font-size: 0.8125rem; }
+.inf-archivo-c { display: grid; gap: 2px; min-width: 0; flex: 1 1 12rem; }
+.inf-nombre { font-family: var(--f-dato); font-size: 0.8125rem; overflow-wrap: anywhere; }
+.inf-meta { font-size: 0.8125rem; color: var(--tinta-2); }
+.inf-estado { display: grid; gap: 6px; justify-items: start; align-content: start; }
+.inf-falta { display: flex; gap: 6px; align-items: flex-start; font-size: 0.8125rem; font-weight: 700; line-height: 1.35; color: var(--alerta-tinta); border: 1.5px solid var(--alerta); background: var(--superficie); padding: 4px 8px; }
+.inf-falta .ico { margin-top: 0.1em; }
+.inf-abrir { min-height: 40px; }
+.inf .pendiente { white-space: normal; font-size: 0.75rem; line-height: 1.3; padding: 0 4px; }
+@container caja (min-width: 760px) {
+  .inf-enc, .inf-f { grid-template-columns: 7.5rem minmax(0, 1.3fr) 9.5rem minmax(0, 2fr) minmax(10rem, 0.9fr); align-items: start; }
+  .inf-f .cola-r { display: none; }
+  .inf-enc { position: static; width: auto; height: auto; overflow: visible; clip: auto; white-space: normal; display: grid; gap: 4px var(--esp-3); padding: 6px var(--esp-3); border-bottom: 1.5px solid var(--tinta); font-size: 0.6875rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: var(--tinta-2); }
+}
+
+/* diálogo «Hacer informe» */
+.inf-visitas { gap: var(--esp-2); }
+.inf-op-lista { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; max-height: 22rem; overflow: auto; }
+.vis-op { display: grid; grid-template-columns: 20px minmax(0, 1fr); gap: 10px; align-items: start; padding: 8px 12px; border: 1.5px solid var(--borde-fuerte); border-radius: var(--radio); cursor: pointer; min-width: 0; }
+.vis-op:hover:not(.no-puede) { background: var(--superficie-2); }
+.vis-op.es-sel { border-color: var(--sel-borde); background: var(--sel-fondo); }
+.vis-op.no-puede { cursor: not-allowed; background: var(--deshab-fondo); color: var(--deshab-tinta); border-style: dashed; }
+.vis-op input { width: 20px; height: 20px; margin: 2px 0 0; accent-color: var(--acento); }
+.vis-op-c { display: grid; gap: 4px; min-width: 0; font-weight: 400; color: inherit; }
+.vis-op-t { display: flex; flex-wrap: wrap; gap: 2px 10px; align-items: baseline; overflow-wrap: anywhere; color: var(--tinta); }
+.vis-op.no-puede .vis-op-t { color: var(--deshab-tinta); }
+.vis-op-carpeta { font-family: var(--f-dato); font-size: 0.8125rem; font-weight: 600; }
+.vis-op-m { display: flex; flex-wrap: wrap; gap: 2px 10px; align-items: baseline; font-size: 0.8125rem; font-weight: 400; overflow-wrap: anywhere; }
+.vis-op-f { color: var(--tinta-2); }
+.vis-op-no { display: flex; gap: 6px; align-items: flex-start; font-size: 0.8125rem; font-weight: 600; color: var(--tinta-2); }
+.vis-op-no .ico { margin-top: 0.15em; }
+.vis-op .pendiente, .eo-m .pendiente { white-space: normal; font-size: 0.75rem; }
+.inf-formatos { display: grid; gap: var(--esp-2); }
+.inf-sale { display: grid; gap: 4px; padding: var(--esp-2) var(--esp-3); border: 1.5px solid var(--ok-tinta); background: var(--ok-fondo); overflow-wrap: anywhere; }
+.inf-sale .ayuda { display: flex; gap: 6px; align-items: flex-start; color: var(--tinta); }
+.inf-sale .ayuda .ico { margin-top: 0.15em; }
+.inf-sale-t { display: flex; gap: 6px; align-items: flex-start; font-weight: 600; }
+.inf-sale-t .ico { margin-top: 0.15em; }
+.inf-sale-no { color: var(--alerta-tinta); }
+.inf-catalogo { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+.inf-cat { display: grid; grid-template-columns: minmax(7.5rem, 10rem) minmax(0, 1fr) auto; gap: 2px var(--esp-3); align-items: baseline; padding: 4px 10px; border: 1.5px dashed var(--fased-borde); font-size: 0.8125rem; overflow-wrap: anywhere; }
+.inf-cat.es-hoy { border: 1.5px solid var(--ok-tinta); }
+.inf-cat-n { font-weight: 700; }
+.inf-cat-t { color: var(--tinta-2); }
+.inf-cat-e { display: inline-flex; gap: 4px; align-items: center; font-weight: 600; white-space: nowrap; }
+.inf-cat.es-hoy .inf-cat-e { color: var(--ok-tinta); }
+.inf-cambiar { display: flex; flex-wrap: wrap; gap: 4px 8px; align-items: center; }
+@media (max-width: 640px) { .inf-cat { grid-template-columns: minmax(0, 1fr); } .inf-cat-e { white-space: normal; } }
+
+/* Informes / Crear informe: elegir la obra */
+.eo-lista { list-style: none; margin: 0; padding: 0; }
+.eo-f { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: var(--esp-2) var(--esp-4); padding: var(--esp-3) var(--esp-2); border-top: 1px solid var(--borde); min-width: 0; }
+.eo-f:first-child { border-top: 0; }
+.eo-n { display: grid; gap: 2px; min-width: 0; flex: 1 1 16rem; }
+.eo-nombre { font-size: 1.0625rem; overflow-wrap: anywhere; }
+.eo-m { font-size: 0.8125rem; color: var(--tinta-2); overflow-wrap: anywhere; }
+.eo-a { display: flex; flex-wrap: wrap; align-items: center; gap: var(--esp-2) var(--esp-4); }
+.eo-no { display: inline-flex; gap: 6px; align-items: center; font-size: 0.8125rem; color: var(--tinta-2); border: 1.5px dashed var(--fased-borde); padding: 4px 8px; }
+@media (max-width: 899px) { .eo-a .btn { flex: 1 1 100%; } .eo-f .enlace { min-height: 44px; } }
