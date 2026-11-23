@@ -13,6 +13,7 @@ from pydantic import BaseModel
 
 import informes_obra
 import procesador_cola
+import regenerar_visita
 from database import get_connection, inicializar_bd, sembrar_datos_iniciales_catdic
 from mesa_dudas import router as router_mesa_dudas
 from obras import planos_vigentes, router as router_obras
@@ -167,6 +168,20 @@ def procesar_cola(proyecto_id: Optional[str] = None):
 def procesar_visita(visita_id: str):
     """Lanza un trabajo para una visita 'Sin procesar', 'En cola' o 'Con dudas'."""
     return {"trabajo": _lanzar([visita_id], "visita"), "mensaje": "Trabajo lanzado."}
+
+
+# --- Etapa 5 · B3g-2: regenerar el informe de una visita ya procesada (solo STP-MIVED, versión nueva) ---
+@app.post("/api/visitas/{visita_id}/regenerar", status_code=202)
+def regenerar_informe_visita(visita_id: str):
+    """Lanza un trabajo que vuelve a generar el STP-MIVED de una visita 'Procesada' como versión nueva (v2, v3…).
+    No relee la visita, no toca los FI ni cambia el estado de la visita."""
+    try:
+        trabajo = regenerar_visita.lanzar_regeneracion(visita_id)
+    except (procesador_cola.TrabajoEnCurso, procesador_cola.VisitaNoProcesable) as e:
+        raise HTTPException(status_code=409, detail=str(e))
+    except LookupError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    return {"trabajo": trabajo, "mensaje": "Regeneración lanzada."}
 
 
 @app.get("/api/trabajos/{trabajo_id}")
