@@ -59,3 +59,36 @@ Steven vio las dos pantallas en una copia de la rama (puerto 8767, BD de prueba 
 
 ### Pruebas ejecutadas
 - **Suite completa sobre una copia exacta de `e5a1c62`:** 955 pasan, 3 se omiten y 2 fallan. Son las 2 conocidas de Dropbox, por el contenido actual de Dropbox y no por este diff.
+
+## Evaluación 3 · 23/11/2026 · Planificador (auditoría) · Fase B · B3e Mesa de Dudas y visor de revisión (rama `claude/etapa5-fase-b-0020e1`, `4405ca2`)
+**Veredicto: BLOQUEADO** (1 bloqueante pequeño de uso; el resto está bien)
+
+### Bloqueantes
+- **La Mesa se abre fuera de la pantalla** (`FRONTEND/js/pestana-visitas.js` / `mesa-dudas.js`; el enlace sale de `cola.js:186`).
+  - **Qué pasa:** desde la cola de «Visitas y trabajos», con la página desplazada hacia abajo, al pulsar «Abrir la Mesa de Dudas» cambia el hash y la Mesa se monta arriba, pero queda fuera de la pantalla y el foco se queda en `BODY`. Para Steven, el enlace parece no hacer nada.
+  - **Evidencia** (copia de `4405ca2`, 800 px): clic en el enlace de la visita 4 → `scrollY` pasa de 1959 a 1389, el encabezado «Mesa de Dudas» queda en `top = -787` (no visible) y `document.activeElement` es `BODY`. Lo mismo ocurre al recargar con `?visita=`.
+  - **Corrección esperada:**
+    - Cuando la ruta trae `?visita=` (o `?dudas=obra`), y también cuando cambia la duda con `&duda=`, la Mesa se desplaza a la vista (`scrollIntoView`) y el foco pasa a su encabezado (`tabindex="-1"`, sin marco de foco visible).
+    - Si hay `&duda=`, el desplazamiento va al detalle de esa duda.
+    - Hace falta una prueba de Playwright que lo compruebe desde la cola desplazada, en 375 y 1280 px.
+
+### Observaciones (no bloquean)
+- **Backend dentro de la excepción.** `leer_refs_duda` y `GET /api/dudas/{id}/refs` son de solo lectura y toman el evento `duda` más reciente (`creado DESC, n DESC`). Responden 404 si la duda no existe y `refs: null` si no hay evento. `/api/dudas` no cambia.
+- **Visor sin datos de plano en la copia.** La duda #52 muestra «pendiente de verificar» en Ubicación y Detalle, con el motivo («La obra no tiene plano vigente…»), y «Abrir plano» deshabilitado con el mismo motivo. Es correcto según la Regla de Oro: no se adivina nada.
+- **Diseño en pantalla ancha.** A 1440 px la lista queda a la izquierda y Ubicación/Detalle/Respuesta a la derecha, como en la referencia de PlanRadar que mandó Steven. A 800 px se apila.
+- **Abiertos del Líder** (siguen sin bloquear):
+  - `refs.plano.recuadro` no se dibuja todavía, porque su sistema de coordenadas es desconocido;
+  - el zoom con pellizco está sin probar;
+  - los 409/422 aparecen en consola como «Failed to load resource». Son errores del navegador por códigos de la API, no de la página.
+- **Falta un caso real.** No pude ver el visor con un plano real en la copia: no tiene plano vigente. Hay que verificarlo con una obra con plano cuando Steven lo pruebe.
+
+### Criterios de aceptación
+- [x] El backend se queda en `mesa_dudas.py` y `tests/test_dudas_refs.py`, sin cambio de esquema y sin tocar `procesador_cola.py`.
+- [x] Las dudas no se atan por `id_elemento`: solo por `refs.plano.uid_diseno` o `campo_confirmable.uid` (revisión del Líder; en la copia, las refs llegan nulas y no se ata nada).
+- [x] El visor muestra Ubicación, Detalle y «Abrir plano», y cae a «pendiente de verificar» con su motivo.
+- [ ] **Abrir la Mesa desde la cola la pone a la vista.** Bloqueante de arriba.
+- [?] Matriz de Playwright y peor caso de 376 dudas: la reporta el Ejecutor, no la repetí.
+
+### Pruebas ejecutadas
+- **Suite completa sobre una copia exacta de `4405ca2`:** 964 pasan, 3 se omiten y 2 fallan (las 2 conocidas de Dropbox).
+- **En el navegador** (BD copiada, puerto 8767): Mesa de la visita 3, detalle de la duda #52, 1440 px y 800 px, y la medición del desplazamiento y el foco descrita arriba.
