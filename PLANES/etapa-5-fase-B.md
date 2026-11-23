@@ -26,7 +26,7 @@ Plan madre: `PLANES/etapa-5.md` (decisiones D5–D8, tareas B0–B5). Este archi
 | B3a | Inicio y Mis obras, con Nueva obra (encargo `PLANES/etapa-5-reportes/B3a-brief.md`) | Ejecutor Sonnet (subagente, en este worktree) + revisión del Líder | esta rama (`ddca35f`, `30bea9a`, `6f6d73a`, `69ed72f`, Líder: corrección móvil) | **aprobada (Director, 22/11; Steven: «Sí, sigue así»)** |
 | B3d | **(2.º; encargo `PLANES/etapa-5-reportes/B3d-brief.md`; informe `B3d.md`)** Visitas y trabajos: **Procesar cola** con el seguimiento del trabajo (polling cada 2 s), **Sincronizar desde Dropbox** con su resultado (Z8), cola de visitas de todas las obras (Z15) y de cada obra, subir visita / conectar Dropbox (M3), avance del procesador (cubre T10b) | Ejecutor Sonnet (subagente, en este worktree) + revisión del Líder | esta rama (`30a1ef0`, `534e9a8`, `f7115a3`, `d134d01`, `e3c64c4`, `452a33b`, `28f44b7`; Líder `65f0916`) | **aprobada (Director, 22/11; Steven: «Sí, sigue así»)** |
 | B3g | **(3.º; Director a pedido de Steven, 22/11; encargo `PLANES/etapa-5-reportes/B3g-brief.md`)** Informes dentro de la obra: lista de informes generados con «Abrir PDF», «Hacer informe» (elegir visita, procesar y avance en vivo de B3d) y «Crear informe» lleva a elegir obra. **Excepción de backend:** `BACKEND/informes_obra.py`, `GET /api/proyectos/{id}/informes`, `GET /api/informes/archivo` (solo rutas registradas en `pdf_generado`) y `tests/test_informes_obra.py` | Ejecutor Sonnet (subagente, en este worktree) + revisión del Líder | esta rama (`a87738d`, `5d03273`, `30ad788`, `051b816`; informe `B3g.md`) | **hecha, esperando auditoría y que Steven la vea** |
-| B3e | **(4.º)** **Mesa de Dudas** completa (M1: por visita y por obra, responder, conflictos) y Bandeja de trabajo con lo que hay hoy (la ruta común es Fase D-a). Construye el **visor de revisión compartido** (Ubicación · Detalle · Abrir plano, ver abajo). **Excepción de backend:** `GET /api/dudas/{id}/refs` | Ejecutor | — | pendiente |
+| B3e | **(4.º; encargo `PLANES/etapa-5-reportes/B3e-brief.md`)** **Mesa de Dudas** completa (M1: por visita y por obra, responder, conflictos) y Bandeja de trabajo con lo que hay hoy (la ruta común es Fase D-a). Construye el **visor de revisión compartido** (Ubicación · Detalle · Abrir plano, ver abajo). **Excepción de backend:** `GET /api/dudas/{id}/refs` | Ejecutor Sonnet (subagente, en este worktree) + revisión del Líder | esta rama | **en curso** |
 | B3b | **(5.º)** Obra: Resumen, Avance, Cierre, Planos y ficha (cambiar plano con el formulario de B3a, datos de la obra M5), visor y recuadros (M4) | Ejecutor | — | pendiente |
 | B3c | **(6.º)** Revisión de planos: confirmar datos del plano (M6) | Ejecutor | — | pendiente |
 | B3f | **(7.º)** Órdenes de trabajo (kanban Z16) | Ejecutor | — | pendiente |
@@ -51,7 +51,7 @@ Las pestañas **Avance** y **Cierre** de la obra entran en **B3b** con Resumen (
   - devuelve el evento `duda` más reciente;
   - si la duda no existe, 404; si no tiene evento, `refs: null`;
   - no cambia `/api/dudas`.
-- El borrador de esta parte del encargo de B3e está en el scratch del Líder (`B3e-visor-nota.md`).
+- Está detallado en el encargo de B3e.
 
 Hueco reservado en la navegación: "Lectura asistida" (Fase C, no es de esta fase).
 
@@ -73,6 +73,9 @@ Hueco reservado en la navegación: "Lectura asistida" (Fase C, no es de esta fas
 - **19/11/2026 · Estilo visual:** «Plano sellado» (respuesta textual de Steven, relayada por el Director). Se construye con el estilo B de `FRONTEND/maquetas/v2/` (`plano.html`, `estilo-plano.css`). Hormigón y Tablero quedan como antecedente, sin borrarlos. Telemetría del sorteo de `impeccable` enviada (`--kind pick`: «choice recorded»).
 
 ## Bitácora (lo más nuevo arriba)
+- 22/11/2026 · Director: **arranca B3e** mientras audita B3g sobre una copia de `e5a1c62`.
+  - Líder: encargo `B3e-brief.md`. La Mesa es una vista con dirección propia (modo visita en `#/obra/<id>/visitas?visita=`, modo obra en `#/obra/<id>/resumen?dudas=obra`), sin panel superpuesto ni apertura automática: es la variante D6 de M1.
+  - El visor de revisión se construye como componente compartido.
 - 22/11/2026 · Líder: **B3g hecha, esperando auditoría y que Steven la vea** (informe `PLANES/etapa-5-reportes/B3g.md`).
   - **Revisión:**
     - el backend se queda dentro de la excepción: `informes_obra.py` y `test_informes_obra.py`, nuevos, y en `main.py` solo las 2 rutas y sus imports;
