@@ -38,6 +38,7 @@
         var s = this.seleccionada;
         return s && this.dudasObra ? this.dudasObra.filter(function (d) { return d.visita_id === s; }) : [];
       },
+      ordenesTodas: function () { return C.ordenes.lista(this.datos); },
       estadoCola: function () { return 'listo'; },
       conectada: function () { return !!this.obra.carpeta_dropbox; },
       vacioTexto: function () {
@@ -90,6 +91,8 @@
         <ColaVisitas titulo="Cola de visitas de esta obra" estado="listo" :visitas="visitas" :proyectos="[obra]" :dudas="dudasObra"
           :seleccionada="seleccionada" :vacio-texto="vacioTexto">
         </ColaVisitas>
+
+        <OrdenesObra :obra="obra" :ordenes="ordenesTodas"/>
 
         <FormularioVisita v-if="dialogo" :modo="dialogo" :proyecto="obra" @hecho="hecho" @cancelar="cerrarDialogo"/>
       </div>`

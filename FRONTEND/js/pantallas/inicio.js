@@ -81,7 +81,7 @@
             <dl class="cajetin cifras">
               <div><dt>Obras activas</dt><dd><a class="cifra-n num" href="#/obras">{{ stats.proyectos_activos }}</a></dd></div>
               <div><dt>Visitas en cola</dt><dd><a class="cifra-n num" href="#/bandeja">{{ stats.visitas_en_cola }}</a></dd></div>
-              <div><dt>Órdenes abiertas</dt><dd><span class="cifra-n num">{{ stats.ordenes_abiertas }}</span> <span class="ayuda">Se verán en la pantalla de órdenes (B3f).</span></dd></div>
+              <div><dt>Órdenes abiertas</dt><dd><a class="cifra-n num" href="#/ordenes">{{ stats.ordenes_abiertas }}</a></dd></div>
               <div><dt>Bloqueadas</dt><dd class="cifra-p"><Pendiente/> <FaseD fase="D-a"/></dd></div>
               <div><dt>Vencen en ≤ 7 días</dt><dd class="cifra-p"><Pendiente/> <FaseD fase="D-a"/></dd></div>
             </dl>

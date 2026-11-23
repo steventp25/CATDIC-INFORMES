@@ -25,6 +25,13 @@
 
         <DudasBandeja :dudas="dudas || []" :estado="estadoDudas" :mensaje="mensajeDudas" :proyectos="proyectos" @reintentar="leerDudas"/>
 
+        <section class="caja" aria-labelledby="t-ord" data-bandeja-ordenes>
+          <div class="caja-cabeza"><h2 id="t-ord">Órdenes de trabajo</h2></div>
+          <Bloque :estado="estadoTablero" :huesos="1" error-titulo="No se pudo leer el número de órdenes." :error-mensaje="mensajeTablero" @reintentar="leerTablero">
+            <a class="enlace ord-acceso" href="#/ordenes">Órdenes de trabajo: <span class="num">{{ stats.ordenes_abiertas }}</span> {{ stats.ordenes_abiertas === 1 ? 'abierta' : 'abiertas' }}<Icono nombre="flecha"/></a>
+          </Bloque>
+        </section>
+
         <section class="caja" aria-labelledby="t-pend">
           <div class="caja-cabeza"><h2 id="t-pend">Pendientes de todas las obras</h2><FaseD fase="D-a"/></div>
           <div class="vacio">
