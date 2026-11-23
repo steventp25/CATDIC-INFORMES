@@ -92,3 +92,35 @@ Steven vio las dos pantallas en una copia de la rama (puerto 8767, BD de prueba 
 ### Pruebas ejecutadas
 - **Suite completa sobre una copia exacta de `4405ca2`:** 964 pasan, 3 se omiten y 2 fallan (las 2 conocidas de Dropbox).
 - **En el navegador** (BD copiada, puerto 8767): Mesa de la visita 3, detalle de la duda #52, 1440 px y 800 px, y la medición del desplazamiento y el foco descrita arriba.
+
+## Evaluación 4 · 23/11/2026 · Planificador (auditoría) · Fase B · Reauditoría de B3e y B3g-2 Regenerar informe (rama `claude/etapa5-fase-b-0020e1`, `b0ba715`)
+**Veredicto: APROBADO** (las dos; falta que Steven las vea)
+
+### Bloqueantes
+- Ninguno. El bloqueante de la Evaluación 3 está corregido (`f67b3ff`).
+  - **Comprobación:** en una copia de `b0ba715`, desde la cola desplazada, clic en «Abrir la Mesa de Dudas» de la visita 4.
+  - **Resultado:** `scrollY` pasa de 1054 a 573, `#mesa-t` queda en `top = 29` y `activeElement` es `mesa-t`.
+
+### Observaciones (no bloquean)
+- **B3g-2 hereda de `ProcesoVisita`** sin cambiar `procesador_cola.py` ni `database.py`. Copia unas 40 líneas de `lanzar_trabajo` y `ejecutar_trabajo`. Queda pendiente el parámetro `clase_proceso` cuando se fusione el PR #35 (decisión del Director).
+- **Regenerar recorre `_elemento` de cada elemento.** Por eso puede abrir dudas nuevas, que es lo que se aceptó. No cambia el estado de la visita ni su `salida_json`.
+- **STP con dudas:** se publica con « - CON DUDAS» y la visita sigue «Procesada» (decisión del Director).
+- **Falta un caso real.** No se regeneró un PDF real en la copia de la BD de Steven, porque no tiene plano vigente. El Ejecutor sí probó v1 → v2 sobre una obra sintética, con Playwright.
+- **El visor con un plano real** sigue sin verse (observación de la Evaluación 3).
+
+### Criterios de aceptación
+- [x] **Ruta aparte.** `POST /api/visitas/{id}/regenerar` solo acepta visitas «Procesada»; da 409 si la visita está en otro estado o si ya corre otro trabajo. Usa el mismo cerrojo y la misma tabla `trabajos`.
+- [x] **Sin lector.** Solo genera el STP-MIVED (`_generar` con `formatos_solicitados = [STP]`) y nunca llama a `_generar_fi`. Publica con `_publicar`, sin sobrescribir.
+- [x] **Sin P3.** Se salta la comprobación P3 y lo audita (`REGENERAR_SIN_P3`).
+- [x] **El estado no cambia** (`_cerrar` propio), y la regeneración queda auditada (`REGENERAR_VISITA`, con `fi: "sin tocar"`).
+- [x] **Pantalla:**
+  - las 24 visitas se pueden lanzar, y las «Procesada» dicen «se puede regenerar su informe como versión nueva»;
+  - los FI dicen «No se tocan al regenerar»;
+  - la confirmación explica: versión nueva, no se borra nada, solo el STP-MIVED, los FI no se tocan y qué pasa si hay bloqueos;
+  - el diálogo se cierra con Escape.
+- [x] **Mesa de Dudas:** queda a la vista y con el foco al abrirla (bloqueante corregido).
+- [?] **Matriz Playwright** de los Ejecutores y del Líder (48 y 130 comprobaciones): la reportan ellos; no la repetí.
+
+### Pruebas ejecutadas
+- **Suite completa** sobre una copia exacta de `b0ba715`: 977 pasan, 3 se omiten y 2 fallan. Son las 2 conocidas de Dropbox.
+- **En el navegador** (BD copiada, puerto 8767): desplazamiento y foco de la Mesa medidos arriba, y el diálogo «Hacer informe» con la visita 20 «Procesada» seleccionada.
