@@ -241,8 +241,8 @@
 
             <fieldset class="ed-herr" :disabled="!elegido">
               <legend>Qué hace el ratón o el dedo sobre la hoja</legend>
-              <label class="radio"><input type="radio" value="dibujar" v-model="herramienta" data-herramienta="dibujar">Dibujar un recuadro</label>
-              <label class="radio"><input type="radio" value="mover" v-model="herramienta" data-herramienta="mover">Mover la hoja</label>
+              <label class="radio"><input type="radio" name="ed-herr" value="dibujar" v-model="herramienta" data-herramienta="dibujar">Dibujar un recuadro</label>
+              <label class="radio"><input type="radio" name="ed-herr" value="mover" v-model="herramienta" data-herramienta="mover">Mover la hoja</label>
             </fieldset>
 
             <section v-for="t in tipos" :key="t.tipo" class="ed-rec" :class="{ 'es-activo': tipo === t.tipo }" :data-recuadro="t.tipo">

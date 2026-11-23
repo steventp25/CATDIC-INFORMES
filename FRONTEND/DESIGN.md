@@ -91,4 +91,7 @@ Qué no se anima, y por qué
 - Foco visible de 2 px en el color de acento. El `<h1>` recibe el foco al cambiar de pantalla, sin marco.
 - Orden de Tab: Saltar → marca → Crear informe → navegación → contenido.
 - Objetivos táctiles de 44 px en móvil.
-- Contraste: elegido para 4.5:1 o más, pero todavía sin medir con herramienta. Se mide en B5.
+- Orden de Tab, medido en B5b a 1280 y a 375: en móvil la barra inferior viene antes del contenido (así está en el DOM); `html` lleva `scroll-padding` arriba y abajo para que el foco nunca quede tras la cabecera pegada ni la barra fija.
+- Diálogos: Tab y Mayús+Tab dan la vuelta dentro; un grupo de radios cuenta como una sola parada (el visor lo ignoraba y dejaba escapar el foco). Escape cierra y devuelve el foco a quien abrió. Las pestañas de la obra son enlaces de una navegación (`aria-current`), se recorren con Tab; las de Órdenes en móvil son `role="tab"` y se mueven con las flechas.
+- Contraste medido (razón WCAG calculada sobre `tokens.css`, claro / oscuro y, además, sobre los colores calculados de 15.246 elementos de texto reales en las 15 pantallas, ambos temas): texto normal, mínimo 5.26:1 (`--alerta` sobre `--error-fondo`) en claro y 5.91:1 en oscuro; ningún texto real por debajo de 5.9:1 en claro ni de 6.9:1 en oscuro. Bordes de control y de estado, mínimo 3.3:1 (`--borde-fuerte`, `--est-cola-borde`, `--fased-borde`, `--dudas-borde`, `--est-rev-borde`). El anillo de foco mide 6.8:1 o más sobre fondos y superficies, y 13.98:1 sobre el riel (allí usa `--riel-tinta`).
+- Excepciones: `--seleccion` es un relleno, no un borde ni un texto; el estado nunca se distingue solo por color, siempre lleva icono y palabra.

@@ -216,7 +216,11 @@
       // ---- diálogo ----
       atrapar: function (ev) {
         var dlg = this.$refs.dlg; if (!dlg) return;
-        var f = [].slice.call(dlg.querySelectorAll('a[href], button, input, select, textarea, [tabindex]')).filter(function (x) { return !x.disabled && x.tabIndex >= 0 && x.offsetParent !== null; });
+        var f = [].slice.call(dlg.querySelectorAll('a[href], button, input, select, textarea, [tabindex]')).filter(function (x) { if (x.disabled || x.tabIndex < 0 || x.offsetParent === null) return false;
+          // un grupo de radios es una sola parada de Tab: la marcada, o la primera si ninguna lo está
+          if (x.type === 'radio' && x.name) { var g = [].slice.call(dlg.querySelectorAll('input[type="radio"]')).filter(function (r) { return r.name === x.name && !r.disabled; }); var m = g.filter(function (r) { return r.checked; })[0] || g[0]; return x === m; }
+          return true;
+        });
         if (!f.length) return;
         var primero = f[0], ultimo = f[f.length - 1];
         if (ev.shiftKey && document.activeElement === primero) { ev.preventDefault(); ultimo.focus(); }

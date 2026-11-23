@@ -247,6 +247,7 @@ main { padding: var(--esp-5) clamp(16px, 3vw, 40px) 64px; min-width: 0; }
 
 /* ---- adaptación ---- */
 @media (max-width: 899px) {
+  html { scroll-padding-top: 4.75rem; scroll-padding-bottom: calc(5.5rem + env(safe-area-inset-bottom)); } /* el foco y los saltos no quedan tras la cabecera pegada ni la barra fija */
   .app { grid-template-columns: minmax(0, 1fr); padding-bottom: 72px; }
   .riel { display: none; }
   .cabeza-movil { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 8px 16px; background: var(--riel-fondo); color: var(--riel-tinta); position: sticky; top: 0; z-index: 5; }
