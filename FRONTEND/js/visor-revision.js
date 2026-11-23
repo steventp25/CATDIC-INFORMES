@@ -144,7 +144,7 @@
       return {
         uid: 'vpl' + contador, hojas: [], planoId: null, estadoIndice: 'cargando', errorIndice: '',
         pagActual: 0, info: null, estadoHoja: 'cargando', errorHoja: '', url: '', W: 0, H: 0, k: 1,
-        vw: 0, vh: 0, e: 1, eAjuste: 1, eMin: 0.05, eMax: 4, tx: 0, ty: 0, cerrado: false, apertura: null, n: 0, tamanoListo: false, trazo: null
+        vw: 0, vh: 0, e: 1, eAjuste: 1, eMin: 0.05, eMax: 4, tx: 0, ty: 0, cerrado: false, apertura: null, n: 0, tamanoListo: false, trazo: null, suave: false
       };
     },
     computed: {
@@ -170,6 +170,7 @@
         return { x: Math.min(t.x0, t.x1) * k, y: Math.min(t.y0, t.y1) * k, w: Math.abs(t.x1 - t.x0) * k, h: Math.abs(t.y1 - t.y0) * k };
       },
       dibuja: function () { return this.editor && this.herramienta === 'dibujar' && this.tamanoListo; },
+      motivoSinRecuadro: function () { return 'No hay ningún recuadro ni borrador en esta hoja: dibuja uno para poder ir a él.'; },
       leyenda: function () {
         var l = this.localizacion;
         if (l && rectValido(l.rect)) return l.origen === 'propuesta' ? 'Ubicación: propuesta, pendiente de verificar (recuadro punteado).' : 'Ubicación: recuadro confirmado.';
@@ -280,6 +281,7 @@
       // ---- zoom y desplazamiento ----
       medir: function (reiniciar) {
         var l = this.$refs.lienzo; if (!l) return;
+        this.suave = false;
         this.vw = l.clientWidth; this.vh = l.clientHeight;
         if (!this.W || !this.H || !this.vw || !this.vh) return;
         this.eAjuste = Math.min(this.vw / this.W, this.vh / this.H);
@@ -290,6 +292,11 @@
         } else {
           this.poner(this.e, this.tx, this.ty);
         }
+      },
+      // Mover suave solo si el clic vino de un puntero (detail > 0), no del teclado (Enter o espacio dan detail 0), y sin movimiento reducido.
+      suavizar: function (ev) {
+        var reducido = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        this.suave = !!(ev && ev.detail > 0 && !reducido);
       },
       poner: function (e, tx, ty) {
         e = Math.max(this.eMin, Math.min(this.eMax, e));
@@ -314,11 +321,13 @@
       zoomCentro: function (f) { this.zoomEn(f, this.vw / 2, this.vh / 2); },
       mover: function (dx, dy) { this.poner(this.e, this.tx + dx, this.ty + dy); },
       rueda: function (ev) {
+        this.suave = false;
         var r = this.$refs.lienzo.getBoundingClientRect();
         var d = ev.deltaMode === 1 ? ev.deltaY * 0.05 : ev.deltaY * 0.0015;
         this.zoomEn(Math.exp(-d), ev.clientX - r.left, ev.clientY - r.top);
       },
       teclas: function (ev) {
+        this.suave = false;
         if (ev.ctrlKey || ev.metaKey || ev.altKey) return;
         var paso = ev.shiftKey ? 240 : 80, k = ev.key, hecho = true;
         if (k === 'ArrowLeft') this.mover(paso, 0);
@@ -333,6 +342,7 @@
         if (hecho) ev.preventDefault();
       },
       alBajarPuntero: function (ev) {
+        this.suave = false;
         if (ev.pointerType === 'mouse' && ev.button !== 0) return;
         var l = this.$refs.lienzo;
         try { l.setPointerCapture(ev.pointerId); } catch (e) { /* sin captura */ }
@@ -412,15 +422,15 @@
                 </select>
               </label>
               <div class="vp-zoom" role="group" aria-label="Zoom">
-                <button type="button" class="btn btn-sec" aria-label="Alejar" :disabled="!tamanoListo" data-zoom-menos @click="zoomCentro(0.8)"><span aria-hidden="true">−</span></button>
+                <button type="button" class="btn btn-sec" aria-label="Alejar" :disabled="!tamanoListo" data-zoom-menos @click="suavizar($event); zoomCentro(0.8)"><span aria-hidden="true">−</span></button>
                 <output class="vp-pct num" data-zoom aria-live="off">{{ pct }} %</output>
-                <button type="button" class="btn btn-sec" aria-label="Acercar" :disabled="!tamanoListo" data-zoom-mas @click="zoomCentro(1.25)"><span aria-hidden="true">+</span></button>
-                <button type="button" class="btn btn-sec" :disabled="!tamanoListo" data-ajustar @click="ajustar">Ajustar</button>
+                <button type="button" class="btn btn-sec" aria-label="Acercar" :disabled="!tamanoListo" data-zoom-mas @click="suavizar($event); zoomCentro(1.25)"><span aria-hidden="true">+</span></button>
+                <button type="button" class="btn btn-sec" :disabled="!tamanoListo" data-ajustar @click="suavizar($event); ajustar()">Ajustar</button>
               </div>
-              <div class="vp-ir" v-if="editor && rectFoco"><button type="button" class="btn btn-sec" data-ir-recuadro @click="irAlRecuadro('foco'); enfocarLienzo()">Ir al recuadro</button></div>
+              <div class="vp-ir" v-if="editor"><button type="button" class="btn btn-sec" data-ir-recuadro :disabled="!rectFoco" :aria-describedby="rectFoco ? null : uid + '-sinrec'" :title="rectFoco ? null : motivoSinRecuadro" @click="suavizar($event); irAlRecuadro('foco'); enfocarLienzo()">Ir al recuadro</button><span v-if="!rectFoco" :id="uid + '-sinrec'" class="sr" data-sin-recuadro>{{ motivoSinRecuadro }}</span></div>
               <div class="vp-ir" v-if="localizacion || detalle">
-                <button v-if="localizacion && rectLoc" type="button" class="btn btn-sec" data-ir-ubicacion @click="irAlRecuadro('localizacion'); enfocarLienzo()">Ir a la ubicación</button>
-                <button v-if="detalle && rectDet" type="button" class="btn btn-sec" data-ir-detalle @click="irAlRecuadro('detalle'); enfocarLienzo()">Ir al detalle</button>
+                <button v-if="localizacion && rectLoc" type="button" class="btn btn-sec" data-ir-ubicacion @click="suavizar($event); irAlRecuadro('localizacion'); enfocarLienzo()">Ir a la ubicación</button>
+                <button v-if="detalle && rectDet" type="button" class="btn btn-sec" data-ir-detalle @click="suavizar($event); irAlRecuadro('detalle'); enfocarLienzo()">Ir al detalle</button>
               </div>
               <button type="button" class="btn btn-pri vp-cerrar" data-cerrar-visor @click="cerrar"><Icono nombre="cerrar"/>Cerrar</button>
             </div>
@@ -436,7 +446,7 @@
               <div ref="lienzo" class="vp-lienzo" tabindex="0" role="group" data-lienzo
                 aria-label="Hoja del plano. Flechas: mover. Más y menos: acercar y alejar. Cero: ajustar a la ventana. R: ir al recuadro."
                 @keydown="teclas" @wheel.prevent="rueda" @pointerdown="alBajarPuntero" @pointermove="alMoverPuntero" @pointerup="alSubirPuntero" @pointercancel="alCancelarPuntero">
-                <div v-if="url" class="vp-hoja" :style="estiloHoja" data-hoja-lienzo>
+                <div v-if="url" class="vp-hoja" :class="{ suave: suave }" :style="estiloHoja" data-hoja-lienzo @transitionend.self="suave = false">
                   <img :src="url" :alt="altImagen" draggable="false" @load="alCargarImagen" @error="alFallarImagen" data-hoja-img>
                   <svg v-if="W" class="vp-svg" :viewBox="'0 0 ' + W + ' ' + H" :width="W" :height="H" aria-hidden="true">
                     <g v-for="x in cajasPx" :key="x.c.clave" :data-caja="x.c.clave" :data-estado-caja="x.c.estado">

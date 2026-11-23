@@ -10,7 +10,7 @@
   var TIPOS = ['Supervisión', 'Levantamiento'];
 
   C.pantallas['ordenes'] = {
-    data: function () { return { estado: 'cargando', mensaje: '', datos: null, solicitud: 0 }; },
+    data: function () { return { estado: 'cargando', mensaje: '', datos: null, solicitud: 0, desborda: false, masIzq: false, masDer: false, destino: '' }; },
     computed: {
       ruta: function () { return C.rutas.ruta; },
       consulta: function () { return this.ruta.consulta || {}; },
@@ -32,8 +32,12 @@
       grupos: function () { return C.ordenes.agrupar(this.filtradas); },
       estados: function () { return C.ordenes.ESTADOS; },
       elegido: function () {
-        var e = this.consulta.estado;
-        return C.ordenes.ESTADOS.indexOf(e) !== -1 ? e : C.ordenes.ESTADOS[0];
+        // Con ?estado= válido se respeta. Sin él, abre la primera pestaña (en el orden de las columnas) que tenga órdenes;
+        // si no hay ninguna, «Pendiente». Con filtros puestos cuenta lo que se ve, no lo que se ocultó.
+        var e = this.consulta.estado, ES = C.ordenes.ESTADOS, porEstado = this.grupos.porEstado;
+        if (ES.indexOf(e) !== -1) return e;
+        for (var i = 0; i < ES.length; i++) if (porEstado[ES[i]] && porEstado[ES[i]].length) return ES[i];
+        return ES[0];
       },
       porId: function () {
         var m = {}; this.filtradas.forEach(function (o) { if (o.doc_id) m[o.doc_id] = o; }); return m;
@@ -48,7 +52,30 @@
       hayFiltros: function () { return !!(this.filtroObra || this.filtroTipo); }
     },
     created: function () { this.leer(); },
+    // El tablero ancho se desplaza dentro de sí mismo cuando las 6 columnas no caben (≈1280 px de ventana): se mide para que el
+    // contenedor reciba foco (flechas del teclado) y para dibujar el sombreado del borde donde hay más columnas.
+    mounted: function () { window.addEventListener('resize', this.medir); },
+    updated: function () { this.enlazar(); this.medir(); },
+    beforeUnmount: function () {
+      window.removeEventListener('resize', this.medir); clearTimeout(this._reloj);
+      if (this._ro) { this._ro.disconnect(); this._ro = null; }
+    },
     methods: {
+      enlazar: function () {
+        var el = this.$refs.cols;
+        if (el === this._elCols) return;
+        if (this._ro) { this._ro.disconnect(); this._ro = null; }
+        this._elCols = el || null;
+        if (el && window.ResizeObserver) { this._ro = new ResizeObserver(this.medir); this._ro.observe(el); }
+      },
+      medir: function () {
+        var el = this.$refs.cols;
+        if (!el) { this.desborda = false; this.masIzq = false; this.masDer = false; return; }
+        var sobra = el.scrollWidth - el.clientWidth;
+        this.desborda = sobra > 1;
+        this.masIzq = this.desborda && el.scrollLeft > 1;
+        this.masDer = this.desborda && el.scrollLeft < sobra - 1;
+      },
       leer: function () {
         var self = this, n = ++this.solicitud;
         this.estado = 'cargando'; this.mensaje = '';
@@ -109,7 +136,12 @@
         this.$nextTick(function () {
           var tarjetas = self.$el.querySelectorAll('[data-orden]'), t = null;
           for (var i = 0; i < tarjetas.length; i++) if (tarjetas[i].getAttribute('data-orden') === id) { t = tarjetas[i]; break; }
-          if (t) { t.scrollIntoView({ block: 'center' }); t.focus({ preventScroll: true }); }
+          if (t) {
+            t.scrollIntoView({ block: 'center' }); t.focus({ preventScroll: true });
+            // Señal breve en la tarjeta de destino (fondo y borde, ~450 ms + 150 ms de salida) para ver adónde fue el foco
+            self.destino = id; clearTimeout(self._reloj);
+            self._reloj = setTimeout(function () { self.destino = ''; }, 450);
+          }
         });
       },
       cuenta: function (n, uno, varios) { return n + ' ' + (n === 1 ? uno : varios); }
@@ -159,14 +191,17 @@
                 <Icono :nombre="icono(e)"/><span class="ord-tab-t">{{ e }}</span><span class="num ord-n">{{ grupos.porEstado[e].length }}</span>
               </button>
             </div>
-            <div class="ord-cols" data-ord-cols>
+            <p v-show="desborda" class="ayuda ord-desliza" data-ord-desliza><Icono nombre="flecha"/>{{ estados.length }} columnas · desliza el tablero hacia los lados</p>
+            <div class="ord-marco" :data-mas-izq="masIzq ? '' : null" :data-mas-der="masDer ? '' : null">
+            <div ref="cols" class="ord-cols" data-ord-cols @scroll.passive="medir"
+              :tabindex="desborda ? 0 : null" :role="desborda ? 'region' : null" :aria-label="desborda ? 'Tablero de órdenes, ' + estados.length + ' columnas: se desplaza hacia los lados con las flechas del teclado' : null">
               <section v-for="(e, i) in estados" :key="e" class="ord-col" :class="{ 'es-sel': e === elegido }" :data-estado="e" :data-ord-col="e"
                 role="tabpanel" :id="'ord-col-' + i" :aria-labelledby="'ord-tab-' + i">
                 <h2 class="ord-col-cab"><span class="ord-col-t"><Icono :nombre="icono(e)"/>{{ e }}</span><span class="num ord-n" :aria-label="cuenta(grupos.porEstado[e].length, 'orden', 'órdenes')">{{ grupos.porEstado[e].length }}</span></h2>
                 <p v-if="!grupos.porEstado[e].length" class="ord-vacio" data-ord-vacio>Sin órdenes en este estado</p>
                 <ul v-else class="ord-lista">
                   <li v-for="(o, k) in grupos.porEstado[e]" :key="(o.doc_id || '') + '#' + k">
-                    <article class="ord-t" :data-estado="e" :data-orden="o.doc_id" tabindex="-1">
+                    <article class="ord-t" :class="{ 'es-destino': destino && o.doc_id === destino }" :data-estado="e" :data-orden="o.doc_id" tabindex="-1">
                       <header class="ord-t-cab">
                         <span class="num ord-id" v-if="texto(o.doc_id)">{{ o.doc_id }}</span><Pendiente v-else/>
                         <span class="etq" v-if="texto(o.tipo)">{{ o.tipo }}</span>
@@ -188,6 +223,7 @@
                   </li>
                 </ul>
               </section>
+            </div>
             </div>
           </div>
 
