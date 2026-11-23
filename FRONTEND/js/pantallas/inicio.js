@@ -13,6 +13,11 @@
     computed: {
       ruta: function () { return C.rutas.ruta; },
       hoy: function () { return C.datos.hoyTexto(); },
+      // El enlace solo muestra la cifra; su nombre accesible dice a dónde lleva («1 orden abierta: ver órdenes de trabajo»).
+      etiquetaOrdenes: function () {
+        var n = this.stats && this.stats.ordenes_abiertas;
+        return n + (Number(n) === 1 ? ' orden abierta' : ' órdenes abiertas') + ': ver órdenes de trabajo';
+      },
       // Prioridades: necesitan las dos lecturas. Si las dudas fallan, se muestra lo del tablero y el error de dudas aparte.
       estadoPrior: function () {
         if (this.estadoTablero === 'error') return 'error';
@@ -81,7 +86,7 @@
             <dl class="cajetin cifras">
               <div><dt>Obras activas</dt><dd><a class="cifra-n num" href="#/obras">{{ stats.proyectos_activos }}</a></dd></div>
               <div><dt>Visitas en cola</dt><dd><a class="cifra-n num" href="#/bandeja">{{ stats.visitas_en_cola }}</a></dd></div>
-              <div><dt>Órdenes abiertas</dt><dd><a class="cifra-n num" href="#/ordenes">{{ stats.ordenes_abiertas }}</a></dd></div>
+              <div><dt>Órdenes abiertas</dt><dd><a class="cifra-n num" href="#/ordenes" :aria-label="etiquetaOrdenes">{{ stats.ordenes_abiertas }}</a></dd></div>
               <div><dt>Bloqueadas</dt><dd class="cifra-p"><Pendiente/> <FaseD fase="D-a"/></dd></div>
               <div><dt>Vencen en ≤ 7 días</dt><dd class="cifra-p"><Pendiente/> <FaseD fase="D-a"/></dd></div>
             </dl>

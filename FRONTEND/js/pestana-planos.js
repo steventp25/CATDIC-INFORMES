@@ -129,7 +129,7 @@
           <div class="caja-cabeza"><h2 id="pp-vig">Plano vigente</h2></div>
           <template v-if="hayPlano">
             <Cajetin :campos="campos"/>
-            <p class="ayuda pp-nota">El vectorial es la fuente de lectura y el sellado es la referencia legal; las huellas sha256 de abajo identifican cada archivo.</p>
+            <p class="ayuda pp-nota">El vectorial es la fuente de lectura y el sellado es la referencia legal; las huellas sha256 del cajetín de arriba identifican cada archivo.</p>
           </template>
           <div v-else class="vacio" data-sin-plano>
             <p class="vacio-t">Sin plano vigente</p>
