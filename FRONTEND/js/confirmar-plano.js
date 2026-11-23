@@ -33,7 +33,32 @@
   function bboxOk(b) { return Array.isArray(b) && b.length === 4 && b.every(function (v) { return typeof v === 'number' && isFinite(v); }); }
   function nombreTabla(t) { return NOMBRES[t] || (t === null || t === undefined || t === '' ? 'pendiente de verificar' : String(t)); }
   function num(v) { return typeof v === 'number' && isFinite(v) ? String(v) : '(pendiente de verificar)'; }
-  function fallas(t) { return (t.comprobaciones || []).filter(function (c) { return !c.ok; }).map(function (c) { return c.comprobacion; }).join(', '); }
+  /* «Falla:» y las comprobaciones muestran un texto legible, no la clave del servidor. Los textos de las claves conocidas salen de
+     BACKEND/plano/extractor.py (qué comprueba cada una); para las demás solo se cambian los «_» por espacios y se pone la
+     primera en mayúscula, sin inventar su significado. La clave original queda en `title` y en `data-clave` para quien la necesite. */
+  var COMPROBACIONES = {
+    celdas_completas: 'Hay celdas vacías o fuera de la tabla',
+    unidades: 'Hay valores con unidades que no corresponden',
+    total_de_barras: 'Hay acero que no tiene el formato de barras esperado',
+    ids_duplicados: 'Hay filas repetidas',
+    espesor_total: 'H no es igual a h1 + h2',
+    rangos_expandidos: 'Hay rangos de niveles que no se pudieron expandir',
+    rangos_sin_choque: "Un mismo nivel (E-n) queda con dos f'c distintos",
+    igual_en_todas_las_hojas: 'La tabla no es igual en todas las hojas',
+    nivel_impreso: 'La hoja no tiene un único nivel impreso',
+    ids_en_planta_sin_duplicados: 'Hay IDs de losa repetidos en la planta',
+    losa_tipo_asignado: 'Hay losas sin tipo asignado',
+    sin_notas_de_modificacion: 'La hoja tiene notas de modificación'
+  };
+  function claveLegible(k) {
+    var c = String(k === null || k === undefined ? '' : k);
+    if (!c) return 'pendiente de verificar';
+    if (COMPROBACIONES[c]) return COMPROBACIONES[c];
+    var t = c.replace(/_/g, ' ').trim();
+    return t ? t.charAt(0).toUpperCase() + t.slice(1) : 'pendiente de verificar';
+  }
+  function fallasClaves(t) { return (t.comprobaciones || []).filter(function (c) { return !c.ok; }).map(function (c) { return c.comprobacion; }); }
+  function fallas(t) { return fallasClaves(t).map(claveLegible).join('; '); }
 
   C.componentes.ConfirmarPlano = {
     props: { obra: { type: Object, required: true } },
@@ -115,6 +140,8 @@
     methods: {
       nombre: nombreTabla,
       fallas: fallas,
+      fallasClaves: fallasClaves,
+      claveLegible: claveLegible,
       bboxOk: bboxOk,
       fh: function (v) { return C.formato.fechaHora(v); },
       txt: function (v) { return C.formato.texto(v); },
@@ -310,8 +337,8 @@
               <p class="ayuda">Revisa lo que el programa leyó del plano vigente. Nada se confirma solo: cada acción pide su casilla.</p>
             </div>
             <div class="conf-acc">
-              <button type="button" class="btn btn-pri" data-extraer :disabled="!!enviando" :aria-busy="enviando === 'extraer' ? 'true' : null" @click="extraer"><Icono nombre="rayo"/>{{ enviando === 'extraer' ? 'Extrayendo…' : 'Extraer del plano vigente' }}</button>
-              <a class="btn btn-sec" :href="hrefMesa" data-mesa-obra><Icono nombre="pregunta"/>Mesa de Dudas de la obra<span class="conf-n num" data-dudas-obra>{{ textoDudas }}</span></a>
+              <button type="button" class="btn btn-pri" data-extraer :disabled="!!enviando" :aria-busy="enviando === 'extraer' ? 'true' : null" @click="extraer"><Icono nombre="rayo"/><span class="conf-largo">{{ enviando === 'extraer' ? 'Extrayendo…' : 'Extraer del plano vigente' }}</span><span class="conf-corto" aria-hidden="true">{{ enviando === 'extraer' ? 'Extrayendo…' : 'Extraer' }}</span></button>
+              <a class="btn btn-sec" :href="hrefMesa" data-mesa-obra><Icono nombre="pregunta"/><span class="conf-largo">Mesa de Dudas de la obra</span><span class="conf-corto" aria-hidden="true">Mesa</span><span class="conf-n num" data-dudas-obra>{{ textoDudas }}</span></a>
               <button type="button" class="btn btn-sec" data-cerrar-confirmar @click="cerrar"><Icono nombre="cerrar"/>Cerrar</button>
             </div>
           </header>
@@ -336,8 +363,9 @@
                 <li v-for="t in tablas" :key="t.id">
                   <button type="button" class="conf-t" :class="{ 'es-sel': t.id === selId, 'no-vig': !t.vigente }" :aria-current="t.id === selId ? 'true' : null" :data-tabla="t.clave" @click="elegir(t)">
                     <span class="conf-t-cab"><b class="conf-t-n">{{ nombre(t.tabla) }}</b><span class="est" :class="insignia(t.resultado).clase"><Icono :nombre="insignia(t.resultado).icono"/>{{ insignia(t.resultado).texto }}</span></span>
+                    <span class="conf-t-id num" data-tabla-id>tabla n.º {{ t.id }} · {{ t.clave }}</span>
                     <span class="conf-t-m num">pág. {{ t.pagina }} · hoja {{ txt(t.hoja) ? t.hoja : "pendiente de verificar" }} · {{ txt(t.nivel_rango) ? t.nivel_rango : "pendiente de verificar" }}</span>
-                    <span v-if="t.resultado === 'rojo'" class="conf-t-f"><Icono nombre="alerta"/>Falla: {{ fallas(t) }}</span>
+                    <span v-if="t.resultado === 'rojo'" class="conf-t-f" :title="fallasClaves(t).join(', ')" :data-claves="fallasClaves(t).join(',')"><Icono nombre="alerta"/>Falla: {{ fallas(t) }}</span>
                     <span v-if="!t.vigente" class="conf-t-nv"><Icono nombre="reloj"/>No vigente: {{ (t.motivos_no_vigente || [])[0] || 'pendiente de verificar' }}</span>
                     <span v-if="t.id === selId" class="conf-t-sel"><Icono nombre="check"/>Tabla elegida</span>
                   </button>
@@ -370,7 +398,7 @@
                   <ul class="conf-comp" data-comprobaciones>
                     <li v-for="c in comprobaciones" :key="c.comprobacion" class="conf-comp-f" :class="c.ok ? 'es-ok' : 'es-mal'">
                       <span class="est" :class="c.ok ? 'est-ok' : 'est-mal'"><Icono :nombre="c.ok ? 'check' : 'alerta'"/>{{ c.ok ? 'cumple' : 'falla' }}</span>
-                      <span class="conf-comp-n num">{{ c.comprobacion }}</span>
+                      <span class="conf-comp-n" :title="c.comprobacion" :data-clave="c.comprobacion">{{ claveLegible(c.comprobacion) }}</span>
                       <span v-if="!c.ok && c.detalle && c.detalle.length" class="conf-comp-d">{{ c.detalle.join('; ') }}</span>
                       <span v-if="c.certificada" class="conf-comp-c" data-certificada>{{ certificadaTexto(c) }}</span>
                     </li>
@@ -437,7 +465,7 @@
                   </template>
                   <div v-else-if="det.resultado === 'rojo'" class="conf-bloque conf-roja" data-tabla-roja>
                     <p class="conf-bt"><Icono nombre="alerta"/>Esta tabla está en rojo: no se confirma por lote.</p>
-                    <p>Falló: <b class="num">{{ fallas(det) }}</b>. Los campos dudosos se resuelven uno por uno en la Mesa de Dudas; los datos que el plano no trae (E-n ↔ nivel, tipo de losa, plantas repetidas) van en «Datos de la obra», y después se vuelve a extraer.</p>
+                    <p>Falló: <b :title="fallasClaves(det).join(', ')">{{ fallas(det) }}</b>. Los campos dudosos se resuelven uno por uno en la Mesa de Dudas; los datos que el plano no trae (E-n ↔ nivel, tipo de losa, plantas repetidas) van en «Datos de la obra», y después se vuelve a extraer.</p>
                     <div class="acc-botones"><a class="btn btn-pri" :href="hrefMesa" data-ir-mesa><Icono nombre="pregunta"/>Ir a la Mesa de Dudas</a></div>
                   </div>
                   <p v-else class="conf-no" data-no-confirmable><Icono nombre="info"/>No se puede confirmar: {{ motivosNo.join('; ') || 'pendiente de verificar' }}.</p>
