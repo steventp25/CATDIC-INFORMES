@@ -47,7 +47,7 @@
       <div class="pestana-resumen">
         <section class="caja" aria-labelledby="rs-ind" data-indicadores>
           <div class="caja-cabeza"><h2 id="rs-ind">Indicadores de la obra</h2></div>
-          <p class="ayuda rs-nota">Los tres indicadores quedan «pendiente de verificar» hasta que Steven defina qué cuenta como entrepiso ejecutado y qué es una unidad documental (decisión D15). No se muestran como 0 %, ni como barra, ni se calculan con el número de archivos, versiones o visitas.</p>
+          <p class="ayuda rs-nota">Los tres indicadores quedan «pendiente de verificar» hasta que Steven defina qué cuenta como entrepiso ejecutado y qué es una unidad documental (decisión D15). Mientras tanto no se muestra ninguna cifra ni barra, y no se calculan con el número de archivos, versiones o visitas.</p>
           <div class="ind-rejilla">
             <Indicador codigo="n8"/><Indicador codigo="n9"/><Indicador codigo="n10"/>
           </div>
