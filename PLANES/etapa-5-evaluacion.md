@@ -157,3 +157,33 @@ Steven vio las dos pantallas en una copia de la rama (puerto 8767, BD de prueba 
 
 ### Pruebas ejecutadas
 - **Suite completa** sobre una copia exacta de `905ec52`, sin `CATDIC_DROPBOX_RAIZ`: 977 pasan, 3 se omiten y 2 fallan. Son las 2 conocidas de Dropbox.
+
+## Evaluación 6 · 23/11/2026 · Planificador (auditoría) · Fase B · B3c Confirmar datos del plano (rama `claude/etapa5-fase-b-0020e1`, `25fe9a5`)
+**Veredicto: APROBADO** (falta que Steven la vea)
+
+### Bloqueantes
+- Ninguno.
+
+### Observaciones (no bloquean)
+- **Dos tablas de la lista se ven idénticas.** Ambas dicen «f'c por rango · pág. 1 · hoja 20 · NIVEL 2». Una de ellas es probablemente la tabla «sin recorte» que se sembró en la copia. Si dos tablas reales coinciden en tipo, página y nivel, Steven no puede distinguirlas sin abrirlas. Conviene mostrar la clave (`p1:…`) o el número de tabla. Va a B4.
+- **El diálogo tiene más contenido del que cabe.** A 1024×768, `dialog.conf` mide 1064 px de alto en un espacio de 768. Con un `scrollIntoView` hecho por código, el diálogo se desplazó 96 px: la cabecera desapareció y abajo se vio la página de detrás. Con Tab de verdad no pasa: el diálogo se queda en 0 y solo se desplaza `conf-det`. Hay que buscar qué elemento se sale del diálogo. Va a B4.
+- **Abierto del Líder:** una `&tabla=` desconocida vuelve a la lista sin aviso. Además, la barra fija ocupa unos 210 px a 375 px de ancho, y «Falla:» muestra las claves tal cual.
+- **Falta un caso real.** No se probó con un plano real, solo con la obra sintética `obra-sintetica-b3c`. Queda para la Fase C.
+
+### Criterios de aceptación
+- [x] **Solo frontend.** `git diff --stat 905ec52 25fe9a5` toca solo `FRONTEND/` y `PLANES/`.
+- [x] **Ninguna acción sin su casilla.** «Confirmar tabla completa» está deshabilitado hasta marcar «Revisé los N valores…». La certificación tiene su propia casilla, «Revisé las notas y certifico…». Las dos envían `extraido_en`.
+- [x] **Regla de Oro (navegador).** La tabla de la pág. 1 tiene un valor distinto del plano: `L1 / H = 0.26` contra `tabla: 0.25`, en rojo. Al confirmarla, el servidor la rechaza y la pantalla lo dice tal cual: «No se confirma: L1 / H = '0.26' ya no coincide con la tabla ('0.25'). Vuelve a extraer.» El aviso de arriba manda el valor dudoso a la Mesa.
+- [x] **Confirmación real en la copia.** La zapata de muro lindero dio «Lote …: 10 valores confirmados en 2 elementos.»
+- [x] **Lista de tablas.** Muestra verde/rojo con icono y texto, «Falla: …» y «No vigente: …». El detalle trae sus 9 comprobaciones, el recorte del plano y «Abrir plano».
+- [x] **Resaltado con el teclado.** Las filas de valores son enfocables (`tr` con `tabindex=0`) y al enfocarlas aparece la caja `conf-caja` sobre el recorte.
+- [x] **Navegación.**
+  - «Mesa de Dudas de la obra (9 abiertas)» abre `#/obra/…/resumen?dudas=obra`, y Atrás vuelve a `…?confirmar=1&tabla=1` con el diálogo abierto.
+  - Escape vuelve a «Planos y ficha».
+  - Recargar con `&tabla=` mantiene la tabla elegida.
+- [x] **Consola.** Solo aparece el 409 esperado, como «Failed to load resource».
+- [?] **Matriz Playwright** (56 del Líder; anchos, pasos en móvil y peor caso de 60 tablas × 400 filas del Ejecutor): la reportan ellos; no la repetí.
+
+### Pruebas ejecutadas
+- **Suite completa** sobre una copia exacta de `25fe9a5`: 977 pasan, 3 se omiten y 2 fallan. Son las 2 conocidas de Dropbox.
+- **En el navegador:** copia de `25fe9a5` con la BD sintética del Ejecutor copiada a mi scratch, en el puerto 8768.
