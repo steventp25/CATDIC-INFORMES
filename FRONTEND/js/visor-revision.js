@@ -170,6 +170,7 @@
         return { x: Math.min(t.x0, t.x1) * k, y: Math.min(t.y0, t.y1) * k, w: Math.abs(t.x1 - t.x0) * k, h: Math.abs(t.y1 - t.y0) * k };
       },
       dibuja: function () { return this.editor && this.herramienta === 'dibujar' && this.tamanoListo; },
+      motivoCorto: function () { return 'Dibuja uno primero'; },
       motivoSinRecuadro: function () { return 'No hay ningún recuadro ni borrador en esta hoja: dibuja uno para poder ir a él.'; },
       leyenda: function () {
         var l = this.localizacion;
@@ -427,7 +428,7 @@
                 <button type="button" class="btn btn-sec" aria-label="Acercar" :disabled="!tamanoListo" data-zoom-mas @click="suavizar($event); zoomCentro(1.25)"><span aria-hidden="true">+</span></button>
                 <button type="button" class="btn btn-sec" :disabled="!tamanoListo" data-ajustar @click="suavizar($event); ajustar()">Ajustar</button>
               </div>
-              <div class="vp-ir" v-if="editor"><button type="button" class="btn btn-sec" data-ir-recuadro :disabled="!rectFoco" :aria-describedby="rectFoco ? null : uid + '-sinrec'" :title="rectFoco ? null : motivoSinRecuadro" @click="suavizar($event); irAlRecuadro('foco'); enfocarLienzo()">Ir al recuadro</button><span v-if="!rectFoco" :id="uid + '-sinrec'" class="sr" data-sin-recuadro>{{ motivoSinRecuadro }}</span></div>
+              <div class="vp-ir vp-ir-ed" v-if="editor"><button type="button" class="btn btn-sec" data-ir-recuadro :disabled="!rectFoco" :aria-describedby="rectFoco ? null : uid + '-sinrec'" :title="rectFoco ? null : motivoSinRecuadro" @click="suavizar($event); irAlRecuadro('foco'); enfocarLienzo()">Ir al recuadro</button><span class="vp-sinrec" aria-hidden="true" :data-sin-recuadro-visible="rectFoco ? null : ''">{{ rectFoco ? '' : motivoCorto }}</span><span v-if="!rectFoco" :id="uid + '-sinrec'" class="sr" data-sin-recuadro>{{ motivoSinRecuadro }}</span></div>
               <div class="vp-ir" v-if="localizacion || detalle">
                 <button v-if="localizacion && rectLoc" type="button" class="btn btn-sec" data-ir-ubicacion @click="suavizar($event); irAlRecuadro('localizacion'); enfocarLienzo()">Ir a la ubicación</button>
                 <button v-if="detalle && rectDet" type="button" class="btn btn-sec" data-ir-detalle @click="suavizar($event); irAlRecuadro('detalle'); enfocarLienzo()">Ir al detalle</button>

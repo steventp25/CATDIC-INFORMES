@@ -559,7 +559,10 @@ main { padding: var(--esp-5) clamp(16px, 3vw, 40px) 64px; min-width: 0; }
 .vp-zoom { display: flex; gap: 4px; align-items: center; }
 .vp-zoom .btn { min-width: 40px; padding: 0 10px; }
 .vp-pct { min-width: 4.2rem; text-align: center; font-size: 0.875rem; }
-.vp-ir { display: flex; gap: 4px; flex-wrap: wrap; }
+.vp-ir { display: flex; gap: 4px; flex-wrap: wrap; align-items: center; }
+/* B5a: el motivo del botón desactivado se ve, junto al botón, y no cambia la altura de la barra (probado a 375, 800, 1024 y 1280). */
+.vp-ir-ed { flex-direction: column; align-items: flex-start; gap: 2px; }
+.vp-sinrec { display: block; width: 0; min-width: 100%; font-size: 0.75rem; line-height: 1.2; min-height: 1.2em; color: var(--tinta-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }   /* el sitio se reserva siempre: con o sin recuadro la barra mide lo mismo */
 .vp-cuerpo { position: relative; min-height: 0; background: #2b323b; display: grid; }
 .vp-msg { margin: auto; padding: var(--esp-4); background: var(--superficie); border: 1px solid var(--borde-fuerte); max-width: 30rem; display: flex; gap: var(--esp-2); align-items: flex-start; }
 .vp-lienzo { position: relative; overflow: hidden; touch-action: none; cursor: grab; min-height: 0; outline-offset: -3px; }
