@@ -148,6 +148,8 @@ def _filas_de_ficha(ficha: Dict, tipo_txt: str, kind: str, tolerancia) -> Tuple[
     dudas, plano_in = [], dict(ficha.get("plano") or {})
     obra_in = dict(ficha.get("obra") or {})
     medidas = dict(ficha.get("medidas") or {})
+    # Letras que Campo dejó vacías: conformes por omisión (decisión de Steven 23/11/2026, paquete v2).
+    conformes = {str(l) for l in (ficha.get("conforme_por_omision") or [])}
     plano: Dict[str, str] = {}
     obra: Dict[str, str] = {}
     medidas_aud: List[Dict] = []
@@ -207,6 +209,10 @@ def _filas_de_ficha(ficha: Dict, tipo_txt: str, kind: str, tolerancia) -> Tuple[
             duda(f"medidas.{letra}", f"No se pudo evaluar la medida '{letra}' de {tipo_txt}: {exc}")
             return None, dudas, {}
         plano[letra] = _fmt_m(m["valor_plano_m"])
+        if m.get("medida_acero_campo_m") is None and letra in conformes:
+            # Casilla vacía en Campo = conforme: en OBRA va el valor del plano (§4.5), sin duda de "OBRA vacía"
+            obra[letra] = plano[letra]
+            continue
         if m.get("medida_acero_campo_m") is None:
             # Sin medida de campo nadie midió nada: OBRA queda VACÍA (no se copia el valor del plano)
             obra[letra] = ""
@@ -247,6 +253,11 @@ def _filas_de_ficha(ficha: Dict, tipo_txt: str, kind: str, tolerancia) -> Tuple[
         # Error #9 (ESTRIBOS al final): esta línea solo existe para el auditor y se arma con las filas f, g y h,
         # que ya son obligatorias en PLANOS; por eso nunca se inventa un valor. No se imprime en las hojas.
         aud["observaciones_texto"] = (f"ESTRIBOS {plano['h']} {plano['f']} NODOS / {plano['g']} CENTRO")
+
+    # Filas de texto vacías en Campo = conformes: OBRA repite el texto del plano (si el plano no lo trae, sigue vacía)
+    for letra in conformes:
+        if letra in obra and not obra[letra] and letra not in DIMENSIONALES[kind] and plano.get(letra):
+            obra[letra] = plano[letra]
 
     # OBRA vacío en filas que debe traer la visita: queda vacío y se crea una duda (no bloquea)
     for letra in sorted(OBLIGATORIAS[kind] | OBRA_EXTRA.get(kind, set())):

@@ -529,3 +529,37 @@ def test_t7b_una_sola_visita_queda_igual_en_dict_o_en_lista(mundo, entorno):
     r2 = _generar(mundo, entorno, visita=[_visita()])
     assert r2["ok"] and r2["ruta"].name.replace(" v2", "") == r1["ruta"].name
     assert [t for t in _textos(r1["ruta"])[:2]] == [t for t in _textos(r2["ruta"])[:2]]
+
+
+# ---------- Paquete v2 de Campo: casilla vacía = conforme (Etapa 7, T3) ----------
+
+def test_t3_letra_conforme_por_omision_pone_en_obra_el_valor_del_plano(mundo, entorno):
+    ficha = mundo.ficha_viga()
+    ficha["medidas"]["c"] = {"valor_plano_m": 0.40, "medida_acero_campo_m": None}  # casilla dimensional vacía
+    del ficha["obra"]["i"]                                                           # fila de texto vacía
+    ficha["conforme_por_omision"] = ["c", "i"]
+    r = _generar(mundo, entorno, [ficha])
+    assert r["ok"], r
+    campos = {d["campo_afectado"] for d in r["dudas"]}
+    assert "medidas.c" not in campos and "obra.i" not in campos  # sin la duda de "OBRA vacía"
+    assert "0.40" in _celdas_a_la_derecha(r["ruta"], 2, "2.c. Ancho Viga (m):", 320)  # OBRA = plano (§4.5)
+    assert '3-Ø3/4"' in " ".join(_celdas_a_la_derecha(r["ruta"], 2, "2.i. Barras Top:", 320))
+
+
+def test_t3_sin_conforme_por_omision_la_obra_vacia_sigue_con_su_duda(mundo, entorno):
+    ficha = mundo.ficha_viga()
+    ficha["medidas"]["c"] = {"valor_plano_m": 0.40, "medida_acero_campo_m": None}
+    del ficha["obra"]["i"]
+    ficha["conforme_por_omision"] = ["j"]  # otra letra: no cubre c ni i
+    r = _generar(mundo, entorno, [ficha])
+    campos = {d["campo_afectado"] for d in r["dudas"]}
+    assert {"medidas.c", "obra.i"} <= campos
+    assert _celdas_a_la_derecha(r["ruta"], 2, "2.c. Ancho Viga (m):", 320) == []
+
+
+def test_t3_conforme_por_omision_no_inventa_si_el_plano_no_trae_el_valor(mundo, entorno):
+    ficha = mundo.ficha_viga()
+    del ficha["plano"]["m"]  # el plano no trae la fila m: no hay valor que copiar
+    ficha["conforme_por_omision"] = ["m"]
+    r = _generar(mundo, entorno, [ficha])
+    assert _celdas_a_la_derecha(r["ruta"], 2, "2.m. Adic Bot:", 320) == []  # nada que copiar: sigue vacía

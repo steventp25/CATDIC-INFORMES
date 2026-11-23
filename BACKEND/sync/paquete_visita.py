@@ -1,10 +1,14 @@
 # BACKEND/sync/paquete_visita.py
-# Importador del paquete de visita v1 de CATDIC Campo (PLANES/paquete-visita-v1.md).
+# Importador del paquete de visita v1 y v2 de CATDIC Campo (PLANES/paquete-visita-v1.md y paquete-visita-v2.md).
 #
 # El técnico ya eligió en Campo el tipo, el ID y los ejes de cada elemento con casillas guiadas: aquí
 # se cargan a `elementos_visita` sin leer el PDF ni interpretar texto libre. Regla de Oro #1: nada se
 # completa por adivinanza. Los ejes se recalculan con formatear_campo_ejes (no se confía en el texto
 # del paquete); lo que no valida queda "pendiente de verificar" con UNA duda por elemento.
+# El v2 agrega por elemento las mediciones guiadas de OBRA (`obra`): se validan (letras del juego de la fila STP,
+# medidas en metros) y se guardan en `medidas_acero_campo_json`, que ya lee procesador_cola. Casilla vacía =
+# conforme por omisión (OBRA = valor del plano); estado Pendiente = elemento en revisión (duda, nada conforme);
+# lo ilegible va a duda con su valor literal, nunca se adivina. Un v1 no toca esa columna.
 # Dropbox es SOLO LECTURA: el paquete se lee y las fotos reducidas van a la caché local.
 import base64
 import binascii
@@ -12,6 +16,7 @@ import getpass
 import io
 import json
 import re
+import unicodedata
 from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
@@ -20,13 +25,16 @@ from PIL import Image, ImageOps, UnidentifiedImageError
 
 import config
 from database import get_connection, _respaldar_bd
+from generators import stp_mived
 from reglas_ingenieria import CATEGORIA_POR_TIPO, PENDIENTE, formatear_campo_ejes
 from sync import lector_visita
 from sync.parser_visitas import CAMPO_CLASE, CAMPO_FECHA, CLASE_COMPLETIVO, CLASE_PARCIAL
 
 EXTENSION = ".catdic-visita.json"
 FORMATO = "catdic-paquete-visita"
-VERSION = 1
+VERSIONES = {1, 2}
+VERSION_OBRA = 2  # desde esta versión el paquete trae `obra` por elemento
+MAX_MEDIDA_M = 30.0
 CAMPO_PAQUETE = "paquete_visita"
 MODULO_AUDITORIA = "PAQUETE_VISITA"
 ACCION_CARGAR = "CARGAR_PAQUETE"
@@ -69,16 +77,17 @@ def _texto(valor) -> str:
 
 
 def leer_paquete(ruta: Path) -> Dict:
-    """Abre y valida la estructura. Un paquete que no es v1 o viene incompleto lanza ValueError (no carga nada)."""
+    """Abre y valida la estructura. Un paquete que no es v1 ni v2 o viene incompleto lanza ValueError (no carga nada)."""
     try:
         datos = json.loads(Path(ruta).read_text(encoding="utf-8"))
     except (OSError, UnicodeDecodeError, json.JSONDecodeError) as e:
         raise ValueError(f"El paquete '{Path(ruta).name}' no se puede leer como JSON: {e}") from e
     if not isinstance(datos, dict) or datos.get("formato") != FORMATO:
         raise ValueError(f"'{Path(ruta).name}' no es un paquete de visita de CATDIC Campo.")
-    if datos.get("version") != VERSION:
-        raise ValueError(f"El paquete '{Path(ruta).name}' es de la versión {datos.get('version')!r}; "
-                         f"este programa solo carga la versión {VERSION}.")
+    version = datos.get("version")
+    if isinstance(version, bool) or version not in VERSIONES:
+        raise ValueError(f"El paquete '{Path(ruta).name}' es de la versión {version!r}; "
+                         f"este programa solo carga las versiones {' y '.join(str(v) for v in sorted(VERSIONES))}.")
     elementos = datos.get("elementos")
     if not isinstance(elementos, list) or not elementos:
         raise ValueError(f"El paquete '{Path(ruta).name}' no trae elementos.")
@@ -177,14 +186,109 @@ def _nota(el: Dict) -> str:
     return " · ".join(partes)
 
 
-def _texto_duda(el: Dict, ident: Dict) -> str:
+def _donde(el: Dict) -> str:
     fotos = el["fotos"]
     primera, ultima = fotos[0]["numero"], fotos[-1]["numero"]
     cuales = f"foto {primera}" if primera == ultima else f"fotos {primera} a {ultima}"
     etiqueta = etiqueta_del_elemento(el)
     titulo = f" ('{etiqueta}')" if etiqueta else ""
-    return (f"Paquete de Campo, elemento {el.get('orden', '?')}{titulo}, {cuales}: falta o no valida "
+    return f"Paquete de Campo, elemento {el.get('orden', '?')}{titulo}, {cuales}"
+
+
+def _texto_duda(el: Dict, ident: Optional[Dict], texto: Optional[str] = None) -> str:
+    if texto is not None:
+        return f"{_donde(el)}: {texto}"
+    return (f"{_donde(el)}: falta o no valida "
             f"{', '.join(ident['faltas'])}. Indica el dato correcto; no se completa por adivinanza.")
+
+
+def _texto_duda_obra(el: Dict, problemas: List[str]) -> str:
+    return (f"{_donde(el)}, mediciones de OBRA: {'; '.join(problemas)}. Indica el dato correcto; esas filas no se "
+            "escriben ni se dan por conformes.")
+
+
+# ---------- Mediciones guiadas de OBRA (v2) ----------
+
+# Juego de letras por fila STP (PLANES/paquete-visita-v2.md). Las dimensionales se piden como medida sobre el
+# acero; la cuantía (p, q aparte) no se pide. Las letras salen de stp_mived.ROTULOS.
+DIMENSIONALES_V2 = stp_mived.DIMENSIONALES
+TEXTOS_V2 = {"col": set("abefghijkmnoq"), "muro": set("acdefghijk"),
+             "viga": set("abefghijkmnoq"), "losa": set("cdefghijkmnop")}
+JUEGO_V2 = {fila: set(DIMENSIONALES_V2[fila]) | TEXTOS_V2[fila] for fila in TEXTOS_V2}
+_RE_MEDIDA = re.compile(r"(\d+([.,]\d+)?|[.,]\d+)")
+ESTADOS_CAMPO = {"pendiente": "Pendiente", "observacion": "Observación", "conforme": "Conforme"}
+
+
+def _medida_en_metros(valor) -> Optional[float]:
+    """Número positivo en metros (punto o coma decimal, también '.32'); cualquier otra cosa -> None (no se adivina)."""
+    if not isinstance(valor, str) or not _RE_MEDIDA.fullmatch(valor.strip()):
+        return None
+    numero = float(valor.strip().replace(",", "."))
+    return numero if 0 < numero <= MAX_MEDIDA_M else None
+
+
+def _estado_de_campo(el: Dict) -> Tuple[str, bool]:
+    """(estado normalizado, reconocido). Vacío = Observación; un estado desconocido se trata como Pendiente."""
+    crudo = _texto(el.get("estado"))
+    if not crudo:
+        return "Observación", True
+    clave = "".join(c for c in unicodedata.normalize("NFD", crudo.lower()) if not unicodedata.combining(c))
+    if clave in ESTADOS_CAMPO:
+        return ESTADOS_CAMPO[clave], True
+    return "Pendiente", False
+
+
+def obra_de_elemento(el: Dict, tipo_ok: str) -> Dict:
+    """
+    Valida la parte `obra` del elemento (v2) y arma medidas_acero_campo_json. Devuelve
+    {"json": dict, "problemas": [texto], "pendiente": bool, "estado_reconocido": bool}.
+    """
+    problemas: List[str] = []
+    obra = el.get("obra") if isinstance(el.get("obra"), dict) else {}
+    esperada = (stp_mived._tipo_de_fila(tipo_ok) or "") if tipo_ok != PENDIENTE else ""
+    declarada = _texto(obra.get("fila_stp"))
+    estado, reconocido = _estado_de_campo(el)
+    resultado = {"obra": {}, "conforme_por_omision": [], "estado_campo": estado, "origen": "paquete_v2"}
+    if declarada != esperada:
+        # El juego de filas que vio el técnico no es el del tipo validado: la obra no se usa (ni como conforme)
+        problemas.append(f"el juego de filas de OBRA del paquete ('{declarada or 'vacío'}') no corresponde al del tipo "
+                         f"('{esperada or 'sin STP-MIVED'}'): no se usa")
+        return {"json": resultado, "problemas": problemas, "pendiente": estado == "Pendiente",
+                "estado_reconocido": reconocido}
+    juego = JUEGO_V2.get(esperada, set())
+    dimensionales = set(DIMENSIONALES_V2.get(esperada, ""))
+    textos_in = obra.get("textos") if isinstance(obra.get("textos"), dict) else {}
+    medidas_in = obra.get("medidas_acero") if isinstance(obra.get("medidas_acero"), dict) else {}
+    dadas, malas = set(), set()
+    for letra, valor in medidas_in.items():
+        if valor is None or (isinstance(valor, str) and not valor.strip()):
+            continue  # casilla vacía: cuenta como conforme
+        if letra not in dimensionales:
+            problemas.append(f"la medida '{letra}' no es una fila dimensional de {esperada or 'este tipo'} (valor '{valor}')")
+            malas.add(letra)
+            continue
+        numero = _medida_en_metros(valor)
+        if numero is None:
+            problemas.append(f"la medida '{letra}' ('{valor}') no es un número positivo en metros (≤ {MAX_MEDIDA_M:g} m): "
+                             "no se usa ni se adivina")
+            malas.add(letra)
+        else:
+            resultado[letra] = numero
+            dadas.add(letra)
+    for letra, valor in textos_in.items():
+        if letra not in TEXTOS_V2.get(esperada, set()):
+            problemas.append(f"el texto de la fila '{letra}' no es de las filas de texto de {esperada or 'este tipo'}"
+                             f" (valor '{valor}')")
+            malas.add(letra)
+        elif not isinstance(valor, str):
+            problemas.append(f"el texto de la fila '{letra}' no es texto (valor '{valor}')")
+            malas.add(letra)
+        elif valor.strip():
+            resultado["obra"][letra] = valor.strip()
+            dadas.add(letra)
+    if estado != "Pendiente":
+        resultado["conforme_por_omision"] = sorted(juego - dadas - malas)
+    return {"json": resultado, "problemas": problemas, "pendiente": estado == "Pendiente", "estado_reconocido": reconocido}
 
 
 # ---------- Fotos ----------
@@ -336,9 +440,12 @@ def cargar_paquete(visita_id: str, ruta_paquete: Path, usuario: Optional[str] = 
 
         respaldo = _respaldar_bd(conn, Path(config.obtener_db_path())) if respaldar else None
         nuevas = actualizadas = sin_cambios = dudas_nuevas = 0
+        es_v2 = paquete["version"] >= VERSION_OBRA
+        obras = [obra_de_elemento(el, ident["tipo_elemento"]) if es_v2 else None for el, ident in elementos]
+        dudas_obra = pendientes = 0
         conn.execute("BEGIN")
         try:
-            for el, ident in elementos:
+            for (el, ident), obra in zip(elementos, obras):
                 orden = el["fotos"][0]["numero"]
                 nota = _nota(el)
                 fotos_json = _json([{
@@ -349,19 +456,20 @@ def cargar_paquete(visita_id: str, ruta_paquete: Path, usuario: Optional[str] = 
                 } for i, f in enumerate(el["fotos"])])
                 valores = (etiqueta_del_elemento(el), ident["id_elemento"], ident["tipo_elemento"], ident["nivel"],
                            ident["ejes"], fotos_json)
-                fila = conn.execute("""SELECT etiqueta_original, id_elemento, tipo_elemento, nivel, ejes, fotos_json
-                                       FROM elementos_visita WHERE visita_id = ? AND orden_en_log = ?""",
-                                    (visita_id, orden)).fetchone()
+                columnas = ["etiqueta_original", "id_elemento", "tipo_elemento", "nivel", "ejes", "fotos_json"]
+                if obra is not None:  # solo un v2 escribe medidas_acero_campo_json; un v1 no la toca
+                    columnas.append("medidas_acero_campo_json")
+                    valores = valores + (_json(obra["json"]),)
+                fila = conn.execute(f"""SELECT {', '.join(columnas)} FROM elementos_visita
+                                        WHERE visita_id = ? AND orden_en_log = ?""", (visita_id, orden)).fetchone()
                 if fila is None:
-                    conn.execute("""INSERT INTO elementos_visita (uid, visita_id, orden_en_log, etiqueta_original,
-                                    id_elemento, tipo_elemento, nivel, ejes, fotos_json)
-                                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                    conn.execute(f"""INSERT INTO elementos_visita (uid, visita_id, orden_en_log, {', '.join(columnas)})
+                                     VALUES (?, ?, ?{', ?' * len(columnas)})""",
                                  (f"{visita_id}-{orden:03d}", visita_id, orden, *valores))
                     nuevas += 1
                 elif tuple(fila) != valores:
-                    conn.execute("""UPDATE elementos_visita SET etiqueta_original = ?, id_elemento = ?, tipo_elemento = ?,
-                                    nivel = ?, ejes = ?, fotos_json = ? WHERE visita_id = ? AND orden_en_log = ?""",
-                                 (*valores, visita_id, orden))
+                    conn.execute(f"""UPDATE elementos_visita SET {', '.join(c + ' = ?' for c in columnas)}
+                                     WHERE visita_id = ? AND orden_en_log = ?""", (*valores, visita_id, orden))
                     actualizadas += 1
                 else:
                     sin_cambios += 1
@@ -369,12 +477,28 @@ def cargar_paquete(visita_id: str, ruta_paquete: Path, usuario: Optional[str] = 
                     if lector_visita._insertar_duda(conn, visita, etiqueta_del_elemento(el) or "(sin datos)",
                                                     f"elemento_visita:p{orden:03d}", _texto_duda(el, ident)):
                         dudas_nuevas += 1
+                if obra is not None:
+                    etiqueta = etiqueta_del_elemento(el) or "(sin datos)"
+                    if obra["problemas"]:
+                        dudas_obra += 1
+                        if lector_visita._insertar_duda(conn, visita, etiqueta, f"elemento_visita:p{orden:03d}:obra",
+                                                        _texto_duda_obra(el, obra["problemas"])):
+                            dudas_nuevas += 1
+                    if obra["pendiente"]:
+                        pendientes += 1
+                        motivo = ("el técnico lo dejó Pendiente" if obra["estado_reconocido"] else
+                                  f"el estado '{_texto(el.get('estado'))}' no se reconoce y se trata como Pendiente")
+                        if lector_visita._insertar_duda(conn, visita, etiqueta, f"elemento_visita:p{orden:03d}:pendiente",
+                                                        _texto_duda(el, None, f"Elemento en revisión: {motivo}. No entra como "
+                                                                              "conforme hasta que se resuelva esta duda.")):
+                            dudas_nuevas += 1
             fecha_clase = _aplicar_fecha_clase(conn, visita, paquete, usuario)
             dudas_lector = _cerrar_duda_lector(conn, visita, usuario)
             estado_anterior = visita["estado"]
             visita = conn.execute("SELECT * FROM visitas WHERE id = ?", (visita_id,)).fetchone()
             estado_nuevo = lector_visita._marcar_con_dudas(conn, visita)
-            detalle = {"paquete": str(ruta_paquete), "generado_por": _texto(paquete.get("generado_por")),
+            detalle = {"paquete": str(ruta_paquete), "version": paquete["version"],
+                       "obra_v2": {"elementos_con_duda_de_obra": dudas_obra, "elementos_pendientes": pendientes} if es_v2 else None, "generado_por": _texto(paquete.get("generado_por")),
                        "elementos": len(elementos), "fotos": sum(len(el["fotos"]) for el, _ in elementos),
                        "reconocidos": sum(1 for _, i in elementos if i["reconocido"]),
                        "filas_nuevas": nuevas, "filas_actualizadas": actualizadas, "sin_cambios": sin_cambios,

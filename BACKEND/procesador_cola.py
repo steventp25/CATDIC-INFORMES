@@ -709,6 +709,17 @@ class ProcesoVisita:
         ficha = {"titulo": f"{tipo}-{c['id_elemento']}" + ("" if c["ejes"] == EJE_LOSA else f"-{c['ejes']}"),
                  "tipo_elemento": tipo, "ejes": c["ejes"], "visita_id": self.visita_id, "fila_stp": fila,
                  "uid_diseno": c["uid"], "orden_en_log": ev["orden_en_log"], "plano": {}, "obra": {}, "medidas": {}}
+        # Paquete v2 (Etapa 7): estado "Pendiente" = elemento en revisión; no entra como conforme. La duda
+        # elemento_visita:pNNN:pendiente la abre el importador; mientras siga abierta (o no exista) no se procesa.
+        medidas_campo = _dict(ev["medidas_acero_campo_json"])
+        if medidas_campo.get("estado_campo") == "Pendiente":
+            campo_pend = f"elemento_visita:{pagina}:pendiente"
+            filas = _con_conexion(lambda conn: conn.execute(
+                "SELECT resuelta FROM dudas_y_hallazgos WHERE visita_id = ? AND campo_afectado = ?",
+                (self.visita_id, campo_pend)).fetchall())
+            if not filas or any(not f["resuelta"] for f in filas):
+                faltas.append((campo_pend, f"Elemento en revisión: el técnico lo dejó Pendiente en Campo ({c['id_elemento']}). "
+                                           "Resuelve esta duda para procesarlo."))
         if fila is not None:  # un tipo no soportado lo excluye el propio STP (con su duda)
             mapeo = MAPEO_DISENO_A_STP.get(fila)
             if not mapeo:
@@ -722,6 +733,8 @@ class ProcesoVisita:
                 medidas_obra = _dict(ev["medidas_acero_campo_json"])
                 obra_txt = medidas_obra.get("obra") if isinstance(medidas_obra.get("obra"), dict) else {}
                 ficha["obra"] = {k: str(v) for k, v in obra_txt.items() if not _vacio(v)}
+                # Letras que Campo dejó vacías (paquete v2) = conformes: el generador pone en OBRA el valor del plano
+                ficha["conforme_por_omision"] = [str(l) for l in medidas_obra.get("conforme_por_omision") or []]
                 for letra, campo in mapeo.get("filas", {}).items():
                     if not _vacio(datos.get(campo)):
                         ficha["plano"][letra] = str(datos[campo])

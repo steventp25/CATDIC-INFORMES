@@ -552,3 +552,44 @@ def test_o1_estado_tras_cerrar_bloqueantes_comprueba_el_stp(entorno, existe):
     else:
         assert cambios == {} and len(nuevas) == 1 and "ya no está" in nuevas[0]["descripcion_pregunta"]
         assert "estado_mesa" not in origen and origen["estado_mesa_anulado"]["motivo"]
+
+
+# ---------- Paquete v2 de Campo en la cola (Etapa 7, T3) ----------
+
+def test_t3_elemento_pendiente_de_campo_queda_en_revision_y_no_se_procesa(entorno, monkeypatch):
+    monkeypatch.setattr(pc, "MAPEO_DISENO_A_STP", MAPEO_SINT)
+    _elemento_visita(entorno, 1, medidas={**OBRA_COMPLETA, "estado_campo": "Pendiente", "conforme_por_omision": []})
+    _diseno()
+    _, eventos = _procesar()
+    assert not any(e["tipo"] == "pdf_generado" for e in eventos)
+    duda = next(d for d in _abiertas() if d["campo_afectado"] == "elemento_visita:p001:pendiente")
+    assert "en revisión" in duda["descripcion_pregunta"]
+    assert _visita()["estado"] == "Con dudas"
+
+
+def test_t3_pendiente_con_su_duda_resuelta_se_procesa(entorno, monkeypatch):
+    _exigir_chromium()
+    monkeypatch.setattr(pc, "MAPEO_DISENO_A_STP", MAPEO_SINT)
+    _elemento_visita(entorno, 1, medidas={**OBRA_COMPLETA, "estado_campo": "Pendiente"})
+    _diseno()
+    with _bd() as conn:
+        conn.execute("""INSERT INTO dudas_y_hallazgos (proyecto_id, visita_id, id_elemento, categoria, campo_afectado,
+                        descripcion_pregunta, resuelta, respuesta_usuario, creado)
+                        VALUES (?, ?, 'L5', 'DUDA_BLOQUEANTE', 'elemento_visita:p001:pendiente', 'SINT', 1, 'ok', 'x')""",
+                     (PID, VID))
+    _, eventos = _procesar()
+    assert any(e["tipo"] == "pdf_generado" for e in eventos)
+
+
+def test_t3_conforme_por_omision_llega_al_generador_y_la_visita_se_procesa(entorno, monkeypatch):
+    _exigir_chromium()
+    monkeypatch.setattr(pc, "MAPEO_DISENO_A_STP", MAPEO_SINT)
+    # b (medida) vacía y las demás filas de texto vacías = conformes; solo 'e' (calzos) la trae Campo
+    _elemento_visita(entorno, 1, medidas={"obra": {"e": "SI"}, "conforme_por_omision": list("abfghin"),
+                                          "estado_campo": "Conforme", "origen": "paquete_v2"})
+    _diseno()
+    _, eventos = _procesar()
+    pdf = next(e for e in eventos if e["tipo"] == "pdf_generado")
+    assert pdf["con_dudas"] is False
+    assert not [d for d in _abiertas() if d["campo_afectado"].startswith(("obra", "medidas"))]
+    assert _visita()["estado"] == "Procesada"
