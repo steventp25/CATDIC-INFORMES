@@ -692,3 +692,96 @@ main { padding: var(--esp-5) clamp(16px, 3vw, 40px) 64px; min-width: 0; }
   .ed-panel select, .ed-panel .radio { min-height: 44px; }
   .dato-comp input { width: 22px; height: 22px; }
 }
+
+/* ───────── B3c: Confirmar datos del plano (pantalla completa) ─────────
+   Estado = borde completo + icono + texto (nunca una franja de color a un lado ni solo color). El rojo del plano (--rojo-plano) marca la celda resaltada. */
+.conf-int { container: conf / inline-size; display: grid; grid-template-rows: auto auto minmax(0, 1fr); height: 100%; min-height: 0; background: var(--fondo); }
+.conf-barra { display: flex; flex-wrap: wrap; gap: var(--esp-2) var(--esp-4); justify-content: space-between; align-items: flex-start; padding: var(--esp-2) var(--esp-3); border-bottom: 1.5px solid var(--tinta); background: var(--superficie); }
+.conf-tit { min-width: 0; flex: 1 1 18rem; }
+.conf-tit h2 { margin: 0; font-size: 1rem; overflow-wrap: anywhere; }
+.conf-tit h2:focus { outline: none; }
+.conf-tit .ayuda { margin: 2px 0 0; }
+.conf-acc { display: flex; flex-wrap: wrap; gap: var(--esp-2); align-items: center; }
+.conf-n { margin-left: 6px; padding: 0 6px; border: 1px solid var(--borde-fuerte); font-size: 0.75rem; background: var(--superficie-2); }
+.conf-h .conf-n { margin-left: 0; }
+.conf-msgs { display: grid; gap: 0; min-width: 0; }
+.conf-msgs > div:has(> *) { padding: var(--esp-2) var(--esp-3) 0; }
+.conf-msgs .aviso, .conf-msgs .dlg-error, .conf-msgs .ed-aviso { margin: 0; overflow-wrap: anywhere; }
+.conf-espera { margin: 0; display: flex; gap: 6px; align-items: center; }
+.conf-cuerpo { display: grid; grid-template-columns: minmax(0, 1fr); min-height: 0; min-width: 0; }
+.conf-lista, .conf-det { min-height: 0; min-width: 0; overflow: auto; padding: var(--esp-3); overscroll-behavior: contain; }
+.conf-lista { background: var(--superficie); }
+.conf-h { margin: 0 0 var(--esp-3); font-size: 0.875rem; text-transform: uppercase; letter-spacing: 0.08em; display: flex; flex-wrap: wrap; align-items: center; gap: var(--esp-2); }
+.conf-vacio { padding: var(--esp-3) 0; overflow-wrap: anywhere; }
+.conf-ul { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--esp-2); }
+.conf-t { display: grid; gap: 4px; width: 100%; text-align: left; font: inherit; color: var(--tinta); padding: var(--esp-3); border: 1px solid var(--borde-fuerte); background: var(--superficie); cursor: pointer; min-width: 0; overflow-wrap: anywhere; }
+.conf-t:hover { background: var(--superficie-2); }
+.conf-t.es-sel { border: 2px solid var(--sel-borde); background: var(--sel-fondo); padding: calc(var(--esp-3) - 1px); }
+.conf-t.no-vig { border-style: dashed; background: var(--superficie-2); color: var(--tinta-2); }
+.conf-t-cab { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: var(--esp-2); }
+.conf-t-n { min-width: 0; }
+.conf-t-m { font-size: 0.8125rem; color: var(--tinta-2); }
+.conf-t-f, .conf-t-nv, .conf-t-sel { display: flex; gap: 6px; align-items: flex-start; font-size: 0.8125rem; }
+.conf-t-f { color: var(--alerta-tinta); font-weight: 600; }
+.conf-t-nv { color: var(--tinta-2); font-weight: 600; }
+.conf-t-sel { font-weight: 700; }
+.conf-volver { margin-bottom: var(--esp-3); }
+.conf-det { container: det / inline-size; display: block; }
+.conf-det > * + * { margin-top: var(--esp-3); }
+.conf-det > .conf-volver + * { margin-top: 0; }
+.conf-cab { display: flex; flex-wrap: wrap; align-items: center; gap: var(--esp-2); }
+.conf-tt { margin: 0; font-size: 1.0625rem; overflow-wrap: anywhere; }
+.conf-meta { margin: 0; font-size: 0.8125rem; color: var(--tinta-2); overflow-wrap: anywhere; }
+.conf-sec { display: grid; gap: var(--esp-2); min-width: 0; }
+.conf-sub { margin: 0; font-size: 0.8125rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--tinta-2); }
+.conf-comp { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.conf-comp-f { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px var(--esp-2); padding: 6px var(--esp-2); border: 1px solid var(--borde); background: var(--superficie); min-width: 0; overflow-wrap: anywhere; }
+.conf-comp-f.es-mal { border: 1.5px solid var(--alerta); background: var(--error-fondo); }
+.conf-comp-n { font-size: 0.8125rem; }
+.conf-comp-d { flex: 1 1 100%; font-size: 0.8125rem; }
+.conf-comp-c { flex: 1 1 100%; font-size: 0.8125rem; color: var(--ok-tinta); font-weight: 600; }
+.conf-bloque { display: grid; gap: var(--esp-2); padding: var(--esp-3); border: 1.5px solid var(--sel-borde); background: var(--aviso-fondo); min-width: 0; overflow-wrap: anywhere; }
+.conf-bt { margin: 0; display: flex; gap: 6px; align-items: flex-start; font-weight: 700; }
+.conf-notas { margin: 0; padding-left: 1.25rem; display: grid; gap: 4px; font-size: 0.875rem; }
+.conf-cert .certifico, .conf-lote .certifico { background: var(--superficie); }
+.conf-roja { border-color: var(--alerta); background: var(--error-fondo); }
+.conf-roja p { margin: 0; }
+.conf-no { margin: 0; display: flex; gap: 6px; align-items: flex-start; padding: var(--esp-3); border: 1.5px dashed var(--pend-borde); background: var(--superficie); overflow-wrap: anywhere; }
+.conf-dos { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--esp-4); align-items: start; min-width: 0; }
+.conf-rec, .conf-val { display: grid; gap: var(--esp-2); min-width: 0; align-content: start; }
+.conf-img { position: relative; border: 1px solid var(--borde-fuerte); background: #fff; line-height: 0; }
+.conf-img img { display: block; width: 100%; height: auto; }
+.conf-caja { position: absolute; pointer-events: none; border: 2px solid var(--rojo-plano); background: rgb(220 0 0 / 0.14); box-shadow: 0 0 0 1px #fff; box-sizing: border-box; min-width: 4px; min-height: 4px; }
+.conf-sinrec { margin: 0; display: flex; gap: 6px; align-items: flex-start; padding: var(--esp-3); border: 1.5px dashed var(--pend-borde); background: var(--superficie); }
+.conf-celda { min-height: 1.3em; margin: 0; overflow-wrap: anywhere; }
+.conf-tabla-cont { max-width: 100%; overflow-x: auto; border: 1px solid var(--borde-fuerte); background: var(--superficie); }
+.conf-tabla { width: 100%; min-width: 30rem; border-collapse: collapse; font-size: 0.8125rem; }
+.conf-tabla th, .conf-tabla td { text-align: left; vertical-align: top; padding: 6px 8px; border-bottom: 1px solid var(--borde); overflow-wrap: anywhere; }
+.conf-tabla thead th { background: var(--superficie-2); font-size: 0.6875rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--tinta-2); border-bottom: 1.5px solid var(--tinta); }
+.conf-tabla tbody th { font-weight: 600; }
+.conf-tabla tbody tr:hover { background: var(--superficie-2); }
+.conf-tabla tbody tr:focus-visible { outline: 2px solid var(--foco); outline-offset: -2px; background: var(--sel-fondo); }
+.conf-niv { color: var(--tinta-2); font-weight: 400; }
+.conf-tabla .est { white-space: nowrap; }
+.conf-dif { display: flex; gap: 4px; align-items: flex-start; margin-top: 2px; padding: 1px 6px; border: 1.5px solid var(--alerta); background: var(--error-fondo); font-family: var(--f-texto); font-size: 0.75rem; font-weight: 600; width: fit-content; max-width: 100%; }
+.conf-dif .ico { color: var(--alerta); }
+.conf-ok { margin: 0; }
+
+/* En 1024 px o más (de la propia pantalla): lista a la izquierda, detalle a la derecha. En estrecho, pasos: lista → tabla. */
+@container conf (min-width: 1024px) {
+  .conf-cuerpo { grid-template-columns: minmax(18rem, 22rem) minmax(0, 1fr); }
+  .conf-lista { border-right: 1.5px solid var(--tinta); }
+  .conf-volver { display: none; }
+}
+@container conf (max-width: 1023.98px) {
+  .conf-cuerpo[data-paso="lista"] .conf-det { display: none; }
+  .conf-cuerpo[data-paso="tabla"] .conf-lista { display: none; }
+  .conf .btn, .conf-t, .conf .certifico { min-height: 44px; }
+  .conf-tabla th, .conf-tabla td { padding: 10px 8px; }
+  .conf-tit .ayuda { display: none; }
+  .conf-acc { width: 100%; }
+  .conf-acc .btn { flex: 1 1 auto; }
+  .conf .certifico input { width: 24px; height: 24px; }
+}
+@container det (min-width: 760px) { .conf-dos { grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr); } }
+.conf-det .ed-aviso, .conf-msgs .ed-aviso { display: flex; gap: 6px; align-items: flex-start; }

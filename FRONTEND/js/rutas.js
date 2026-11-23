@@ -2,6 +2,7 @@
    Generales:  #/inicio  #/obras  #/bandeja  #/informes  #/configuracion  #/crear-informe
    De obra:    #/obra/<id>/<pestaña>   con pestaña = resumen | visitas | planos | avance | informes | cierre
    Editor de recuadros (B3b):  #/obra/<id>/planos?visor=1[&elemento=<uid>]   (también ?subir=1 abre «Subir planos»)
+   Confirmar datos del plano (B3c):  #/obra/<id>/planos?confirmar=1[&tabla=<id de la tabla extraída>]
    Mesa de Dudas (B3e, vista con dirección propia):
                #/obra/<id>/visitas?visita=<vid>[&duda=<n>]   modo visita
                #/obra/<id>/resumen?dudas=obra[&duda=<n>]     modo obra (dudas sin visita)
@@ -38,6 +39,10 @@
   var primera = true;
   function leer() {
     var antes = ruta.nombre === 'obra' && ruta.pestana === 'planos' && ruta.consulta && ruta.consulta.visor === '1';
+    // B3c: ¿se venía de «Planos y ficha» a secas, de la misma obra? Solo entonces «Cerrar» puede volver con Atrás.
+    var antesConfirmar = ruta.nombre === 'obra' && ruta.pestana === 'planos' && !!(ruta.consulta && ruta.consulta.confirmar === '1');
+    var antesPlanos = ruta.nombre === 'obra' && ruta.pestana === 'planos' && !antes && !antesConfirmar;
+    var antesId = ruta.id;
     var h = location.hash;
     if (!h || h === '#' || h === '#/') { sustituir('#/inicio'); return; }
     var sinAlmohadilla = h.replace(/^#\/?/, '');
@@ -65,6 +70,8 @@
     ruta.consulta = consulta; ruta.hash = h;
     var ahora = ruta.nombre === 'obra' && ruta.pestana === 'planos' && consulta.visor === '1';
     if (ahora && !antes && !primera) C.rutas.vinoDeDentro = true;
+    var ahoraConfirmar = ruta.nombre === 'obra' && ruta.pestana === 'planos' && consulta.confirmar === '1';
+    if (ahoraConfirmar && !antesConfirmar) C.rutas.vinoDeDentroConfirmar = !primera && antesPlanos && antesId === ruta.id;
     primera = false;
   }
 
@@ -88,11 +95,18 @@
     hashVisorPlano: function (obraId, uid) {
       return '#/obra/' + encodeURIComponent(obraId) + '/planos?visor=1' + (uid ? '&elemento=' + encodeURIComponent(uid) : '');
     },
+    // B3c · «Confirmar datos del plano»: #/obra/<id>/planos?confirmar=1[&tabla=<id>]. La tabla elegida va en la dirección (recargar la conserva).
+    hashConfirmarPlano: function (obraId, tablaId) {
+      return '#/obra/' + encodeURIComponent(obraId) + '/planos?confirmar=1' + (tablaId !== undefined && tablaId !== null && tablaId !== '' ? '&tabla=' + encodeURIComponent(tablaId) : '');
+    },
     // Cambia la dirección sin añadir una entrada al historial (p. ej. al elegir otro elemento en el editor).
     reemplazar: function (hash) { sustituir(hash); },
     // Verdadero si el editor se abrió navegando dentro del tablero (entonces «Cerrar» vuelve con Atrás, sin duplicar el historial);
     // falso si se cargó directo (recarga o enlace): «Cerrar» lleva a la pestaña sustituyendo la entrada.
     vinoDeDentro: false,
+    // Igual para «Confirmar datos del plano»: verdadero solo si se entró desde «Planos y ficha» de la misma obra (Cerrar = Atrás).
+    // Si se volvió de la Mesa de Dudas con Atrás, o se cargó directo, «Cerrar» lleva a «Planos y ficha» sustituyendo la entrada.
+    vinoDeDentroConfirmar: false,
     iniciar: function () { window.addEventListener('hashchange', leer); leer(); }
   };
 })();

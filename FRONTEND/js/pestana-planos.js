@@ -3,8 +3,8 @@
    emite   actualizar  (se subió un plano nuevo: la pantalla de la obra relee el tablero)
    Muestra: el plano vigente (Z14a, de `planos_vigentes[id]`), el historial (GET /api/proyectos/{id}/planos), «Cambiar plano» o
    «Subir planos» (FormularioPlanos, modo cambiar: A11 y A28), el editor de recuadros (EditorPlano, M4: ruta
-   #/obra/<id>/planos?visor=1[&elemento=<uid>]), «Datos de la obra» (DatosObra, M5), el enlace «Dudas de la obra: N» (A15) y el
-   sitio reservado de «Confirmar datos del plano» (M6), que construye la tarea B3c.
+   #/obra/<id>/planos?visor=1[&elemento=<uid>]), «Datos de la obra» (DatosObra, M5), el enlace «Dudas de la obra: N» (A15) y
+   «Confirmar datos del plano» (ConfirmarPlano, M6, B3c: ruta #/obra/<id>/planos?confirmar=1[&tabla=<id>]; A14: solo con plano vigente).
    Con ?subir=1 en la ruta el diálogo «Subir planos» se abre solo (y la dirección queda limpia).
    Ningún POST se reintenta solo. Un elemento de diseño se identifica por su `uid`, nunca por `id_elemento`. */
 (function () {
@@ -32,6 +32,8 @@
       pv: function () { return (this.datos.planos_vigentes || {})[this.obra.id] || null; },
       hayPlano: function () { return !!this.pv; },
       conVisor: function () { return !!(this.ruta.consulta && this.ruta.consulta.visor === '1'); },
+      conConfirmar: function () { return !!(this.ruta.consulta && this.ruta.consulta.confirmar === '1'); },
+      hrefConfirmar: function () { return C.rutas.hashConfirmarPlano(this.obra.id); },
       uidVisor: function () { return this.ruta.consulta && this.ruta.consulta.elemento ? String(this.ruta.consulta.elemento) : ''; },
       tituloDialogo: function () { return this.hayPlano ? 'Cambiar plano' : 'Subir planos'; },
       campos: function () {
@@ -110,6 +112,11 @@
         if (C.rutas.vinoDeDentro) { C.rutas.vinoDeDentro = false; history.back(); }
         else C.rutas.reemplazar(C.rutas.hashObra(this.obra.id, 'planos'));
       },
+      // «Cerrar» de Confirmar: con Atrás si se entró desde esta pestaña; si no (recarga, enlace o regreso de la Mesa), sustituyendo la entrada.
+      cerrarConfirmar: function () {
+        if (C.rutas.vinoDeDentroConfirmar) { C.rutas.vinoDeDentroConfirmar = false; history.back(); }
+        else C.rutas.reemplazar(C.rutas.hashObra(this.obra.id, 'planos'));
+      },
       elementoElegido: function (uid) { C.rutas.reemplazar(C.rutas.hashVisorPlano(this.obra.id, uid)); },
       fecha: function (v) { return C.formato.fecha(v); },
       txt: function (v) { return C.formato.texto(v); },
@@ -164,11 +171,23 @@
           </Bloque>
         </section>
 
-        <section class="caja" aria-labelledby="pp-conf" data-confirmar-datos-reservado>
+        <section class="caja" aria-labelledby="pp-conf" data-confirmar-datos>
           <div class="caja-cabeza"><h2 id="pp-conf">Confirmar datos del plano</h2></div>
-          <p class="vacio-t">Esta sección todavía no está construida.</p>
-          <p>La revisión de las tablas extraídas del plano la construye la tarea <span class="num tarea">B3c</span> de la Fase B. No se simula aquí.</p>
+          <p>Revisa las tablas que el programa leyó del plano vigente (acero en losa, zapata de muro lindero, f'c por rango, losa aligerada) junto al recorte del plano, y confirma sus valores. Nada se confirma solo.</p>
+          <div class="acc-botones pv-botones">
+            <a v-if="hayPlano" class="btn btn-pri" :href="hrefConfirmar" data-confirmar-plano><Icono nombre="check"/>Confirmar datos del plano</a>
+            <button v-else type="button" class="btn btn-pri" disabled aria-describedby="pp-conf-motivo" data-confirmar-plano><Icono nombre="check"/>Confirmar datos del plano</button>
+          </div>
+          <p v-if="!hayPlano" id="pp-conf-motivo" class="ayuda" data-confirmar-sin-plano>No disponible: esta obra no tiene plano vigente. Sube el vectorial y el sellado para poder confirmar sus datos.</p>
         </section>
+
+        <section v-if="conConfirmar && !hayPlano" class="caja" aria-labelledby="pp-sc" data-confirmar-sin-plano-pantalla>
+          <div class="caja-cabeza"><h2 id="pp-sc">Confirmar datos del plano</h2></div>
+          <p class="vacio-t">Esta obra no tiene plano vigente.</p>
+          <p>Las tablas se leen del plano vigente. Sube primero el vectorial y el sellado.</p>
+          <div class="acc-botones"><button type="button" class="btn btn-pri" @click="abrirPlano"><Icono nombre="subir"/>Subir planos</button><button type="button" class="btn btn-sec" @click="cerrarConfirmar">Volver a la pestaña</button></div>
+        </section>
+        <ConfirmarPlano v-if="conConfirmar && hayPlano" :obra="obra" @cerrar="cerrarConfirmar" @actualizar="$emit('actualizar')"/>
 
         <section v-if="conVisor && !hayPlano" class="caja" aria-labelledby="pp-sv" data-visor-sin-plano>
           <div class="caja-cabeza"><h2 id="pp-sv">Editor de recuadros</h2></div>
