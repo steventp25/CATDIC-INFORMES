@@ -203,7 +203,7 @@
       abrirDesdeRuta: function (v) {
         var id = parseInt(v, 10);
         if (!isFinite(id) || String(id) !== String(v) || !this.tablas.some(function (t) { return t.id === id; })) {
-          this.avisoTabla = 'La tabla de la dirección («' + v + '») ya no está entre las tablas extraídas del plano vigente.';
+          this.avisoTabla = 'La tabla ' + (/^\d+$/.test(v) ? v : '«' + v + '»') + ' no existe en esta extracción. Se muestra la lista de tablas.';
           this.selId = null; this.det = null; this.estadoT = 'ninguna'; this.soltarRecorte();
           C.rutas.reemplazar(C.rutas.hashConfirmarPlano(this.obra.id));
           return;
