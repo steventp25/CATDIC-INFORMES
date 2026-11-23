@@ -1,0 +1,10 @@
+{
+  "confirmado": false,
+  "version": 1,
+  "nota": "PROPUESTA pendiente de Steven (Etapa 7, T4). Solo correspondencias directas con evidencia de los STP entregados (visita 24). Mientras confirmado sea false, el STP se genera solo como BORRADOR en la carpeta de pruebas. Detalle y preguntas en PLANES/etapa-7-mapeo-stp.md. col: barras se convierte con conversion exacta (36∅1\" -> [[36, 1\"]]); k y cuantia los calcula/comprueba el generador, no se copian. muro: la misma entrada sirve a MURO H.A. y MURO DE CONTENCION (los dos usan fila_stp muro); el plano no distingue cara, h=i (ASV) y j=k (ASH) son una propuesta que Steven debe confirmar. Los bordes (borde_k.*) no tienen fila en el STP-MIVED. Viga y losa: sin entrada a proposito (siguen con la duda de mapeo).",
+  "filas_stp": {
+    "col": {"filas": {}, "medidas": {"c": "b_m", "d": "h_m"}, "barras": "acero_longitudinal"},
+    "muro": {"filas": {"c": "longitud", "h": "alma.ASV", "i": "alma.ASV", "j": "alma.ASH", "k": "alma.ASH"},
+             "medidas": {"b": "espesor"}, "barras": null}
+  }
+}

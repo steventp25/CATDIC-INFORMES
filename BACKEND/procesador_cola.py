@@ -80,11 +80,44 @@ def campo_de_elemento(campo: str) -> Optional[Tuple[str, str]]:
 def es_propia_de_visita(campo: str) -> bool:
     return campo_de_elemento(campo) is None and (campo or "").startswith(PREFIJOS_PROPIOS_VISITA)
 
-# De qué dato de diseño (datos_diseno_json) sale cada fila del STP-MIVED. PENDIENTE DE STEVEN: hoy NO hay ninguna
-# correspondencia aprobada (p. ej. si "DIR. X" de la tabla de acero en losa es la fila h "Barras Top X-X" o la i
-# "Barras Bot X-X"), así que el procesador no la deduce: el elemento queda en espera con una duda `diseno:pNNN:mapeo`.
+# De qué dato de diseño (datos_diseno_json) sale cada fila del STP-MIVED. Vive en generators/mapeo_stp.json (T4, Etapa 7):
+# solo correspondencias DIRECTAS con evidencia; mientras "confirmado" sea false es una PROPUESTA para Steven y el STP
+# solo se escribe como BORRADOR en la carpeta de pruebas. JSON ausente o roto = mapeo vacío (nunca se adivina).
 # Forma: {fila_stp: {"filas": {letra: campo}, "medidas": {letra: campo en metros}, "barras": campo | None}}.
-MAPEO_DISENO_A_STP: Dict[str, Dict] = {}
+RUTA_MAPEO_STP = Path(__file__).resolve().parent / "generators" / "mapeo_stp.json"
+
+
+def cargar_mapeo_stp(ruta: Optional[Path] = None) -> Tuple[Dict[str, Dict], bool]:
+    """(mapeo, confirmado). Ausente, roto o con otra forma: ({}, False). Solo `confirmado: true` exacto confirma."""
+    try:
+        crudo = json.loads(Path(ruta or RUTA_MAPEO_STP).read_text(encoding="utf-8"))
+        filas_stp = crudo["filas_stp"]
+        if not isinstance(filas_stp, dict):
+            raise ValueError("filas_stp")
+        mapeo: Dict[str, Dict] = {}
+        for fila, m in filas_stp.items():
+            if not isinstance(m, dict):
+                raise ValueError(fila)
+            filas, medidas, barras = m.get("filas") or {}, m.get("medidas") or {}, m.get("barras")
+            if not isinstance(filas, dict) or not isinstance(medidas, dict) or not (barras is None or isinstance(barras, str)):
+                raise ValueError(fila)
+            mapeo[str(fila)] = {"filas": dict(filas), "medidas": dict(medidas), "barras": barras}
+        return mapeo, crudo.get("confirmado") is True
+    except (OSError, ValueError, KeyError, TypeError, AttributeError):
+        return {}, False
+
+
+MAPEO_DISENO_A_STP, MAPEO_CONFIRMADO = cargar_mapeo_stp()
+_RE_BARRAS = re.compile(r"^\s*(\d+)\s*[∅Øø]\s*(\d+(?:/\d+)?)\s*[\"″”“]\s*$")
+
+
+def convertir_barras(texto) -> Optional[List[list]]:
+    """'36∅1"' -> [[36, '1"']]. Solo el texto ENTERO con un único grupo cantidad+diámetro; otra cosa -> None (duda)."""
+    m = _RE_BARRAS.match(str(texto)) if isinstance(texto, str) else None
+    return [[int(m.group(1)), f'{m.group(2)}"']] if m and int(m.group(1)) > 0 else None
+
+
+MARCA_BORRADOR = "BORRADOR — mapeo sin confirmar"
 
 _cerrojo = threading.Lock()
 _hilos: Dict[str, threading.Thread] = {}
@@ -722,7 +755,7 @@ class ProcesoVisita:
                                            "Resuelve esta duda para procesarlo."))
         if fila is not None:  # un tipo no soportado lo excluye el propio STP (con su duda)
             mapeo = MAPEO_DISENO_A_STP.get(fila)
-            if not mapeo:
+            if mapeo is None:  # sin entrada (viga, losa): duda de mapeo; una entrada vacía (muro) pide cada fila con su duda
                 faltas.append((f"diseno:{pagina}:mapeo",
                                f"No está definido de qué datos del plano sale cada fila del STP-MIVED para '{tipo}' "
                                f"(p. ej. si 'DIR. X' es la fila de barras arriba o abajo): decisión pendiente de Steven "
@@ -749,11 +782,14 @@ class ProcesoVisita:
                                                 and not isinstance(medida, bool) else None}
                 if mapeo.get("barras"):
                     barras = datos.get(mapeo["barras"])
-                    if isinstance(barras, list) and all(isinstance(b, list) and len(b) == 2 for b in barras):
+                    if isinstance(barras, str):  # texto impreso tipo 36∅1": conversión exacta o duda, nunca adivinar
+                        barras = convertir_barras(barras)
+                    if isinstance(barras, list) and barras and all(isinstance(b, list) and len(b) == 2 for b in barras):
                         ficha["barras"] = [(b[0], b[1]) for b in barras]
                     else:
-                        faltas.append((f"diseno:{pagina}:barras", f"Las barras de {c['id_elemento']} no están como "
-                                                                  f"lista [[n, diámetro], …] ({PENDIENTE})."))
+                        faltas.append((f"diseno:{pagina}:barras", f"Las barras de {c['id_elemento']} no se pueden leer "
+                                                                  f"como [[n, diámetro], …] (texto impreso: "
+                                                                  f"'{datos.get(mapeo['barras'])}'): {PENDIENTE}."))
 
         # M3 / M4: recuadros confirmados en el visor (T5n) sobre el plano vigente
         plano = self.contexto["plano"]
@@ -888,10 +924,16 @@ class ProcesoVisita:
         resultado = {"archivos": [], "limpio": True, "discrepancias": []}
         por_orden = {f["titulo"]: f["orden_en_log"] for f in fichas}
 
-        if FORMATO_STP in formatos:
+        if FORMATO_STP in formatos and not MAPEO_CONFIRMADO and not os.environ.get(config.ENV_SALIDA_PRUEBAS, "").strip():
+            # Mapeo sin confirmar: solo borrador y solo en la carpeta de pruebas elegida a propósito
+            self.duda("generacion:STP-MIVED", "(visita)", "STP-MIVED: mapeo sin confirmar: defina "
+                      f"{config.ENV_SALIDA_PRUEBAS} para generar el borrador ({PENDIENTE}).")
+            resultado["limpio"] = False
+        elif FORMATO_STP in formatos:
             proyecto = {**self.contexto["proyecto"],
                         "carpeta_planos": str(Path(self.contexto["plano"]["vectorial_ruta"]).parent.parent)}
-            r = stp_mived.generar_stp_mived(proyecto, datos_visita, fichas, carpeta_salida=paso, usuario=self.usuario)
+            r = stp_mived.generar_stp_mived(proyecto, datos_visita, fichas, carpeta_salida=paso, usuario=self.usuario,
+                                            marca_borrador=None if MAPEO_CONFIRMADO else MARCA_BORRADOR)
             resultado["discrepancias"] = list(r.get("discrepancias") or [])
             obra: Dict[int, List[str]] = {}
             for d in r["dudas"]:

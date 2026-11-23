@@ -318,8 +318,10 @@ def _pagina_fot(proy, ficha, num, loc_img, det_img, fotos_img) -> str:
             f'<div class=foot><span>{_esc(proy["nombre"].upper())}</span><span>{num}</span></div></div>')
 
 
-def _portada(proy, visita) -> str:
-    return ('<div class=pg><div class=cover>'
+def _portada(proy, visita, marca_borrador=None) -> str:
+    marca = (f'<div style="color:#c00000;font-weight:bold;font-size:14pt;text-align:center">{_esc(marca_borrador)}</div>'
+             if marca_borrador else "")
+    return ('<div class=pg><div class=cover>' + marca +
             f'<div class=k style="margin-top:0.85in">Proyecto</div><div class=v>{_esc(proy["nombre"].upper())}</div>'
             f'<div class=k>Licencia No.</div><div class=v style="font-weight:bold;font-size:13pt">{_esc(proy["no_licencia"])}</div>'
             f'<div class=k>Elementos</div><div class=v style="font-weight:bold;font-size:13pt">{_esc(visita["elementos_txt"])}</div>'
@@ -449,7 +451,7 @@ def _unir_visitas(visitas: List[Dict]) -> Tuple[Optional[Dict], List[str]]:
 
 
 def generar_stp_mived(proyecto: Dict, visita, fichas: List[Dict], carpeta_salida=None,
-                      usuario: Optional[str] = None) -> Dict:
+                      usuario: Optional[str] = None, marca_borrador: Optional[str] = None) -> Dict:
     """
     Genera el STP-MIVED de una visita o, (T7b), de varias visitas del mismo nivel: `visita` es un dict o una lista
     de dicts (con 'id' y 'nivel') y cada ficha trae 'visita_id' con la visita de la que sale.
@@ -533,7 +535,7 @@ def generar_stp_mived(proyecto: Dict, visita, fichas: List[Dict], carpeta_salida
     pendientes = sum(1 for d in dudas if d.get("bloquea") is False and not d.get("excluido"))
 
     # Imágenes (M1, M3, M4 de T6) y páginas
-    paginas, num = [_portada(proyecto, visita), _inspeccion(proyecto, visita, _texto_observaciones(visita, discrepancias, pendientes, resultado["excluidos"]))], 1
+    paginas, num = [_portada(proyecto, visita, marca_borrador), _inspeccion(proyecto, visita, _texto_observaciones(visita, discrepancias, pendientes, resultado["excluidos"]))], 1
     carpeta_planos = proyecto["carpeta_planos"]
     try:
         for ficha, kind, filas, fecha_ficha in armadas:

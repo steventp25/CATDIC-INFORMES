@@ -119,9 +119,10 @@ def entorno(tmp_path, monkeypatch):
 
 
 def _diseno(uid="ed-0001", id_elemento="L5", nivel="SOTANO S4", ejes="—", confirmado=True, recuadros=True,
-            tipo="LOSA MACIZA"):
+            tipo="LOSA MACIZA", campos=None):
+    campos = CAMPOS_DISENO if campos is None else campos
     estado = {k: ("confirmado" if confirmado else "pendiente_de_verificar")
-              for k in ["id_elemento", "tipo_elemento", "nivel_rango", "ejes"] + [f"datos_diseno.{c}" for c in CAMPOS_DISENO]}
+              for k in ["id_elemento", "tipo_elemento", "nivel_rango", "ejes"] + [f"datos_diseno.{c}" for c in campos]}
     loc = {"plano_id": 1, "pagina": 1, "rect": [100, 100, 300, 250], "estado": "confirmado"} if recuadros else {}
     det = {"plano_id": 1, "pagina": 1, "rect": [0, 0, 300, 200], "estado": "confirmado"} if recuadros else {}
     with _bd() as conn:
@@ -129,7 +130,7 @@ def _diseno(uid="ed-0001", id_elemento="L5", nivel="SOTANO S4", ejes="—", conf
                         hoja_plano_origen, archivo_plano_origen, datos_diseno_json, estado_campos_json,
                         recorte_planta_json, recorte_detalle_json, actualizado, fuente_json, plano_id)
                         VALUES (?, ?, ?, ?, ?, ?, '21', 'vectorial.pdf', ?, ?, ?, ?, 'x', ?, 1)""",
-                     (uid, PID, id_elemento, tipo, nivel, ejes, json.dumps(CAMPOS_DISENO), json.dumps(estado),
+                     (uid, PID, id_elemento, tipo, nivel, ejes, json.dumps(campos), json.dumps(estado),
                       json.dumps(loc), json.dumps(det),
                       json.dumps({"tabla": "p1:acero_en_losa", "bbox_id": [[10, 10, 20, 20]]})))
 
@@ -593,3 +594,164 @@ def test_t3_conforme_por_omision_llega_al_generador_y_la_visita_se_procesa(entor
     assert pdf["con_dudas"] is False
     assert not [d for d in _abiertas() if d["campo_afectado"].startswith(("obra", "medidas"))]
     assert _visita()["estado"] == "Procesada"
+
+
+# ---------- T4 (Etapa 7): mapeo de filas del STP en generators/mapeo_stp.json ----------
+
+def test_t4_carga_del_json_valido_roto_y_ausente(tmp_path):
+    ok = tmp_path / "ok.json"
+    ok.write_text(json.dumps({"confirmado": True, "filas_stp": {"col": {"medidas": {"c": "b_m"}}, "muro": {}}}),
+                  encoding="utf-8")
+    assert pc.cargar_mapeo_stp(ok) == ({"col": {"filas": {}, "medidas": {"c": "b_m"}, "barras": None},
+                                        "muro": {"filas": {}, "medidas": {}, "barras": None}}, True)
+    sin_confirmar = tmp_path / "sc.json"
+    sin_confirmar.write_text(json.dumps({"confirmado": "true", "filas_stp": {}}), encoding="utf-8")
+    assert pc.cargar_mapeo_stp(sin_confirmar) == ({}, False)  # solo True exacto confirma
+    roto = tmp_path / "roto.json"
+    roto.write_text("{ no es json", encoding="utf-8")
+    forma = tmp_path / "forma.json"
+    forma.write_text(json.dumps({"confirmado": True, "filas_stp": {"col": ["x"]}}), encoding="utf-8")
+    for ruta in (roto, forma, tmp_path / "no-existe.json"):
+        assert pc.cargar_mapeo_stp(ruta) == ({}, False)
+
+
+def test_t4_el_json_entregado_es_propuesta_sin_confirmar():
+    mapeo, confirmado = pc.cargar_mapeo_stp()
+    assert confirmado is False
+    assert mapeo["col"] == {"filas": {}, "medidas": {"c": "b_m", "d": "h_m"}, "barras": "acero_longitudinal"}
+    assert mapeo["muro"]["medidas"] == {"b": "espesor"}
+    assert mapeo["muro"]["filas"] == {"c": "longitud", "h": "alma.ASV", "i": "alma.ASV", "j": "alma.ASH", "k": "alma.ASH"}
+    assert "viga" not in mapeo and "losa" not in mapeo  # fuera de alcance: siguen con la duda de mapeo
+
+
+def test_t4_sin_salida_de_pruebas_y_sin_confirmar_no_se_genera(entorno, monkeypatch):
+    monkeypatch.setattr(pc, "MAPEO_DISENO_A_STP", MAPEO_SINT)
+    monkeypatch.setattr(pc, "MAPEO_CONFIRMADO", False)
+    monkeypatch.delenv(config.ENV_SALIDA_PRUEBAS)
+    llamado = []
+    monkeypatch.setattr(pc.stp_mived, "generar_stp_mived", lambda *a, **k: llamado.append(1))
+    _elemento_visita(entorno, 1, medidas=OBRA_COMPLETA)
+    _diseno()
+    antes = _arbol(entorno["tmp"] / "dropbox")
+    _, eventos = _procesar()
+    assert not llamado and not any(e["tipo"] == "pdf_generado" for e in eventos)
+    d = next(d for d in _abiertas() if d["campo_afectado"] == "generacion:STP-MIVED")
+    assert "mapeo sin confirmar" in d["descripcion_pregunta"] and config.ENV_SALIDA_PRUEBAS in d["descripcion_pregunta"]
+    assert _visita()["estado"] == "Con dudas"
+    assert _arbol(entorno["tmp"] / "dropbox") == antes
+    assert not list((entorno["obra"] / "INFORMES" / "2.DATA PROCESADA").iterdir())
+
+
+def test_t4_sin_confirmar_el_borrador_solo_va_a_la_salida_de_pruebas_con_la_marca(entorno, monkeypatch):
+    _exigir_chromium()
+    monkeypatch.setattr(pc, "MAPEO_DISENO_A_STP", MAPEO_SINT)
+    monkeypatch.setattr(pc, "MAPEO_CONFIRMADO", False)
+    _elemento_visita(entorno, 1, medidas=OBRA_COMPLETA)
+    _diseno()
+    antes = _arbol(entorno["tmp"] / "dropbox")
+    _, eventos = _procesar()
+    ruta = Path(next(e for e in eventos if e["tipo"] == "pdf_generado")["ruta"])
+    assert ruta.parent == entorno["tmp"] / "salida"
+    assert not list((entorno["obra"] / "INFORMES" / "2.DATA PROCESADA").iterdir())
+    assert _arbol(entorno["tmp"] / "dropbox") == antes
+    doc = pymupdf.open(str(ruta))
+    try:
+        texto = doc[0].get_text()
+    finally:
+        doc.close()
+    assert "BORRADOR" in texto and "mapeo sin confirmar" in texto
+
+
+def test_t4_confirmado_la_portada_no_lleva_la_marca(entorno, monkeypatch):
+    _exigir_chromium()
+    monkeypatch.setattr(pc, "MAPEO_DISENO_A_STP", MAPEO_SINT)
+    monkeypatch.setattr(pc, "MAPEO_CONFIRMADO", True)
+    _elemento_visita(entorno, 1, medidas=OBRA_COMPLETA)
+    _diseno()
+    _, eventos = _procesar()
+    doc = pymupdf.open(next(e for e in eventos if e["tipo"] == "pdf_generado")["ruta"])
+    try:
+        assert "BORRADOR" not in doc[0].get_text()
+    finally:
+        doc.close()
+
+
+def _capturar_fichas(monkeypatch):
+    capturado = {}
+
+    def falso(proyecto, visita, fichas, **k):
+        capturado["fichas"], capturado["marca"] = fichas, k.get("marca_borrador")
+        return {"ok": False, "ruta": None, "errores": [], "dudas": [], "discrepancias": [], "excluidos": []}
+    monkeypatch.setattr(pc.stp_mived, "generar_stp_mived", falso)
+    return capturado
+
+
+def test_t4_columna_con_b_m_y_h_m_llena_las_medidas_c_y_d(entorno, monkeypatch):
+    mapeo, _ = pc.cargar_mapeo_stp()
+    monkeypatch.setattr(pc, "MAPEO_DISENO_A_STP", mapeo)
+    monkeypatch.setattr(pc, "MAPEO_CONFIRMADO", False)
+    capturado = _capturar_fichas(monkeypatch)
+    _elemento_visita(entorno, 1, "C1 D4", "C1", "EJE D-4")
+    _diseno(id_elemento="C1", ejes="EJE D-4", tipo="COLUMNA",  # SINTÉTICO
+            campos={"b_m": "0.60", "h_m": "1.50", "acero_longitudinal": '36∅1"', "estribos": '9 EST. ∅3/8" @0.10'})
+    _procesar()
+    ficha = capturado["fichas"][0]
+    assert ficha["fila_stp"] == "col"
+    assert ficha["medidas"] == {"c": {"valor_plano_m": 0.60, "medida_acero_campo_m": None},
+                                "d": {"valor_plano_m": 1.50, "medida_acero_campo_m": None}}
+    assert ficha["barras"] == [(36, '1"')]  # conversión exacta de 36∅1"
+    assert ficha["plano"] == {}  # f, g, h, k, m, n: sin mapear (k y la cuantía las calcula/comprueba el generador)
+    assert capturado["marca"] == pc.MARCA_BORRADOR
+    assert not any(d["campo_afectado"] == "diseno:p001:mapeo" for d in _abiertas())
+
+
+def test_t4_conversion_exacta_de_barras():
+    assert pc.convertir_barras('36∅1"') == [[36, '1"']]
+    assert pc.convertir_barras(' 28 Ø 3/4 ” ') == [[28, '3/4"']]
+    assert pc.convertir_barras('14ø3/4″') == [[14, '3/4"']]
+    for malo in ('4Ø1" 22Ø3/4" 2Ø1"(ESQUINA)', '36∅1" COMPRIMIDAS', '36∅1', '∅1"', '0∅1"', 'pendiente de verificar',
+                 '36∅1" + 4∅3/4"', '', None, 36):
+        assert pc.convertir_barras(malo) is None
+
+
+def test_t4_barras_que_no_cuadran_abren_duda_y_no_se_adivinan(entorno, monkeypatch):
+    mapeo, _ = pc.cargar_mapeo_stp()
+    monkeypatch.setattr(pc, "MAPEO_DISENO_A_STP", mapeo)
+    capturado = _capturar_fichas(monkeypatch)
+    _elemento_visita(entorno, 1, "C1 D4", "C1", "EJE D-4")
+    _diseno(id_elemento="C1", ejes="EJE D-4", tipo="COLUMNA",  # SINTÉTICO
+            campos={"b_m": "0.60", "h_m": "1.00", "acero_longitudinal": '4∅1" 22∅3/4"', "estribos": 'x'})
+    _procesar()
+    assert "fichas" not in capturado or "barras" not in capturado["fichas"][0]
+    assert "diseno:p001:barras" in {d["campo_afectado"] for d in _abiertas()}
+
+
+def test_t4_muro_llena_espesor_y_filas(entorno, monkeypatch):
+    mapeo, _ = pc.cargar_mapeo_stp()
+    monkeypatch.setattr(pc, "MAPEO_DISENO_A_STP", mapeo)
+    capturado = _capturar_fichas(monkeypatch)
+    _elemento_visita(entorno, 1, "MH3 C2", "MH3", "EJE C ENTRE 2-3")
+    _elemento_visita(entorno, 2, "MC EJE4", "MURO DE CONTENCION PERIMETRAL", "EJE 4 ENTRE A-D")
+    _diseno(uid="ed-0001", id_elemento="MH3", ejes="EJE C ENTRE 2-3", tipo="MURO H.A.",  # SINTÉTICO
+            campos={"espesor": "0.40", "longitud": "1.80", "alma.ASV": 'Ø1/2"@0.10', "alma.ASH": 'Ø3/8"@0.10'})
+    _diseno(uid="ed-0002", id_elemento="MURO DE CONTENCION PERIMETRAL", ejes="EJE 4 ENTRE A-D",
+            tipo="MURO DE CONTENCION", campos={"espesor": "0.25", "longitud": PENDIENTE,
+                                              "alma.ASV": PENDIENTE, "alma.ASH": PENDIENTE})
+    _procesar()
+    assert not {d["campo_afectado"] for d in _abiertas()} & {"diseno:p001:mapeo", "diseno:p002:mapeo"}
+    muros = {f["id_elemento"] if "id_elemento" in f else f["titulo"]: f for f in capturado.get("fichas", [])
+             if f["fila_stp"] == "muro"}
+    mh3 = next(f for t, f in muros.items() if "MH3" in t)
+    assert mh3["plano"] == {"c": "1.80", "h": 'Ø1/2"@0.10', "i": 'Ø1/2"@0.10', "j": 'Ø3/8"@0.10', "k": 'Ø3/8"@0.10'}
+    assert mh3["medidas"]["b"]["valor_plano_m"] == 0.40
+    cont = next(f for t, f in muros.items() if "CONTENCION" in t)
+    assert cont["plano"] == {} and cont["medidas"]["b"]["valor_plano_m"] == 0.25  # lo pendiente no se rellena
+
+
+def test_t4_la_viga_sigue_con_la_duda_de_mapeo(entorno, monkeypatch):
+    mapeo, _ = pc.cargar_mapeo_stp()
+    monkeypatch.setattr(pc, "MAPEO_DISENO_A_STP", mapeo)
+    _elemento_visita(entorno, 1, "V1 B4", "V1", "EJE B, ENTRE 1-2")
+    _diseno(id_elemento="V1", ejes="EJE B, ENTRE 1-2", tipo="VIGA", campos={"b_m": "0.30"})  # SINTÉTICO
+    _procesar()
+    assert "diseno:p001:mapeo" in {d["campo_afectado"] for d in _abiertas()}
