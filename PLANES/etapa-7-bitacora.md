@@ -1,0 +1,40 @@
+# Etapa 7 — Bitácora del Líder (T2, T3, T4)
+
+Rama `claude/etapa7-campo-informe-02d16d`. Commits locales, sin push ni PR (los hace Steven al volver).
+
+## Estado
+| Tarea | Estado | Dónde |
+|---|---|---|
+| Contrato v2 | hecho | `PLANES/paquete-visita-v2.md` (`2bc4bae`, ajuste `a5e5386`) |
+| T3 lector v2 | hecho | `e84c14a`. Suite: 1018 pasan, 3 omitidas, solo las 2 fallas conocidas de Dropbox |
+| T2 Campo v11 | hecho (fuera de git) | `G:\My Drive\VISITA A OBRA CATDIC (v11 prueba)\` |
+| T4 mapeo STP | hecho | `430bcf5`. `mapeo_stp.json` con `confirmado: false`. Columna: c←`b_m`, d←`h_m` y barras←`acero_longitudinal` con conversión exacta. Muro: b←`espesor`, c←`longitud`, h/i←`alma.ASV`, j/k←`alma.ASH`. Sin confirmar, el STP solo sale como BORRADOR en `CATDIC_SALIDA_PRUEBAS`. Suite comprobada por el Líder: 1028 pasan, 3 omitidas y solo las 2 fallas conocidas |
+
+## T2: copia de Campo v11 (no está en git)
+- La carpeta original `G:\My Drive\VISITA A OBRA CATDIC\` no se tocó (app.js sha256 `f9a67c28…`, sw.js `d2c6874e…`).
+- sha256 de la copia v11: app.js `c34cbf9c6313221be37328105dffd1d8ebddbbf5a49a1bb16539806181e039a4`,
+  index.html `20778d37aad34ce13bafa081dcce576b9581d486999e0e753a1e0b64848ac5fb`,
+  styles.css `91f1f9f2b25d5322ea0eacca18d6fb003b1f54137adcf922419ad45cb3a05dbb`,
+  sw.js `d16410ab14f3e49de88c94360bd6fe56c1252217a733b4a2abb8fab881632600` (caché `catdic-campo-v11`).
+- Bloque plegable «Armado en obra» por tipo (col, muro, viga o pórtico, losa), con los rótulos de `ROTULOS`. Las medidas se toman sobre el acero, en metros. Vacío = «conforme (igual al plano)». Marca roja «PENDIENTE: queda en revisión».
+- El paquete exportado sale como v2 y trae `obra: {fila_stp, textos, medidas_acero}`. Las visitas viejas cargan sin perder datos (probado con una visita v1 sembrada y con un elemento antiguo sin `ident`).
+- Paquete de ejemplo (datos inventados): `C:\WINDOWS\TEMP\claude\cf008b8b80cb5786\a3a1fe19-9412-4d29-a4e7-b5eb4358eccb\scratchpad\paquete-v2-ejemplo.catdic-visita.json`. El Líder lo pasó por `leer_paquete` y `obra_de_elemento` del lector v2:
+  - C1 entra con c=0.32 y d=0.42 (la coma se acepta) y 11 letras conformes por omisión;
+  - el muro entra con todo conforme;
+  - la viga Pendiente entra sin ninguna letra conforme y queda en revisión.
+- En el IndexedDB de `localhost:8765` del navegador integrado quedó una obra de prueba («OBRA DE PRUEBA»). No afecta a la app real.
+
+## Decisiones del Líder (para que Steven las revise)
+1. Un elemento v2 sin `obra` va a duda; no se toma como conforme.
+2. Un estado desconocido se trata como Pendiente; un estado vacío, como Observación.
+3. Una duda `…:pendiente` resuelta por Steven deja procesar el elemento. Sus filas de OBRA no entran como conformes por omisión.
+
+## Pendiente para Steven
+Ver la lista al final de `PLANES/etapa-7-mapeo-stp.md`. Incluye:
+- la columna C3, que en el informe da LY 1.20 y en el plano tiene una nota que la cambia de 1.20 a 1.50;
+- las caras del muro (h=i, j=k);
+- las derivaciones de columna;
+- la conversión de las barras;
+- la longitud de los muros en L (MH2).
+
+Además quedan las 3 decisiones del Líder de arriba y reemplazar Campo en uso por la copia v11.
