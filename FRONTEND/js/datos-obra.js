@@ -126,7 +126,7 @@
                 <label v-else class="dato-comp"><input type="checkbox" v-model="completo[g.tipo]" :data-completo="g.tipo">Ya escribí todos los de esta lista</label>
                 <button type="button" class="btn btn-pri" :disabled="enviando[g.tipo]" :aria-busy="enviando[g.tipo] ? 'true' : null" :data-guardar="g.tipo" @click="guardar(g.tipo)">{{ enviando[g.tipo] ? 'Guardando…' : 'Guardar' }}</button>
               </div>
-              <p v-if="mensajes[g.tipo]" class="dato-msg" :class="errores[g.tipo] ? 'es-mal' : 'es-ok'" :role="errores[g.tipo] ? 'alert' : 'status'" :data-mensaje="g.tipo"><Icono :nombre="errores[g.tipo] ? 'alerta' : 'check'"/>{{ mensajes[g.tipo] }}</p>
+              <div class="sitio-aviso sitio-dato"><p v-if="mensajes[g.tipo]" class="dato-msg" :class="errores[g.tipo] ? 'es-mal' : 'es-ok'" :role="errores[g.tipo] ? 'alert' : 'status'" :data-mensaje="g.tipo"><Icono :nombre="errores[g.tipo] ? 'alerta' : 'check'"/>{{ mensajes[g.tipo] }}</p></div>
             </section>
           </template>
         </div>

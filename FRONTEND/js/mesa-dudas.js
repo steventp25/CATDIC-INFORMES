@@ -255,9 +255,11 @@
           <a class="btn btn-sec" :href="hrefCerrar" data-cerrar-mesa><Icono nombre="cerrar"/>Cerrar</a>
         </div>
 
-        <p v-if="estado === 'listo' && aviso" class="aviso aviso-ok" role="status" data-aviso-mesa><Icono nombre="check"/>{{ aviso }}</p>
-        <p v-if="conflicto" class="aviso aviso-mal" role="alert" data-conflicto-mesa><Icono nombre="alerta"/>{{ conflicto }}</p>
-        <p v-if="figuraProcesada" class="aviso aviso-mal" role="alert" data-aviso-procesada><Icono nombre="alerta"/>Esta visita figura como Procesada pero tiene dudas bloqueantes abiertas.</p>
+        <div class="sitio-aviso" data-sitio-aviso>
+          <p v-if="estado === 'listo' && aviso" class="aviso aviso-ok" role="status" data-aviso-mesa><Icono nombre="check"/>{{ aviso }}</p>
+          <p v-if="conflicto" class="aviso aviso-mal" role="alert" data-conflicto-mesa><Icono nombre="alerta"/>{{ conflicto }}</p>
+          <p v-if="figuraProcesada" class="aviso aviso-mal" role="alert" data-aviso-procesada><Icono nombre="alerta"/>Esta visita figura como Procesada pero tiene dudas bloqueantes abiertas.</p>
+        </div>
 
         <div v-if="estado === 'cargando'" class="cargando" aria-busy="true" aria-live="polite"><span class="sr">Cargando dudas…</span><span class="hueso" style="--i:0"></span><span class="hueso" style="--i:1"></span><span class="hueso" style="--i:2"></span></div>
         <div v-else-if="estado === 'error'" class="error" role="alert" data-error-mesa>

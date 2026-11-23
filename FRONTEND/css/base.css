@@ -685,6 +685,11 @@ main { padding: var(--esp-5) clamp(16px, 3vw, 40px) 64px; min-width: 0; }
 .dato-pie { display: flex; flex-wrap: wrap; gap: var(--esp-2) var(--esp-3); align-items: center; justify-content: space-between; }
 .dato-pie .ayuda { margin: 0; }
 .dato-comp { display: flex; gap: 6px; align-items: center; font-size: 0.875rem; }
+/* B5a: sitio reservado para el aviso de una línea de cada bloque, para que al guardar no se corra lo de debajo */
+.sitio-aviso { min-height: 3rem; margin-bottom: var(--esp-3); }
+.sitio-aviso > .aviso { margin-bottom: 0; }
+.sitio-aviso > .aviso + .aviso { margin-top: var(--esp-2); }
+.sitio-dato { min-height: 2.4rem; }
 .dato-msg { margin: 0; display: flex; gap: 6px; align-items: flex-start; padding: var(--esp-2) var(--esp-3); border: 1.5px solid; font-weight: 600; font-size: 0.875rem; }
 .dato-msg.es-ok { border-color: var(--ok-tinta); background: var(--ok-fondo); }
 .dato-msg.es-mal { border-color: var(--alerta); background: var(--error-fondo); }
@@ -706,7 +711,7 @@ main { padding: var(--esp-5) clamp(16px, 3vw, 40px) 64px; min-width: 0; }
 .conf-corto { display: none; }
 .conf-n { margin-left: 6px; padding: 0 6px; border: 1px solid var(--borde-fuerte); font-size: 0.75rem; background: var(--superficie-2); }
 .conf-h .conf-n { margin-left: 0; }
-.conf-msgs { display: grid; gap: 0; min-width: 0; }
+.conf-msgs { display: grid; gap: 0; min-width: 0; min-height: 3.5rem; }   /* B5a: sitio reservado para un aviso de una línea (48 px + su aire): al aparecer no empuja lo de debajo */
 .conf-msgs > div:has(> *) { padding: var(--esp-2) var(--esp-3) 0; }
 .conf-msgs .aviso, .conf-msgs .dlg-error, .conf-msgs .ed-aviso { margin: 0; overflow-wrap: anywhere; }
 .conf-espera { margin: 0; display: flex; gap: 6px; align-items: center; }
