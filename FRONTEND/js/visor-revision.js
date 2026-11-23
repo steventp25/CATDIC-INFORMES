@@ -130,15 +130,21 @@
       localizacion: { type: Object, default: null },
       detalle: { type: Object, default: null },
       etiqueta: { type: String, default: '' },
-      nota: { type: String, default: '' }
+      nota: { type: String, default: '' },
+      // B3b · editor de recuadros (Planos y ficha). Sin `editor` el visor se comporta como en B3e.
+      editor: { type: Boolean, default: false },
+      cajas: { type: Array, default: function () { return []; } },     // [{ clave, tipo:'localizacion'|'detalle', estado:'confirmado'|'propuesto'|'sin_guardar', pagina, rect, texto }]
+      herramienta: { type: String, default: 'mover' },                  // 'mover' | 'dibujar'
+      salto: { type: Object, default: null },                           // { pagina, n }: lleva el visor a esa hoja
+      leyendaPropia: { type: String, default: '' }
     },
-    emits: ['cerrar'],
+    emits: ['cerrar', 'hoja', 'dibujado'],
     data: function () {
       contador++;
       return {
         uid: 'vpl' + contador, hojas: [], planoId: null, estadoIndice: 'cargando', errorIndice: '',
         pagActual: 0, info: null, estadoHoja: 'cargando', errorHoja: '', url: '', W: 0, H: 0, k: 1,
-        vw: 0, vh: 0, e: 1, eAjuste: 1, eMin: 0.05, eMax: 4, tx: 0, ty: 0, cerrado: false, apertura: null, n: 0, tamanoListo: false
+        vw: 0, vh: 0, e: 1, eAjuste: 1, eMin: 0.05, eMax: 4, tx: 0, ty: 0, cerrado: false, apertura: null, n: 0, tamanoListo: false, trazo: null
       };
     },
     computed: {
@@ -149,6 +155,21 @@
       rectLoc: function () { return this.aPx(this.localizacion); },
       rectDet: function () { return this.aPx(this.detalle); },
       grosor: function () { return 3 / this.e; },
+      // Cajas del editor sobre la hoja actual, en píxeles de la imagen. El texto va en la propia caja (no solo el color).
+      cajasPx: function () {
+        var self = this;
+        return (this.cajas || []).map(function (c, i) { var r = self.aPx(c); return r ? { c: c, r: r, i: i } : null; }).filter(Boolean);
+      },
+      rectFoco: function () {
+        var l = this.cajasPx.filter(function (x) { return x.c.tipo === 'localizacion'; })[0] || this.cajasPx[0];
+        return l ? l.r : null;
+      },
+      trazoPx: function () {
+        var t = this.trazo; if (!t || !this.W) return null;
+        var k = this.k;
+        return { x: Math.min(t.x0, t.x1) * k, y: Math.min(t.y0, t.y1) * k, w: Math.abs(t.x1 - t.x0) * k, h: Math.abs(t.y1 - t.y0) * k };
+      },
+      dibuja: function () { return this.editor && this.herramienta === 'dibujar' && this.tamanoListo; },
       leyenda: function () {
         var l = this.localizacion;
         if (l && rectValido(l.rect)) return l.origen === 'propuesta' ? 'Ubicación: propuesta, pendiente de verificar (recuadro punteado).' : 'Ubicación: recuadro confirmado.';
@@ -164,7 +185,7 @@
       this.apertura = document.activeElement;
       var dlg = this.$refs.dlg;
       if (dlg && dlg.showModal) dlg.showModal(); else if (dlg) dlg.setAttribute('open', '');
-      this._p = {}; this._pinch = null;
+      this._p = {}; this._pinch = null; this._dib = null;
       if (window.ResizeObserver && this.$refs.lienzo) {
         this._ro = new ResizeObserver(function () { self.medir(false); });
         this._ro.observe(this.$refs.lienzo);
@@ -175,6 +196,14 @@
       if (this._ro) this._ro.disconnect();
       soltar(this.url); this.url = '';
       this.devolverFoco();
+    },
+    watch: {
+      // El editor pide una hoja (por ejemplo, la del recuadro guardado del elemento elegido).
+      salto: function (s) {
+        if (!s || !this.hojas.length || !this.hojas.some(function (h) { return h.pagina === s.pagina; })) return;
+        if (s.pagina !== this.pagActual) { this.pagActual = s.pagina; this.cargarHoja(); this.$emit('hoja', this.pagActual); }
+        else if (this.tamanoListo) { this.medir(true); }
+      }
     },
     methods: {
       aPx: function (r) {
@@ -214,8 +243,10 @@
           if (!self.hojas.length) { self.estadoIndice = 'error'; self.errorIndice = 'El plano vigente no trae ninguna hoja.'; return; }
           var ini = (self.localizacion && self.localizacion.pagina) || (self.detalle && self.detalle.pagina) || self.pagina || 0;
           var existe = self.hojas.some(function (h) { return h.pagina === ini; });
-          self.pagActual = existe ? ini : self.hojas[0].pagina;
+          var s0 = self.salto && self.hojas.some(function (h) { return h.pagina === self.salto.pagina; }) ? self.salto.pagina : 0;
+          self.pagActual = s0 || (existe ? ini : self.hojas[0].pagina);
           self.estadoIndice = 'listo';
+          self.$emit('hoja', self.pagActual);
           self.cargarHoja();
         }, function (e) { self.estadoIndice = 'error'; self.errorIndice = (e && e.mensaje) || 'No se pudo leer el índice del plano.'; });
       },
@@ -245,7 +276,7 @@
         this.$nextTick(this.enfocarLienzo);
       },
       alFallarImagen: function () { this.estadoHoja = 'error'; this.errorHoja = 'La imagen de la hoja no se pudo leer.'; },
-      cambiarHoja: function () { this.cargarHoja(); },
+      cambiarHoja: function () { this.cargarHoja(); this.$emit('hoja', this.pagActual); },
       // ---- zoom y desplazamiento ----
       medir: function (reiniciar) {
         var l = this.$refs.lienzo; if (!l) return;
@@ -255,7 +286,7 @@
         this.eMin = this.eAjuste * 0.5;
         this.eMax = Math.max(4, this.eAjuste * 2);
         if (reiniciar) {
-          if (this.rectLoc) this.irAlRecuadro('localizacion'); else if (this.rectDet) this.irAlRecuadro('detalle'); else this.ajustar();
+          if (this.rectLoc) this.irAlRecuadro('localizacion'); else if (this.rectDet) this.irAlRecuadro('detalle'); else if (this.rectFoco) this.irAlRecuadro('foco'); else this.ajustar();
         } else {
           this.poner(this.e, this.tx, this.ty);
         }
@@ -269,7 +300,7 @@
       },
       ajustar: function () { this.poner(this.eAjuste, 0, 0); },
       irAlRecuadro: function (cual) {
-        var r = cual === 'detalle' ? this.rectDet : this.rectLoc;
+        var r = cual === 'detalle' ? this.rectDet : (cual === 'foco' ? this.rectFoco : this.rectLoc);
         if (!r) return;
         var e = Math.min(0.5 * this.vw / Math.max(r.w, 1), 0.5 * this.vh / Math.max(r.h, 1));
         e = Math.max(this.eAjuste, Math.min(this.eMax, e));
@@ -297,7 +328,7 @@
         else if (k === '+' || k === '=') this.zoomCentro(1.25);
         else if (k === '-' || k === '_') this.zoomCentro(0.8);
         else if (k === '0') this.ajustar();
-        else if (k === 'r' || k === 'R' || k === 'Home') { if (this.rectLoc) this.irAlRecuadro('localizacion'); else if (this.rectDet) this.irAlRecuadro('detalle'); else this.ajustar(); }
+        else if (k === 'r' || k === 'R' || k === 'Home') { if (this.rectLoc) this.irAlRecuadro('localizacion'); else if (this.rectDet) this.irAlRecuadro('detalle'); else if (this.rectFoco) this.irAlRecuadro('foco'); else this.ajustar(); }
         else hecho = false;
         if (hecho) ev.preventDefault();
       },
@@ -308,11 +339,16 @@
         this._p[ev.pointerId] = { x: ev.clientX, y: ev.clientY };
         this._pinch = null;
         this.arrastrando = true;
+        if (this.dibuja) {
+          // Un dedo o el ratón dibuja; con un segundo dedo se cancela el trazo y pasa a pellizco.
+          if (Object.keys(this._p).length === 1) this.empezarDibujo(ev); else this.cancelarDibujo();
+        }
       },
       alMoverPuntero: function (ev) {
         var p = this._p[ev.pointerId]; if (!p) return;
         var ids = Object.keys(this._p);
         if (ids.length === 1) {
+          if (this.dibuja) { this.seguirDibujo(ev); p.x = ev.clientX; p.y = ev.clientY; return; }
           this.mover(ev.clientX - p.x, ev.clientY - p.y);
           p.x = ev.clientX; p.y = ev.clientY;
         } else if (ids.length === 2) {
@@ -328,8 +364,37 @@
         }
       },
       alSubirPuntero: function (ev) {
+        if (this._dib && Object.keys(this._p).length === 1) this.terminarDibujo(ev);
         delete this._p[ev.pointerId]; this._pinch = null;
         if (!Object.keys(this._p).length) this.arrastrando = false;
+      },
+      alCancelarPuntero: function (ev) { this.cancelarDibujo(); this.alSubirPuntero(ev); },
+      // ---- dibujo de recuadros (B3b): coordenadas en puntos del PDF, redondeadas a 2 decimales ----
+      ptDe: function (ev) {
+        var r = this.$refs.lienzo.getBoundingClientRect(), k = this.k || 1;
+        var x = (ev.clientX - r.left - this.tx) / this.e / k, y = (ev.clientY - r.top - this.ty) / this.e / k;
+        return { x: Math.max(0, Math.min(this.W / k, x)), y: Math.max(0, Math.min(this.H / k, y)) };
+      },
+      empezarDibujo: function (ev) {
+        var q = this.ptDe(ev);
+        this._dib = { x0: q.x, y0: q.y };
+        this.trazo = { x0: q.x, y0: q.y, x1: q.x, y1: q.y };
+      },
+      seguirDibujo: function (ev) {
+        if (!this._dib) return;
+        var q = this.ptDe(ev);
+        this.trazo = { x0: this._dib.x0, y0: this._dib.y0, x1: q.x, y1: q.y };
+      },
+      cancelarDibujo: function () { this._dib = null; this.trazo = null; },
+      terminarDibujo: function (ev) {
+        var d = this._dib; if (!d) return;
+        this.seguirDibujo(ev);
+        var t = this.trazo; this._dib = null; this.trazo = null;
+        if (!t) return;
+        var redondo = function (v) { return Math.round(v * 100) / 100; };
+        var x0 = Math.min(t.x0, t.x1), x1 = Math.max(t.x0, t.x1), y0 = Math.min(t.y0, t.y1), y1 = Math.max(t.y0, t.y1);
+        if (x1 - x0 < 5 || y1 - y0 < 5) return;   // un clic suelto o un arrastre de menos de 5 pt no es un recuadro
+        this.$emit('dibujado', { pagina: this.pagActual, rect: [redondo(x0), redondo(y0), redondo(x1), redondo(y1)] });
       }
     },
     template: `
@@ -338,7 +403,7 @@
           <header class="vp-barra">
             <div class="vp-tit">
               <h2 :id="uid + '-t'">Plano vigente<template v-if="etiqueta"> · {{ etiqueta }}</template></h2>
-              <p class="vp-leyenda" data-visor-leyenda><Icono :nombre="localizacion && localizacion.origen === 'propuesta' ? 'info' : 'plano'"/>{{ leyenda }}<template v-if="nota"> {{ nota }}</template></p>
+              <p class="vp-leyenda" data-visor-leyenda><Icono :nombre="localizacion && localizacion.origen === 'propuesta' ? 'info' : 'plano'"/>{{ leyendaPropia || leyenda }}<template v-if="nota"> {{ nota }}</template></p>
             </div>
             <div class="vp-ctl">
               <label class="vp-hoja-sel"><span>Hoja</span>
@@ -352,6 +417,7 @@
                 <button type="button" class="btn btn-sec" aria-label="Acercar" :disabled="!tamanoListo" data-zoom-mas @click="zoomCentro(1.25)"><span aria-hidden="true">+</span></button>
                 <button type="button" class="btn btn-sec" :disabled="!tamanoListo" data-ajustar @click="ajustar">Ajustar</button>
               </div>
+              <div class="vp-ir" v-if="editor && rectFoco"><button type="button" class="btn btn-sec" data-ir-recuadro @click="irAlRecuadro('foco'); enfocarLienzo()">Ir al recuadro</button></div>
               <div class="vp-ir" v-if="localizacion || detalle">
                 <button v-if="localizacion && rectLoc" type="button" class="btn btn-sec" data-ir-ubicacion @click="irAlRecuadro('localizacion'); enfocarLienzo()">Ir a la ubicación</button>
                 <button v-if="detalle && rectDet" type="button" class="btn btn-sec" data-ir-detalle @click="irAlRecuadro('detalle'); enfocarLienzo()">Ir al detalle</button>
@@ -360,6 +426,7 @@
             </div>
           </header>
 
+          <div class="vp-medio" :class="{ 'es-editor': editor }">
           <div class="vp-cuerpo">
             <div v-if="estadoIndice === 'cargando'" class="vp-msg cargando" aria-busy="true" role="status"><span class="sr">Cargando el índice del plano…</span><span class="hueso" style="--i:0"></span></div>
             <div v-else-if="estadoIndice === 'error'" class="vp-msg error" role="alert"><Icono nombre="alerta"/><div><p class="error-t">No se pudo abrir el plano.</p><p>{{ errorIndice }}</p><button type="button" class="btn btn-sec" @click="cargarIndice">Reintentar</button></div></div>
@@ -368,10 +435,18 @@
               <div v-else-if="estadoHoja === 'error'" class="vp-msg error" role="alert"><Icono nombre="alerta"/><div><p class="error-t">No se pudo cargar la hoja.</p><p>{{ errorHoja }}</p><button type="button" class="btn btn-sec" @click="cargarHoja">Reintentar</button></div></div>
               <div ref="lienzo" class="vp-lienzo" tabindex="0" role="group" data-lienzo
                 aria-label="Hoja del plano. Flechas: mover. Más y menos: acercar y alejar. Cero: ajustar a la ventana. R: ir al recuadro."
-                @keydown="teclas" @wheel.prevent="rueda" @pointerdown="alBajarPuntero" @pointermove="alMoverPuntero" @pointerup="alSubirPuntero" @pointercancel="alSubirPuntero">
+                @keydown="teclas" @wheel.prevent="rueda" @pointerdown="alBajarPuntero" @pointermove="alMoverPuntero" @pointerup="alSubirPuntero" @pointercancel="alCancelarPuntero">
                 <div v-if="url" class="vp-hoja" :style="estiloHoja" data-hoja-lienzo>
                   <img :src="url" :alt="altImagen" draggable="false" @load="alCargarImagen" @error="alFallarImagen" data-hoja-img>
                   <svg v-if="W" class="vp-svg" :viewBox="'0 0 ' + W + ' ' + H" :width="W" :height="H" aria-hidden="true">
+                    <g v-for="x in cajasPx" :key="x.c.clave" :data-caja="x.c.clave" :data-estado-caja="x.c.estado">
+                      <rect class="vp-halo" :x="x.r.x" :y="x.r.y" :width="x.r.w" :height="x.r.h" :stroke-width="grosor * 2" fill="none"/>
+                      <rect :class="x.c.tipo === 'localizacion' ? 'vp-rojo' : 'vp-det'" :x="x.r.x" :y="x.r.y" :width="x.r.w" :height="x.r.h" :stroke-width="grosor * (x.c.tipo === 'localizacion' ? 1 : 0.9)"
+                        :stroke-dasharray="x.c.estado === 'propuesto' ? (grosor * 4) + ' ' + (grosor * 2.5) : (x.c.estado === 'sin_guardar' ? grosor + ' ' + (grosor * 2) : null)"
+                        :stroke-linecap="x.c.estado === 'sin_guardar' ? 'round' : null" fill="none"/>
+                      <text class="vp-etq" :class="x.c.tipo === 'localizacion' ? 'es-loc' : 'es-det'" :x="x.r.x" :y="Math.max(15 / e * (x.i + 1), x.r.y - 4 / e - x.i * 15 / e)" :font-size="12 / e" :stroke-width="3 / e">{{ x.c.texto }}</text>
+                    </g>
+                    <rect v-if="trazoPx" class="vp-det" :x="trazoPx.x" :y="trazoPx.y" :width="trazoPx.w" :height="trazoPx.h" :stroke-width="grosor" :stroke-dasharray="grosor + ' ' + (grosor * 2)" stroke-linecap="round" fill="none" data-trazo/>
                     <g v-if="rectLoc" data-rect-ubicacion>
                       <rect class="vp-halo" :x="rectLoc.x" :y="rectLoc.y" :width="rectLoc.w" :height="rectLoc.h" :stroke-width="grosor * 2" fill="none"/>
                       <rect class="vp-rojo" :class="{ 'es-propuesta': localizacion.origen === 'propuesta' }" :x="rectLoc.x" :y="rectLoc.y" :width="rectLoc.w" :height="rectLoc.h"
@@ -385,6 +460,8 @@
                 </div>
               </div>
             </template>
+          </div>
+          <aside v-if="editor" class="vp-panel" aria-label="Recuadros del elemento" data-panel-editor><slot name="panel"></slot></aside>
           </div>
           <p class="vp-ayuda ayuda">Arrastra o usa las flechas para mover · rueda, pellizco o + y − para acercar · 0 ajusta a la ventana · R va al recuadro · Escape cierra.<template v-if="rectDet"> El recuadro azul punteado es el detalle.</template></p>
         </div>
