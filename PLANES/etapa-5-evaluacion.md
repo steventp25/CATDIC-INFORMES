@@ -124,3 +124,36 @@ Steven vio las dos pantallas en una copia de la rama (puerto 8767, BD de prueba 
 ### Pruebas ejecutadas
 - **Suite completa** sobre una copia exacta de `b0ba715`: 977 pasan, 3 se omiten y 2 fallan. Son las 2 conocidas de Dropbox.
 - **En el navegador** (BD copiada, puerto 8767): desplazamiento y foco de la Mesa medidos arriba, y el diálogo «Hacer informe» con la visita 20 «Procesada» seleccionada.
+
+## Evaluación 5 · 23/11/2026 · Planificador (auditoría) · Fase B · B3b Obra: Resumen, Planos y ficha, Avance y Cierre (rama `claude/etapa5-fase-b-0020e1`, `905ec52`)
+**Veredicto: APROBADO** (falta que Steven la vea)
+
+### Bloqueantes
+- Ninguno.
+
+### Observaciones (no bloquean)
+- **El panel se mueve al dibujar.** Al crearse el primer borrador aparece «Ir al recuadro» en la barra del visor. A 800 px de ancho, eso hace que la barra pase a dos líneas y el panel baje unos 38 px, así que un clic que iba a «Confirmar y guardar» cayó sobre la insignia. Conviene reservar el sitio del botón o dejarlo siempre visible y deshabilitado. Se puede arreglar en B4 (pulido).
+- **Texto de la tarjeta del plano:** «las huellas sha256 *de abajo*». Las huellas están arriba del texto. Es un cambio de una palabra.
+- **El dibujo no tiene equivalente de teclado.** Lo cubren «Proponer» y «Usar propuesta»; es lo acordado en el encargo.
+- **Falta un caso real.** No se probó con un plano real, solo con la obra sintética de B3e. Queda para la Fase C.
+
+### Criterios de aceptación
+- [x] **Solo frontend.** `git diff --stat b0ba715 905ec52` toca solo `FRONTEND/` y `PLANES/`; `BACKEND/` queda igual.
+- [x] **Elementos atados por `uid`.** El selector usa `uid` como valor, y el PUT y el POST van a `/elementos/{uid}/…`. En la obra sintética, dos «C1 · EJE A-1» de niveles distintos (S-1 y S-2) salen como opciones separadas.
+- [x] **Guardar llama a `C.visor.olvidar(obra.id)`** (`editor-plano.js:190`). También se llama al cambiar el plano (`pestana-planos.js:101`).
+- [x] **El valor de `origen` coincide con lo que acepta el backend** (`visor.py:304`): `dibujado` al dibujar y `confirmado` con «Usar propuesta», igual que el clásico.
+- [x] **Arrastres pequeños y redondeo.** Un arrastre de menos de 5 pt se descarta y las coordenadas se redondean a 2 decimales (`visor-revision.js:394-396`).
+- [x] **Sin doble envío.** Proponer, Guardar, Vista previa y Datos de la obra se deshabilitan mientras esperan respuesta.
+- [x] **Indicadores N8, N9 y N10 sin cifras.** Muestran la fórmula, «pendiente de verificar», D15 y «Fase D-b». No hay ninguna cifra en %, ni `progress`, `meter` o `progressbar`, en Resumen ni en Cierre. Cierre aclara que no hay un «listo para cerrar» calculado.
+- [x] **Datos de la obra.** Si el GET falla, se muestra el estado de error con su mensaje; ya no se abre vacío en silencio.
+- [x] **En el navegador** (copia de `905ec52`, obra sintética copiada, puerto 8768):
+  - Planos y ficha muestra el plano vigente (Rev. 2, los sha256 y quién lo certificó), el historial con 2 revisiones, «Dudas de la obra: 5» y el sitio reservado para B3c sin simularlo.
+  - En el visor, elegí C9, dibujé con el ratón y guardé. Salió el mensaje «LOCALIZACION guardado (confirmado por steven).», el recuadro pasó a «LOC confirmado» con trazo continuo y apareció la vista previa.
+  - El Atrás del navegador vuelve a `#/obra/…/planos`.
+  - Resumen muestra los pendientes reales: dudas por visita, dudas de obra, el plano, el elemento con «plano cambiado: revisar» con su enlace al visor, los informes vacíos y las acciones rápidas. Actividad reciente aparece como «Fase D-a».
+  - Datos de la obra trae sus 4 grupos. Se abre con Enter, el foco pasa al primer textarea, Escape lo cierra y el foco vuelve a su botón.
+  - 0 errores de consola.
+- [?] **Matriz de Playwright** (136 comprobaciones del Líder, más 5 anchos × 2 temas, el toque y el peor caso del Ejecutor): la reportan ellos; no la repetí.
+
+### Pruebas ejecutadas
+- **Suite completa** sobre una copia exacta de `905ec52`, sin `CATDIC_DROPBOX_RAIZ`: 977 pasan, 3 se omiten y 2 fallan. Son las 2 conocidas de Dropbox.
