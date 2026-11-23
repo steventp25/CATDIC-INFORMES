@@ -792,3 +792,58 @@ main { padding: var(--esp-5) clamp(16px, 3vw, 40px) 64px; min-width: 0; }
 }
 @container det (min-width: 760px) { .conf-dos { grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr); } }
 .conf-det .ed-aviso, .conf-msgs .ed-aviso { display: flex; gap: 6px; align-items: flex-start; }
+
+/* ---- B3f · Órdenes de trabajo (kanban de solo lectura) ----
+   Cada estado: su palabra, su icono y un borde completo (sin franjas laterales). El tablero es un contenedor:
+   ancho → 6 columnas con desplazamiento dentro del tablero; estrecho → pestañas y una columna cada vez. */
+.ord-acceso { min-height: 44px; font-size: 1rem; }
+.ord-filtros { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr)); gap: var(--esp-3); }
+.ord-filtros .campo-i { min-height: 44px; }
+.ord-aplicados { display: flex; flex-wrap: wrap; align-items: center; gap: var(--esp-2); margin-top: var(--esp-3); }
+.ord-chip { white-space: normal; overflow-wrap: anywhere; font-size: 0.8125rem; padding: 2px 8px; }
+.ord-quitar { min-height: 44px; }
+.pagina-ordenes .aviso button.enlace { min-height: 44px; background: none; border: 0; padding: 0 4px; cursor: pointer; font-family: inherit; }
+.ord-tablero { container: ordenes / inline-size; min-width: 0; }
+.ord-tabs { display: none; }
+.ord-cols { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(13.5rem, 1fr); gap: var(--esp-3); align-items: start; overflow-x: auto; padding-bottom: var(--esp-2); scrollbar-width: thin; }
+.ord-col { --ord-borde: var(--borde-fuerte); --ord-fondo: var(--superficie); background: var(--ord-fondo); border: 1.5px solid var(--ord-borde); min-width: 0; display: grid; align-content: start; }
+.ord-col[data-estado="Pendiente"], .ord-t[data-estado="Pendiente"], .ord-tab[data-estado="Pendiente"] { --ord-borde: var(--est-cola-borde); --ord-tinta: var(--est-cola-tinta); --ord-fondo2: var(--est-cola-fondo); }
+.ord-col[data-estado="Bloqueada"], .ord-t[data-estado="Bloqueada"], .ord-tab[data-estado="Bloqueada"] { --ord-borde: var(--dudas-borde); --ord-tinta: var(--dudas-tinta); --ord-fondo2: var(--dudas-suave); }
+.ord-col[data-estado="En revisión"], .ord-t[data-estado="En revisión"], .ord-tab[data-estado="En revisión"] { --ord-borde: var(--est-rev-borde); --ord-tinta: var(--est-rev-tinta); --ord-fondo2: var(--est-rev-fondo); }
+.ord-col[data-estado="Entregada"], .ord-t[data-estado="Entregada"], .ord-tab[data-estado="Entregada"] { --ord-borde: var(--ok-tinta); --ord-tinta: var(--ok-tinta); --ord-fondo2: var(--ok-fondo); }
+.ord-col-cab { display: flex; align-items: center; justify-content: space-between; gap: var(--esp-2); padding: var(--esp-2) var(--esp-3); border-bottom: 1.5px solid var(--ord-borde); font-size: 0.8125rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ord-tinta, var(--tinta)); }
+.ord-col-t { display: inline-flex; align-items: center; gap: 6px; min-width: 0; overflow-wrap: anywhere; }
+.ord-n { font-size: 0.8125rem; font-weight: 700; border: 1px solid var(--ord-borde, var(--borde-fuerte)); padding: 0 6px; border-radius: 2px; background: var(--superficie); color: var(--tinta); flex: none; }
+.ord-vacio { padding: var(--esp-4) var(--esp-3); font-size: 0.8125rem; color: var(--tinta-2); }
+.ord-lista { list-style: none; margin: 0; padding: var(--esp-2); display: grid; gap: var(--esp-2); max-height: 72vh; overflow-y: auto; }
+.ord-otro .ord-lista { max-height: none; grid-template-columns: repeat(auto-fill, minmax(min(100%, 18rem), 1fr)); padding: 0; }
+.ord-t { background: var(--superficie); border: 1.5px solid var(--ord-borde, var(--borde-fuerte)); padding: var(--esp-3); display: grid; gap: 6px; min-width: 0; overflow-wrap: anywhere; }
+.ord-t:focus-visible { outline: 2px solid var(--foco); outline-offset: 2px; }
+.ord-t-cab { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px var(--esp-2); }
+.ord-id { font-weight: 700; font-size: 0.9375rem; overflow-wrap: anywhere; }
+.ord-sec { font-weight: 600; }
+.ord-nota { font-size: 0.8125rem; color: var(--tinta-2); }
+.ord-dl { display: grid; gap: 4px; margin: 0; font-size: 0.8125rem; }
+.ord-dl > div { display: grid; gap: 0; }
+.ord-dl dt { color: var(--tinta-2); font-weight: 600; font-size: 0.6875rem; text-transform: uppercase; letter-spacing: 0.06em; }
+.ord-dl dd { margin: 0; min-width: 0; overflow-wrap: anywhere; }
+.ord-dep { background: none; border: 0; padding: 0; cursor: pointer; font-family: var(--f-dato); font-size: 0.8125rem; overflow-wrap: anywhere; text-align: left; }
+.oo-lista { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--esp-3); grid-template-columns: repeat(auto-fill, minmax(min(100%, 16rem), 1fr)); }
+.oo-grupo { border: 1px solid var(--borde-fuerte); padding: var(--esp-3); min-width: 0; display: grid; gap: 6px; align-content: start; }
+.oo-cab { display: flex; align-items: center; justify-content: space-between; gap: var(--esp-2); }
+.oo-etq { display: inline-flex; align-items: center; gap: 4px; white-space: normal; }
+.oo-n { font-weight: 700; }
+.oo-corta { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; font-size: 0.8125rem; overflow-wrap: anywhere; }
+@container ordenes (max-width: 879.98px) {
+  .ord-tabs { display: grid; grid-template-columns: repeat(auto-fill, minmax(8.5rem, 1fr)); gap: var(--esp-2); margin-bottom: var(--esp-3); }
+  .ord-tab { display: flex; align-items: center; justify-content: space-between; gap: 6px; min-height: 44px; padding: 6px 10px; font: 600 0.875rem/1.2 var(--f-texto); color: var(--tinta); background: var(--superficie); border: 1.5px solid var(--ord-borde, var(--borde-fuerte)); border-radius: var(--radio); cursor: pointer; text-align: left; }
+  .ord-tab .ord-tab-t { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+  .ord-tab[aria-selected="true"] { background: var(--seg-activo); color: var(--seg-activo-tinta); }
+  .ord-tab[aria-selected="true"] .ord-n { color: var(--tinta); }
+  .ord-cols { display: block; overflow: visible; }
+  .ord-col:not(.es-sel) { display: none; }
+  .ord-col-cab { display: none; }
+  .ord-lista { max-height: none; }
+  .ord-obra, .ord-dep { min-height: 44px; display: inline-flex; align-items: center; }
+}
+@media (prefers-reduced-motion: no-preference) { .ord-tab { transition: background-color 150ms ease; } }

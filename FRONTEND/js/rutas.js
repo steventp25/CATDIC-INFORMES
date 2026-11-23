@@ -1,5 +1,6 @@
 /* CATDIC-WEB · enrutador por hash. El botón Atrás del navegador funciona porque cada pantalla es un hash.
-   Generales:  #/inicio  #/obras  #/bandeja  #/informes  #/configuracion  #/crear-informe
+   Generales:  #/inicio  #/obras  #/bandeja  #/informes  #/configuracion  #/crear-informe  #/ordenes
+   Órdenes de trabajo (B3f):  #/ordenes[?obra=<id>][&tipo=Supervisión|Levantamiento][&estado=<estado>]  (solo lectura; el estado elegido en pantallas estrechas va en la dirección)
    De obra:    #/obra/<id>/<pestaña>   con pestaña = resumen | visitas | planos | avance | informes | cierre
    Editor de recuadros (B3b):  #/obra/<id>/planos?visor=1[&elemento=<uid>]   (también ?subir=1 abre «Subir planos»)
    Confirmar datos del plano (B3c):  #/obra/<id>/planos?confirmar=1[&tabla=<id de la tabla extraída>]
@@ -12,7 +13,7 @@
   'use strict';
   var C = window.CATDIC = window.CATDIC || {};
 
-  var GENERALES = ['inicio', 'obras', 'bandeja', 'informes', 'configuracion', 'crear-informe'];
+  var GENERALES = ['inicio', 'obras', 'bandeja', 'informes', 'configuracion', 'crear-informe', 'ordenes'];
   var PESTANAS = [
     ['resumen', 'Resumen'], ['visitas', 'Visitas y trabajos'], ['planos', 'Planos y ficha'],
     ['avance', 'Avance'], ['informes', 'Informes'], ['cierre', 'Cierre']
