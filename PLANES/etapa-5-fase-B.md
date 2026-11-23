@@ -32,7 +32,7 @@ Plan madre: `PLANES/etapa-5.md` (decisiones D5–D8, tareas B0–B5). Este archi
 | B3c | **(7.º)** Revisión de planos: confirmar datos del plano (M6) | Ejecutor Sonnet (subagente, en este worktree) + revisión del Líder | esta rama (`9dd4aee`, `71d4bd1`; corrección del Líder `ede37af`; encargo `B3c-brief.md`, informe `B3c.md`) | **APROBADA** (auditoría del Director, 23/11, sobre `25fe9a5`); falta que Steven la vea |
 | B3f | **(8.º)** Órdenes de trabajo (kanban Z16), de solo lectura: no hay ruta para crear ni mover órdenes (Fase D) | Ejecutor Sonnet (subagente, en este worktree) + revisión del Líder | esta rama (`9c7cc93`, `bf8d9b6`; informe `B3f.md` en `af169ab`) | **APROBADA** (auditoría del Director, 23/11, sobre `d7cec65`); falta que Steven la vea |
 | B3h | **(SIN AUTORIZACIÓN: Steven, 20/11, «Conserva el tablero clásico»)** Retiro del clásico: checklist de paridad de B0 §9 completa en el tablero nuevo; se borran `FRONTEND/clasico/` y `test_clasico_entrega_el_tablero_anterior` (esta prueba es de `BACKEND/`: pide excepción al Director) | Líder + Ejecutor | — | pendiente |
-| B4 | Movimiento y pulido (`animate`, `choreograph`, `emil-design-eng`), `prefers-reduced-motion`, más las notas «Para B4» de B3b, B3c y B3f | Ejecutor Sonnet (subagente, en este worktree) + revisión del Líder | esta rama (`c69a84a`, `e3baf7d`, `5da950a`, `1ea2931`, `6e8d386`; Líder `38c6d56`; encargo `B4-brief.md`, informe `B4.md`) | **hecha y revisada por el Líder**, esperando auditoría del Director |
+| B4 | Movimiento y pulido (`animate`, `choreograph`, `emil-design-eng`), `prefers-reduced-motion`, más las notas «Para B4» de B3b, B3c y B3f | Ejecutor Sonnet (subagente, en este worktree) + revisión del Líder | esta rama (`c69a84a`, `e3baf7d`, `5da950a`, `1ea2931`, `6e8d386`; Líder `38c6d56`; corrección de la auditoría `41e7468`; encargo `B4-brief.md`, informe `B4.md`) | **bloqueada por el Director (23/11) y corregida en `41e7468`**, esperando reauditoría |
 | B5 | `break-ui`, teclado, contraste, 1280/1920, paridad con B0, cierre | Líder + Ejecutor | — | pendiente |
 
 Las pestañas **Avance** y **Cierre** de la obra entran en **B3b** con Resumen (Director, 19/11). Sus indicadores muestran «pendiente de verificar» hasta D15, sin números inventados.
@@ -74,6 +74,10 @@ Hueco reservado en la navegación: "Lectura asistida" (Fase C, no es de esta fas
 - **19/11/2026 · Estilo visual:** «Plano sellado» (respuesta textual de Steven, relayada por el Director). Se construye con el estilo B de `FRONTEND/maquetas/v2/` (`plano.html`, `estilo-plano.css`). Hormigón y Tablero quedan como antecedente, sin borrarlos. Telemetría del sorteo de `impeccable` enviada (`--kind pick`: «choice recorded»).
 
 ## Bitácora (lo más nuevo arriba)
+- 23/11/2026 · Director: **B4 BLOQUEADA** por un punto: la lista «Comprobaciones» usaba la frase de falla en todas las filas, así que una tabla verde decía «✓ cumple · Hay celdas vacías o fuera de la tabla». Los 4 abiertos de B4 pasan a B5.
+  - Líder: corregido en `41e7468`.
+    - Cada clave lleva dos textos: un nombre neutro para la lista («Celdas completas», «Unidades y rangos», «H = h1 + h2»…) y la frase de falla solo para «Falla:» y «Falló:».
+    - Playwright a 375 y 1280 sobre las 7 tablas de la obra sintética de B3c: 46 filas que cumplen sin frase de falla, 4 que fallan con nombre neutro, «Falla:» y «Falló:» con la frase de falla, 0 errores, 0 externas y sin desborde.
 - 23/11/2026 · Líder: **B4 hecha y revisada** (informe `PLANES/etapa-5-reportes/B4.md`). Ejecutor: `c69a84a`, `e3baf7d`, `5da950a`, `1ea2931` y `6e8d386`. El diff toca 8 archivos (+297/−51): `FRONTEND/` y el informe, nada de `BACKEND/`, `clasico/`, `maquetas/` ni `vendor/`.
   - **Movimiento:**
     - diálogos con fundido y `scale(0.97 → 1)` de 200 ms con `@starting-style`;

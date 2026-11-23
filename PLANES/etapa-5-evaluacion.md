@@ -225,3 +225,39 @@ Steven vio las dos pantallas en una copia de la rama (puerto 8767, BD de prueba 
 
 ### Estado de B3
 Con B3f, quedan aprobadas **B3a, B3b, B3c, B3d, B3e, B3f, B3g y B3g-2**. B3h (retirar el tablero clásico) sigue **sin autorizar**.
+
+## Evaluación 8 · 23/11/2026 · Planificador (auditoría) · Fase B · B4 Movimiento y pulido (rama `claude/etapa5-fase-b-0020e1`, `a22f20e`)
+**Veredicto: BLOQUEADO** (1 bloqueante de texto, pequeño; el resto está bien)
+
+### Bloqueantes
+- **Las comprobaciones que pasan dicen lo contrario de lo que significan** (`FRONTEND/js/confirmar-plano.js:399-401`).
+  - **Qué pasa:** la lista «Comprobaciones» del detalle usa `claveLegible(c.comprobacion)` para todas las filas. Ese diccionario redacta cada clave como **falla** («Hay celdas vacías o fuera de la tabla», «Hay valores fuera de la unidad o del rango esperado», «H no es igual a h1 + h2», «La hoja tiene notas de modificación»…).
+  - **Por qué bloquea:** en una tabla verde se lee «✓ cumple · Hay celdas vacías o fuera de la tabla». Es la pantalla donde Steven decide si confirma datos de diseño, y el texto contradice el resultado.
+  - **Evidencia:** captura a 375 px de la tabla n.º 1 (p1:acero_en_losa, verde). Las 9 filas dicen «cumple» junto a una frase de error.
+  - **Corrección esperada:**
+    - Dos textos por clave: un **nombre neutro** de la comprobación para la lista (p. ej. «Celdas completas», «Unidades y rangos», «Formato de barras», «Sin filas repetidas», «H = h1 + h2», «Sin notas de modificación», «Un único nivel impreso», «IDs de losa sin repetir», «Tipo de losa asignado») y la **frase de falla** actual solo para «Falla:» y «Falló:».
+    - Una prueba de Playwright que compruebe que una fila `es-ok` no muestra la frase de falla.
+
+### Observaciones (no bloquean)
+- Las 9 notas de B3b, B3c y B3f quedan resueltas. Lo comprobé en el navegador:
+  - Órdenes abre «En proceso 1»;
+  - Inicio dice «1 orden abierta: ver órdenes de trabajo»;
+  - el diálogo de Confirmar plano mide 768 de alto, igual que el espacio disponible;
+  - las tablas se distinguen («tabla n.º 2 · p1:fc_por_rango» y «tabla n.º 7 · p9:fc_por_rango»);
+  - a 375 px la barra cabe en una línea y no hay desplazamiento horizontal.
+- El texto de «unidades» coincide con lo que comprueba `extractor.py` (unidades y rango).
+- **Movimiento:**
+  - `.dlg` anima solo `opacity` y `transform`, en 200 ms;
+  - no hay ninguna regla con `transition: all` ni `ease-in`;
+  - los `:hover` van dentro de `(hover: hover) and (pointer: fine)`;
+  - todo lo que se mueve está dentro de `prefers-reduced-motion: no-preference`.
+- Los 4 abiertos del Líder (salida instantánea de los diálogos, avisos que empujan, el foco al h1 de Confirmar plano y el motivo de «Ir al recuadro») pueden ir a B5.
+
+### Criterios de aceptación
+- [x] **Solo frontend:** cambian `FRONTEND/` (sin `clasico/`, `maquetas/` ni `vendor/`) y `PLANES/`.
+- [x] **Movimiento según DESIGN.md y las skills** (comprobado arriba).
+- [ ] **Textos correctos en Confirmar plano.** Es el bloqueante de arriba.
+- [?] **Matriz de 280 visitas** del Ejecutor y Playwright del Líder: los reportan ellos; no los repetí.
+
+### Pruebas ejecutadas
+- **Suite completa** sobre una copia exacta de `a22f20e`: 977 pasan, 3 se omiten y 2 fallan. Son las 2 conocidas de Dropbox.
