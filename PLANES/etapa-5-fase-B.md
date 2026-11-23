@@ -30,7 +30,7 @@ Plan madre: `PLANES/etapa-5.md` (decisiones D5–D8, tareas B0–B5). Este archi
 | B3g-2 | **(5.º; Director a pedido de Steven, 22/11: «Sí, lo necesito»; encargo `PLANES/etapa-5-reportes/B3g2-brief.md`)** Regenerar el informe de una visita «Procesada»: solo STP-MIVED, como versión nueva (`v2`, `v3`…), sin P3, sin tocar los FI ni el estado de la visita; «Regenerar informe» con confirmación en «Hacer informe». **Excepción de backend:** `BACKEND/regenerar_visita.py`, `POST /api/visitas/{id}/regenerar` y `tests/test_regenerar_visita.py`; `procesador_cola.py` sin tocar | Ejecutor Sonnet (subagente, en este worktree) + revisión del Líder | esta rama (`5b135d0`, `39f1346`, `bc1f6da`, `d82824c`; informe `B3g2.md`) | **APROBADA** (auditoría del Director, 23/11, sobre `b0ba715`); falta que Steven la vea |
 | B3b | **(6.º)** Obra: Resumen, Avance, Cierre, Planos y ficha (cambiar plano con el formulario de B3a, datos de la obra M5), visor y recuadros (M4) | Ejecutor Sonnet (subagente, en este worktree) + revisión del Líder | esta rama (`eeebe2b`, `5f6a46a`, `c3def42`, `4568959`; encargo `B3b-brief.md`, informe `B3b.md`) | **APROBADA** (auditoría del Director, 23/11, sobre `905ec52`); falta que Steven la vea |
 | B3c | **(7.º)** Revisión de planos: confirmar datos del plano (M6) | Ejecutor Sonnet (subagente, en este worktree) + revisión del Líder | esta rama (`9dd4aee`, `71d4bd1`; corrección del Líder `ede37af`; encargo `B3c-brief.md`, informe `B3c.md`) | **APROBADA** (auditoría del Director, 23/11, sobre `25fe9a5`); falta que Steven la vea |
-| B3f | **(8.º)** Órdenes de trabajo (kanban Z16), de solo lectura: no hay ruta para crear ni mover órdenes (Fase D) | Ejecutor Sonnet (subagente, en este worktree) + revisión del Líder | — | **en curso** (encargo `B3f-brief.md`, 23/11) |
+| B3f | **(8.º)** Órdenes de trabajo (kanban Z16), de solo lectura: no hay ruta para crear ni mover órdenes (Fase D) | Ejecutor Sonnet (subagente, en este worktree) + revisión del Líder | esta rama (`9c7cc93`, `bf8d9b6`; informe `B3f.md` en `af169ab`) | **hecha y revisada por el Líder**, esperando auditoría del Director |
 | B3h | **(SIN AUTORIZACIÓN: Steven, 20/11, «Conserva el tablero clásico»)** Retiro del clásico: checklist de paridad de B0 §9 completa en el tablero nuevo; se borran `FRONTEND/clasico/` y `test_clasico_entrega_el_tablero_anterior` (esta prueba es de `BACKEND/`: pide excepción al Director) | Líder + Ejecutor | — | pendiente |
 | B4 | Movimiento y pulido (`animate`, `choreograph`, `emil-design-eng`), `prefers-reduced-motion` | Ejecutor + Líder | — | pendiente |
 | B5 | `break-ui`, teclado, contraste, 1280/1920, paridad con B0, cierre | Líder + Ejecutor | — | pendiente |
@@ -74,6 +74,26 @@ Hueco reservado en la navegación: "Lectura asistida" (Fase C, no es de esta fas
 - **19/11/2026 · Estilo visual:** «Plano sellado» (respuesta textual de Steven, relayada por el Director). Se construye con el estilo B de `FRONTEND/maquetas/v2/` (`plano.html`, `estilo-plano.css`). Hormigón y Tablero quedan como antecedente, sin borrarlos. Telemetría del sorteo de `impeccable` enviada (`--kind pick`: «choice recorded»).
 
 ## Bitácora (lo más nuevo arriba)
+- 23/11/2026 · Líder: **B3f hecha y revisada**, lista para auditar. Ejecutor: `9c7cc93` (pantalla `#/ordenes`), `bf8d9b6` (entradas desde Inicio, la Bandeja y la pestaña de la obra) y `af169ab` (informe `B3f.md`). El diff toca 10 archivos (+477/−5), solo `FRONTEND/` y el informe.
+  - **Revisión del diff:**
+    - nada de `BACKEND/`;
+    - sin franjas laterales, porcentajes, barras de progreso ni arrastre;
+    - solo lee `/api/dashboard`;
+    - «Bloqueadas» y «Vencen en ≤ 7 días» de Inicio sin cambios;
+    - 0 menciones al clásico.
+  - **Playwright del Líder** (copia de la BD en el 8766, ya apagado):
+    - 375, 1280 y 1920 px, en claro y oscuro: Inicio → `#/ordenes`, las 6 columnas o pestañas con su contador, «Crear orden» y «Cambiar estado» deshabilitados con «Fase D», «Bandeja de trabajo» marcada;
+    - filtro de tipo tras recargar y con Atrás, sin desborde de página, 0 peticiones externas y 0 errores de consola;
+    - en móvil: flechas del teclado entre pestañas, la pestaña sobrevive a la recarga y vuelve con Atrás desde una obra;
+    - «depende de» salta a la orden, cambia de pestaña y le pasa el foco;
+    - en la Bandeja: «Órdenes de trabajo: 10 abiertas»;
+    - en la pestaña de la obra: el bloque con «Ver en Órdenes de trabajo», y en la obra sin órdenes «Esta obra no tiene órdenes de trabajo.».
+    - Sin correcciones del Líder.
+  - **Suite (del Ejecutor):** todo en el scratch, 975 pasan, 7 se omiten y 0 fallan; sin `CATDIC_DROPBOX_RAIZ`, 977 pasan, 3 se omiten y fallan solo las 2 de Dropbox.
+  - **Para B4 (no bloquean):**
+    - a 1280 px las columnas 5 y 6 quedan tras un desplazamiento horizontal dentro del tablero (como pide el encargo), y con una ventana de 1024 ya salen pestañas porque el menú lateral resta ancho;
+    - sin virtualización: el peor caso (300 órdenes, 150 en un estado) pinta todas las tarjetas.
+- 23/11/2026 · Director: sin veto a las 5 decisiones de B3f. «Bloqueadas» y «Vencen en ≤ 7 días» siguen «pendiente de verificar · Fase D-a», sin recalcularlas con las OT: no está definido si «Bloqueadas» se refiere a órdenes, visitas o dudas, y eso lo decide Steven. El Ejecutor de B3f se cortó por el límite de 5 horas antes de escribir nada; se reanudó el mismo.
 - 23/11/2026 · Director: **B3c APROBADA** sobre `25fe9a5` (Evaluación 6 copiada en `etapa-5-evaluacion.md`). Suite: 977 pasan, 3 se omiten y solo fallan las 2 de Dropbox. «Adelante con B3f», sin push.
   - **Para B4 (no bloquean):** (1) dos tablas se ven idénticas en la lista («f'c por rango · pág. 1 · hoja 20 · NIVEL 2»): mostrar la clave o el número de tabla; (2) `dialog.conf` mide 1064 px de alto con una ventana de 768: un `scrollIntoView` por código lo desplazó 96 px y se perdió la cabecera (con Tab real no pasa); buscar qué se sale del diálogo.
   - Líder: encargo `PLANES/etapa-5-reportes/B3f-brief.md` y Ejecutor lanzado.
