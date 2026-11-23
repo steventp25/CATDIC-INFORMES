@@ -218,25 +218,25 @@
             <h3 id="inf-f-t" class="tr-sub">2. Formatos</h3>
             <div v-if="visita" class="inf-sale" role="status" aria-live="polite" data-formatos-visita>
               <template v-if="regenera">
-                <p v-if="pideStp || pedidos === null" class="inf-sale-t" data-formatos-regenera><Icono nombre="check"/>Se vuelve a generar: <b class="num">STP-MIVED</b>, como versión nueva.</p>
+                <p v-if="pideStp || pedidos === null" class="inf-sale-t" data-formatos-regenera><Icono nombre="check"/><span>Se vuelve a generar: <b class="num">STP-MIVED</b>, como versión nueva.</span></p>
                 <p v-else class="inf-sale-t inf-sale-no" data-formatos-regenera><Icono nombre="alerta"/>Esta visita no pide STP-MIVED, el único formato que se regenera: no se generará nada.</p>
                 <p class="ayuda"><Icono nombre="info"/>{{ textoFI }}</p>
               </template>
               <p v-else-if="pedidos === null" class="ayuda"><Pendiente>formatos de la visita pendientes de verificar</Pendiente> El servidor no trae la lista de formatos que pide esta visita.</p>
               <template v-else>
-                <p v-if="saldran.length" class="inf-sale-t"><Icono nombre="check"/>Saldrán de esta visita: <b class="num">{{ textoSaldran }}</b></p>
+                <p v-if="saldran.length" class="inf-sale-t"><Icono nombre="check"/><span>Saldrán de esta visita: <b class="num">{{ textoSaldran }}</b></span></p>
                 <p v-else class="inf-sale-t inf-sale-no"><Icono nombre="alerta"/>Esta visita no pide ningún formato que el sistema genere hoy.</p>
-                <p v-if="despues.length" class="ayuda"><Icono nombre="info"/>Los pide la visita, pero todavía no se generan: <span class="num">{{ textoDespues }}</span> · disponible más adelante.</p>
+                <p v-if="despues.length" class="ayuda"><Icono nombre="info"/><span>Los pide la visita, pero todavía no se generan: <span class="num">{{ textoDespues }}</span> · disponible más adelante.</span></p>
               </template>
               <p v-if="visita.estado === 'Con dudas'" class="ayuda"><Icono nombre="pregunta"/>Esta visita está Con dudas: se vuelve a procesar, y si quedan dudas abiertas los PDF salen marcados «CON DUDAS».</p>
             </div>
             <p v-else class="ayuda">Elige una visita para ver qué formatos saldrán.</p>
 
             <ul class="inf-catalogo" aria-label="Formatos del sistema">
-              <li v-for="f in formatos" :key="f.id" class="inf-cat" :class="{ 'es-hoy': f.hoy }">
+              <li v-for="f in formatos" :key="f.id" class="inf-cat" :class="{ 'es-hoy': f.hoy && !(regenera && f.id === 'FI') }" :data-formato="f.id">
                 <span class="inf-cat-n num">{{ f.nombre }}</span>
                 <span class="inf-cat-t">{{ f.texto }}</span>
-                <span class="inf-cat-e"><template v-if="f.hoy"><Icono nombre="check"/>Se genera hoy</template><template v-else>Disponible más adelante</template></span>
+                <span class="inf-cat-e"><template v-if="regenera && f.id === 'FI'">No se tocan al regenerar</template><template v-else-if="f.hoy"><Icono nombre="check"/>Se genera hoy</template><template v-else>Disponible más adelante</template></span>
               </li>
             </ul>
             <p class="ayuda inf-cambiar">Cambiar los formatos que pide una visita: <FaseD fase="D" texto="Sin ruta en el backend"/></p>
