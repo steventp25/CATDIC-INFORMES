@@ -72,7 +72,10 @@
     var ahora = ruta.nombre === 'obra' && ruta.pestana === 'planos' && consulta.visor === '1';
     if (ahora && !antes && !primera) C.rutas.vinoDeDentro = true;
     var ahoraConfirmar = ruta.nombre === 'obra' && ruta.pestana === 'planos' && consulta.confirmar === '1';
-    if (ahoraConfirmar && !antesConfirmar) C.rutas.vinoDeDentroConfirmar = !primera && antesPlanos && antesId === ruta.id;
+    if (ahoraConfirmar && !antesConfirmar) {
+      C.rutas.vinoDeDentroConfirmar = !primera && antesPlanos && antesId === ruta.id;
+      C.rutas.confirmarDesdeCarga = primera;   // B5a: al recargar con ?confirmar=1 no hay disparador: al cerrar el foco va al <h1>
+    }
     primera = false;
   }
 
@@ -108,6 +111,7 @@
     // Igual para «Confirmar datos del plano»: verdadero solo si se entró desde «Planos y ficha» de la misma obra (Cerrar = Atrás).
     // Si se volvió de la Mesa de Dudas con Atrás, o se cargó directo, «Cerrar» lleva a «Planos y ficha» sustituyendo la entrada.
     vinoDeDentroConfirmar: false,
+    confirmarDesdeCarga: false,
     iniciar: function () { window.addEventListener('hashchange', leer); leer(); }
   };
 })();

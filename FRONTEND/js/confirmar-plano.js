@@ -138,8 +138,13 @@
     beforeUnmount: function () {
       this.nT++; this.nR++;
       soltar(this.urlRecorte); this.urlRecorte = '';   // A51: se libera la URL del recorte al cerrar
+      // B5a: el foco vuelve a lo que abrió el diálogo. Si no hay disparador (se llegó de vuelta desde la Mesa, o se recargó con ?confirmar=1),
+      // vuelve al enlace «Confirmar datos del plano» de la pestaña y, tras una recarga, al <h1>. Nunca queda en el <body>.
       var a = this.apertura; this.apertura = null;
-      if (a && a.isConnected && a.focus) a.focus({ preventScroll: true });
+      var utilA = a && a !== document.body && a !== document.documentElement && a.isConnected && a.focus;
+      if (utilA) { a.focus({ preventScroll: true }); return; }
+      var destino = (!C.rutas.confirmarDesdeCarga && document.querySelector('[data-confirmar-plano]:not([disabled])')) || document.querySelector('main h1');
+      if (destino) destino.focus({ preventScroll: true });
     },
     methods: {
       nombre: nombreTabla,
