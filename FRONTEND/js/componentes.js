@@ -98,20 +98,28 @@
   C.componentes = { Icono: Icono, Pendiente: Pendiente, FaseD: FaseD, Bloque: Bloque, Cajetin: Cajetin, PestanasObra: PestanasObra, PantallaB3: PantallaB3 };
 
   /* Utilidades de formato compartidas por las pantallas */
+  // ¿Existe ese día en el calendario? (B5a: «2026-13-45» o «31/02/2026» no son fechas y no se muestran como tales.)
+  function diaReal(a, m, d) {
+    a = +a; m = +m; d = +d;
+    if (!(a >= 1900 && a <= 2200 && m >= 1 && m <= 12 && d >= 1)) return false;
+    return d <= new Date(a, m, 0).getDate();
+  }
+
   C.formato = {
-    // Fechas siempre DD/MM/AAAA. Acepta AAAA-MM-DD (con o sin hora) y DD/MM/AAAA; cualquier otra cosa no es una fecha → null.
+    // Fechas siempre DD/MM/AAAA. Acepta AAAA-MM-DD (con o sin hora) y DD/MM/AAAA que existan en el calendario; cualquier otra cosa no es una fecha → null.
     fecha: function (v) {
       if (typeof v !== 'string') return null;
       var m = /^(\d{4})-(\d{2})-(\d{2})/.exec(v);
-      if (m) return m[3] + '/' + m[2] + '/' + m[1];
-      if (/^\d{2}\/\d{2}\/\d{4}$/.test(v)) return v;
+      if (m) return diaReal(m[1], m[2], m[3]) ? m[3] + '/' + m[2] + '/' + m[1] : null;
+      m = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(v);
+      if (m) return diaReal(m[3], m[2], m[1]) ? v : null;
       return null;
     },
     // AAAA-MM-DDTHH:MM… (o con espacio) → DD/MM/AAAA HH:MM; sin hora → solo la fecha; otra cosa → null.
     fechaHora: function (v) {
       if (typeof v !== 'string') return null;
       var m = /^(\d{4})-(\d{2})-(\d{2})(?:[T ](\d{2}):(\d{2}))?/.exec(v);
-      if (!m) return null;
+      if (!m || !diaReal(m[1], m[2], m[3])) return null;
       return m[3] + '/' + m[2] + '/' + m[1] + (m[4] ? ' ' + m[4] + ':' + m[5] : '');
     },
     // Hora local de la PC como DD/MM/AAAA HH:MM (la hora de la sincronización).
