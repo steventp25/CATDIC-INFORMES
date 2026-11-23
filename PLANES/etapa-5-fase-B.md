@@ -24,17 +24,34 @@ Plan madre: `PLANES/etapa-5.md` (decisiones D5–D8, tareas B0–B5). Este archi
 | — | **Puerta de Steven:** elige estilo (vía Director) | Steven | — | **resuelta 19/11: «Plano sellado»** |
 | B2 | Base: estructura de `FRONTEND/`, `vendor/` local, tokens del estilo B, armazón con navegación D6, cliente API, `/clasico/` (encargo `PLANES/etapa-5-reportes/B2-brief.md`) | Ejecutor Sonnet (subagente, en este worktree) + revisión del Líder | esta rama (`d254519`…`485b3ea`, Líder `a7a1f3f`, `078d4f3`, prueba de backend) | **aprobada por el Director (19/11)** |
 | B3a | Inicio y Mis obras, con Nueva obra (encargo `PLANES/etapa-5-reportes/B3a-brief.md`) | Ejecutor Sonnet (subagente, en este worktree) + revisión del Líder | esta rama (`ddca35f`, `30bea9a`, `6f6d73a`, `69ed72f`, Líder: corrección móvil) | **hecha, esperando auditoría y que Steven la vea** |
-| B3d | **(2.º; reanudada el 22/11; encargo `PLANES/etapa-5-reportes/B3d-brief.md`, con las novedades del 22/11)** Visitas y trabajos: **Procesar cola** con el seguimiento del trabajo (polling cada 2 s), **Sincronizar desde Dropbox** con su resultado (Z8), cola de visitas de todas las obras (Z15) y de cada obra, subir visita / conectar Dropbox (M3), avance del procesador (cubre T10b) | Ejecutor Sonnet (subagente, en este worktree) + revisión del Líder | esta rama | **en curso** |
-| B3e | **(3.º)** **Mesa de Dudas** completa (M1: por visita y por obra, responder, conflictos) y Bandeja de trabajo con lo que hay hoy (la ruta común es Fase D-a) | Ejecutor | — | pendiente |
-| B3b | **(4.º)** Obra: Resumen, Avance, Cierre, Planos y ficha (cambiar plano con el formulario de B3a, datos de la obra M5), visor y recuadros (M4) | Ejecutor | — | pendiente |
-| B3c | **(5.º)** Revisión de planos: confirmar datos del plano (M6) | Ejecutor | — | pendiente |
-| B3f | **(6.º)** Órdenes de trabajo (kanban Z16) | Ejecutor | — | pendiente |
-| B3g | **(7.º)** Informes y Crear informe (solo lo que ya genera el sistema; lo demás «disponible más adelante»; guardar trabajos es Fase D-c) | Ejecutor | — | pendiente |
+| B3d | **(2.º; encargo `PLANES/etapa-5-reportes/B3d-brief.md`; informe `B3d.md`)** Visitas y trabajos: **Procesar cola** con el seguimiento del trabajo (polling cada 2 s), **Sincronizar desde Dropbox** con su resultado (Z8), cola de visitas de todas las obras (Z15) y de cada obra, subir visita / conectar Dropbox (M3), avance del procesador (cubre T10b) | Ejecutor Sonnet (subagente, en este worktree) + revisión del Líder | esta rama (`30a1ef0`, `534e9a8`, `f7115a3`, `d134d01`, `e3c64c4`, `452a33b`, `28f44b7`; Líder `65f0916`) | **hecha, esperando auditoría y que Steven la vea** |
+| B3g | **(3.º; Director a pedido de Steven, 22/11; encargo `PLANES/etapa-5-reportes/B3g-brief.md`)** Informes dentro de la obra: lista de informes generados con «Abrir PDF», «Hacer informe» (elegir visita, procesar y avance en vivo de B3d) y «Crear informe» lleva a elegir obra. **Excepción de backend:** `BACKEND/informes_obra.py`, `GET /api/proyectos/{id}/informes`, `GET /api/informes/archivo` (solo rutas registradas en `pdf_generado`) y `tests/test_informes_obra.py` | Ejecutor Sonnet (subagente, en este worktree) + revisión del Líder | esta rama | **en curso** |
+| B3e | **(4.º)** **Mesa de Dudas** completa (M1: por visita y por obra, responder, conflictos) y Bandeja de trabajo con lo que hay hoy (la ruta común es Fase D-a). Construye el **visor de revisión compartido** (Ubicación · Detalle · Abrir plano, ver abajo). **Excepción de backend:** `GET /api/dudas/{id}/refs` | Ejecutor | — | pendiente |
+| B3b | **(5.º)** Obra: Resumen, Avance, Cierre, Planos y ficha (cambiar plano con el formulario de B3a, datos de la obra M5), visor y recuadros (M4) | Ejecutor | — | pendiente |
+| B3c | **(6.º)** Revisión de planos: confirmar datos del plano (M6) | Ejecutor | — | pendiente |
+| B3f | **(7.º)** Órdenes de trabajo (kanban Z16) | Ejecutor | — | pendiente |
 | B3h | **(SIN AUTORIZACIÓN: Steven, 20/11, «Conserva el tablero clásico»)** Retiro del clásico: checklist de paridad de B0 §9 completa en el tablero nuevo; se borran `FRONTEND/clasico/` y `test_clasico_entrega_el_tablero_anterior` (esta prueba es de `BACKEND/`: pide excepción al Director) | Líder + Ejecutor | — | pendiente |
 | B4 | Movimiento y pulido (`animate`, `choreograph`, `emil-design-eng`), `prefers-reduced-motion` | Ejecutor + Líder | — | pendiente |
 | B5 | `break-ui`, teclado, contraste, 1280/1920, paridad con B0, cierre | Líder + Ejecutor | — | pendiente |
 
 Las pestañas **Avance** y **Cierre** de la obra entran en **B3b** con Resumen (Director, 19/11). Sus indicadores muestran «pendiente de verificar» hasta D15, sin números inventados.
+
+**Visor de revisión (Steven, 22/11):** «CUANDO EL PROGRAMA ME PIDA QUE ESTA EN REVISION, QUIERO QUE LA PANTALLA DE REVISION ME UBIQUE EL ELEMENTO Y ME DE EL DETALLE DEL ELEMENTO O TAMBIEN OTRA OPCION APARTE DE ESOS ES ABRIR EL PLANO». Referencia: PlanRadar, con la lista a un lado y el plano al otro.
+- Un solo componente, construido en **B3e** y reutilizado en B3c y B3b.
+- Muestra junto a cada pregunta:
+  - **Ubicación** (M3, `visor/vista-previa` con `localizacion`);
+  - **Detalle** (M4, `detalle`);
+  - **Abrir plano**: la hoja completa con zoom, centrada en el recuadro.
+- **Si falta el recuadro:**
+  - sin recuadro confirmado se muestra la propuesta, rotulada «propuesta, pendiente de verificar», con su fuente;
+  - sin propuesta ni hoja, «pendiente de verificar»;
+  - si la duda no se puede atar a un elemento, solo «Abrir plano».
+- **Prohibido** atar una duda por `id_elemento`.
+- Las dudas de visita se atan con `GET /api/dudas/{id}/refs`, excepción de backend de B3e aprobada por el Director el 22/11:
+  - devuelve el evento `duda` más reciente;
+  - si la duda no existe, 404; si no tiene evento, `refs: null`;
+  - no cambia `/api/dudas`.
+- El borrador de esta parte del encargo de B3e está en el scratch del Líder (`B3e-visor-nota.md`).
 
 Hueco reservado en la navegación: "Lectura asistida" (Fase C, no es de esta fase).
 
@@ -56,6 +73,18 @@ Hueco reservado en la navegación: "Lectura asistida" (Fase C, no es de esta fas
 - **19/11/2026 · Estilo visual:** «Plano sellado» (respuesta textual de Steven, relayada por el Director). Se construye con el estilo B de `FRONTEND/maquetas/v2/` (`plano.html`, `estilo-plano.css`). Hormigón y Tablero quedan como antecedente, sin borrarlos. Telemetría del sorteo de `impeccable` enviada (`--kind pick`: «choice recorded»).
 
 ## Bitácora (lo más nuevo arriba)
+- 22/11/2026 · Líder: **B3d hecha, esperando auditoría y que Steven la vea** (informe `PLANES/etapa-5-reportes/B3d.md`).
+  - **Revisión:**
+    - toda la entrega está en `FRONTEND/**` y el informe, sin tocar `clasico/`, `maquetas/`, `vendor/` ni `BACKEND/`;
+    - 0 menciones al clásico y 0 URL externas.
+  - **Corrección del Líder (`65f0916`):** franjas laterales gruesas cambiadas por bordes completos (aviso del detector de diseño). Matriz y peor caso repetidos sin fallas.
+  - **Suite** (con las rutas al scratch): 942 pasan, 7 se omiten y 0 fallan. Las 2 de Dropbox se omiten en vez de fallar porque la raíz apunta al scratch.
+  - **Paquete de Campo:** el informe anota dónde iría el aviso y qué dato haría falta (`paquete_campo` por visita en `/api/dashboard`, `origen` en `visita_inicio`).
+  - **Pregunta abierta para el Director:** ¿«Sincronizar desde Dropbox» también en la pestaña de cada obra? Por ahora solo está en Inicio; «Conectar con Dropbox» ya sincroniza la obra.
+- 22/11/2026 · Director, a pedido de Steven: **nuevo orden de B3: B3a → B3d → B3g → B3e → B3b → B3c → B3f.**
+  - Steven: «PREPARA CATDIC INFORMES PARA QUE YO PUEDA HACER LOS INFORMES DENTRO DEL PROYECTO».
+  - B3g lleva una excepción de backend concedida por el Director (ver la tabla).
+  - Visor de revisión pedido por Steven: entra en B3e (ver arriba).
 - 22/11/2026 · Director: **se reanuda la Fase B.** Steven, textual: «Sí, reanúdala».
   - B3d arranca con su encargo, 1 Ejecutor a la vez, en este worktree y esta rama (ya contiene `main`).
   - El clásico sigue como lo dejó Steven el 20/11: no se borra `FRONTEND/clasico/` ni su prueba; `ddca35f` no se revierte ni se amplía. B3h sigue sin autorización.
