@@ -140,6 +140,31 @@ def listar_dudas(proyecto_id: Optional[str] = None, visita_id: Optional[str] = N
         conn.close()
 
 
+def leer_refs_duda(duda_id: int) -> Dict:
+    """
+    B3e (excepción aprobada por el Director, 22/11/2026): de dónde sale la duda, para ubicar su elemento en el plano.
+    Devuelve {duda_id, refs}; `refs` sale del `datos_json` del evento `duda` MÁS RECIENTE de esa duda en
+    `trabajo_eventos` (mayor `creado` y, si empatan, mayor `n`) y trae `elemento`, `plano` y `visita_pdf` (cada uno
+    puede faltar: es null). Sin evento (dudas del sincronizador, del lector o del extractor): refs = None.
+    Solo lectura: no escribe nada ni deduce nada. Lanza DudaNoEncontrada si la duda no existe (404).
+    """
+    conn = get_connection()
+    try:
+        if conn.execute("SELECT 1 FROM dudas_y_hallazgos WHERE id = ?", (duda_id,)).fetchone() is None:
+            raise DudaNoEncontrada(f"No existe la duda {duda_id}.")
+        fila = conn.execute("""SELECT datos_json FROM trabajo_eventos
+                               WHERE tipo = 'duda' AND json_extract(datos_json, '$.duda_id') = ?
+                               ORDER BY creado DESC, n DESC LIMIT 1""", (duda_id,)).fetchone()
+    finally:
+        conn.close()
+    if fila is None:
+        return {"duda_id": duda_id, "refs": None}
+    datos = _dict_json(fila["datos_json"])
+    return {"duda_id": duda_id,
+            "refs": {clave: (datos[clave] if isinstance(datos.get(clave), dict) else None)
+                     for clave in ("elemento", "plano", "visita_pdf")}}
+
+
 # ---------- Validación de la respuesta (sin tocar la BD) ----------
 
 def _validar_fecha(respuesta: str) -> str:
@@ -312,6 +337,14 @@ router = APIRouter()
 def api_listar_dudas(proyecto_id: Optional[str] = None, visita_id: Optional[str] = None,
                      resuelta: Optional[bool] = None, categoria: Optional[str] = None, sin_visita: bool = False):
     return listar_dudas(proyecto_id, visita_id, resuelta, categoria, sin_visita)
+
+
+@router.get("/api/dudas/{duda_id}/refs")
+def api_refs_duda(duda_id: int):
+    try:
+        return leer_refs_duda(duda_id)
+    except DudaNoEncontrada as e:
+        raise HTTPException(status_code=404, detail=str(e))
 
 
 @router.patch("/api/dudas/{duda_id}")
