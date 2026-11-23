@@ -68,9 +68,9 @@ Hueco reservado en la navegación: "Lectura asistida" (Fase C, no es de esta fas
 
 ## Preguntas de producto para Steven (cierre de la Fase B, 23/11/2026)
 Ninguna pide backend. Se le preguntan a la vuelta de su viaje (24/11) y no se construye nada hasta que conteste.
-1. **Placa «Web Local v2.0».** El tablero anterior la mostraba junto a la marca «Control Taller». El nuevo dice «CATDIC · Control de obras», sin placa. ¿La vuelves a querer?
-2. **Abrir la Mesa de Dudas sola.** El tablero anterior la abría al terminar de sincronizar o de subir una visita con dudas. El nuevo muestra un enlace a la Mesa. ¿Quieres que se abra sola?
-3. **N20 · Servicios en «Crear informe».** ¿Se listan los servicios marcados como «disponible hoy» o «desarrollo futuro»? Hoy solo aparecen los que existen.
+1. **Placa «Web Local v2.0».** La marca «Control Taller» y la placa «Web Local v2.0» no están en el tablero nuevo, que dice «CATDIC · Control de obras». ¿La vuelves a querer?
+2. **Abrir la Mesa de Dudas sola.** En el nuevo, la Mesa no se abre sola al sincronizar o subir una visita: se muestra un enlace (hueco de paridad de B0 §9). ¿Quieres que se abra sola?
+3. **N20 · Servicios en «Crear informe».** Hoy no se listan los servicios marcados como «disponible hoy» o «desarrollo futuro» (B0 §10). ¿Quieres verlos así?
 
 Quedan anotados como huecos, sin pregunta abierta:
 - **N15:** la Bandeja no tiene filtros.
