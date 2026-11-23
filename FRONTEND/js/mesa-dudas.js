@@ -237,7 +237,7 @@
         <div class="caja-cabeza mesa-cab">
           <div class="mesa-tit">
             <h2 id="mesa-t">Mesa de Dudas</h2>
-            <p class="mesa-sub" :data-mesa-obra="modoVisita ? null : ''">{{ titulo }}<span v-if="visita && modoVisita" class="est" :class="claseEstado(visita.estado)"> {{ visita.estado }}</span></p>
+            <p class="mesa-sub" :data-mesa-obra="modoVisita ? null : ''">{{ titulo }}<span v-if="visita && modoVisita" class="est" style="margin-inline-start:.5em" :class="claseEstado(visita.estado)">{{ visita.estado }}</span></p>
           </div>
           <a class="btn btn-sec" :href="hrefCerrar" data-cerrar-mesa><Icono nombre="cerrar"/>Cerrar</a>
         </div>
