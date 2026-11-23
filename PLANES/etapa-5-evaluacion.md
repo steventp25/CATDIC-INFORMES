@@ -187,3 +187,41 @@ Steven vio las dos pantallas en una copia de la rama (puerto 8767, BD de prueba 
 ### Pruebas ejecutadas
 - **Suite completa** sobre una copia exacta de `25fe9a5`: 977 pasan, 3 se omiten y 2 fallan. Son las 2 conocidas de Dropbox.
 - **En el navegador:** copia de `25fe9a5` con la BD sintética del Ejecutor copiada a mi scratch, en el puerto 8768.
+
+## Evaluación 7 · 23/11/2026 · Planificador (auditoría) · Fase B · B3f Órdenes de trabajo (rama `claude/etapa5-fase-b-0020e1`, `d7cec65`)
+**Veredicto: APROBADO** (falta que Steven la vea)
+
+### Bloqueantes
+- Ninguno.
+
+### Observaciones (no bloquean; van a B4/B5)
+- **La pestaña inicial puede salir vacía.** En modo pestañas (1024 px) se abre «Pendiente» aunque esté vacía y la única orden esté en «En proceso». Conviene abrir la primera pestaña que tenga órdenes cuando no hay `?estado=`.
+- **El enlace de Inicio no dice adónde lleva.** En «Órdenes abiertas», el enlace solo contiene la cifra («1»), sin `aria-label`. Un lector de pantalla oye «1, enlace». Debe decir, por ejemplo, «1 orden abierta: ver órdenes de trabajo».
+- **Abiertos del Líder:**
+  - a 1280 px, las columnas 5 y 6 quedan tras un desplazamiento dentro del tablero;
+  - no hay virtualización para 300 órdenes.
+
+### Criterios de aceptación
+- [x] **Solo frontend.** `git diff --stat 94dfcaf d7cec65 -- BACKEND` sale vacío.
+- [x] **Solo se lee `/api/dashboard`.**
+  - No se crea ni se mueve nada: «Crear orden» y «Cambiar estado» están deshabilitados, con el motivo y «Fase D».
+  - Hay 0 elementos `draggable`.
+  - Un estado desconocido no se pierde: va a «Otro estado».
+- [x] **Inicio sin cifras inventadas.** «Bloqueadas» y «Vencen en ≤ 7 días» siguen como «pendiente de verificar · Fase D-a».
+- [x] **En el navegador** (copia de `d7cec65`, BD sintética, puerto 8768, a 1024 px):
+  - `#/ordenes` marca «Bandeja de trabajo» como activa;
+  - las 6 pestañas muestran su contador;
+  - «En proceso» enseña OT-LEV-001 con su obra, formato, entregable y prioridad; la fecha comprometida dice «pendiente de verificar»;
+  - el estado queda en la dirección (`?estado=En%20proceso`) y Atrás funciona;
+  - la Bandeja muestra «Órdenes de trabajo: 1 abierta» y lleva a `#/ordenes`;
+  - Inicio enlaza a `#/ordenes`;
+  - una obra sin órdenes dice «Esta obra no tiene órdenes de trabajo.»;
+  - no hay desbordamiento horizontal de la página.
+- [x] **Consola sin errores de la página.** Hubo un solo error, que vino de un script inyectado por la herramienta del navegador y no de la app.
+- [?] **Matriz Playwright del Líder** (375, 1280 y 1920 px, claro y oscuro, flechas y foco de «depende de») y **peor caso** (300 órdenes): los reportan ellos; no los repetí.
+
+### Pruebas ejecutadas
+- **Suite completa** sobre una copia exacta de `d7cec65`: 977 pasan, 3 se omiten y 2 fallan. Son las 2 conocidas de Dropbox.
+
+### Estado de B3
+Con B3f, quedan aprobadas **B3a, B3b, B3c, B3d, B3e, B3f, B3g y B3g-2**. B3h (retirar el tablero clásico) sigue **sin autorizar**.
