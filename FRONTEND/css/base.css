@@ -398,3 +398,9 @@ main { padding: var(--esp-5) clamp(16px, 3vw, 40px) 64px; min-width: 0; }
 }
 .cola .pendiente { white-space: normal; font-size: 0.75rem; line-height: 1.3; padding: 0 4px; }
 .dlg-titulo { display: flex; align-items: center; gap: 8px; }
+
+/* ======================================================================================================
+   B3g · El avance en vivo como componente común y los informes dentro de la obra
+   ====================================================================================================== */
+.avance-trabajo { display: grid; gap: var(--esp-5); min-width: 0; }
+.tr-abrir { font-size: inherit; }
