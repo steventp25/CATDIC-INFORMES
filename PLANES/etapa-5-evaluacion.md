@@ -31,3 +31,31 @@ Steven vio las dos pantallas en una copia de la rama (puerto 8767, BD de prueba 
 
 ### Pendientes de verificar
 - **Push:** no se hace. La regla de la fase dice «sin push» hasta cerrarla, y Steven pidió que se le pregunte antes de cualquier push.
+
+## Evaluación 2 · 22/11/2026 · Planificador (auditoría) · Fase B · B3g Informes dentro de la obra (rama `claude/etapa5-fase-b-0020e1`, `e5a1c62`)
+**Veredicto: APROBADO** (falta que Steven la vea)
+
+### Bloqueantes
+- Ninguno.
+
+### Observaciones (no bloquean)
+- **Una visita «Procesada» no se puede volver a lanzar**, así que no hay forma de regenerar su informe desde la pantalla. Es lo que permite hoy el procesador (`/api/visitas/{id}/procesar` solo acepta Sin procesar, En cola o Con dudas). Si Steven quiere regenerar informes de visitas ya procesadas, es una decisión de producto con backend nuevo (Fase D).
+- **`ruta_registrada` lee todos los eventos `pdf_generado` en cada apertura.** Con el volumen actual no importa; si crece, conviene un índice o filtrar en SQL.
+- **Dónde quedan los PDF.** Hoy el procesador publica en la salida de pruebas (`CATDIC_SALIDA_PRUEBAS`), no en `INFORMES\2.DATA PROCESADA`. La lista muestra lo que se generó ahí.
+- **No se generó un PDF real de punta a punta.** La copia de la BD no tiene datos de diseño suficientes. La lista se probó con eventos y PDF sintéticos.
+
+### Criterios de aceptación
+- [x] **El backend se queda dentro de la excepción.** Cambian solo `BACKEND/informes_obra.py` (nuevo, de solo lectura), las 2 rutas de `main.py` y `tests/test_informes_obra.py`. No cambian `procesador_cola.py`, `database.py` ni el esquema.
+- [x] **Abrir un PDF solo sirve rutas registradas.** `GET /api/informes/archivo` compara la ruta exacta con los eventos `pdf_generado` antes de tocar el disco; cualquier otra ruta da 404, y un archivo ausente también da 404. No hay rutas libres.
+- [x] **Los informes se listan** del más nuevo al más viejo, con su versión `vN` y con `existe`. Un archivo ausente se marca, no se oculta.
+- [x] **En el navegador** (copia de `e5a1c62`, BD copiada, puerto 8767):
+  - la pestaña Informes muestra el vacío «Esta obra todavía no tiene informes generados»;
+  - «Hacer informe» lista las 24 visitas, de las que 18 se pueden lanzar;
+  - las «Procesada» salen deshabilitadas, con el motivo escrito;
+  - el diálogo cabe en la pantalla y se cierra con Escape;
+  - 0 errores de consola.
+- [x] **Los formatos que no existen** (CATDIC-STP y HV) aparecen como «disponible más adelante», sin simulación.
+- [?] **Matriz de 5 anchos × 2 temas y peor caso de 200 informes.** La reportan el Ejecutor y el Líder; no la repetí.
+
+### Pruebas ejecutadas
+- **Suite completa sobre una copia exacta de `e5a1c62`:** 955 pasan, 3 se omiten y 2 fallan. Son las 2 conocidas de Dropbox, por el contenido actual de Dropbox y no por este diff.
