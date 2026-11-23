@@ -183,7 +183,7 @@
                 <span v-if="esPend(v.estado)"><Pendiente/></span>
                 <span v-else class="est" :class="claseEstado(v.estado)"><Icono v-if="v.estado === 'Con dudas'" nombre="pregunta"/>{{ v.estado }}</span>
                 <p v-if="c(v).bq > 0 && v.estado !== 'Con dudas'" class="cola-linea bloq" data-aviso-dudas><Icono nombre="alerta"/>{{ v.estado }} con {{ c(v).bq }} {{ textoBloq(c(v).bq) }}</p>
-                <p v-if="c(v).abiertas > 0" class="cola-linea abiertas"><Icono nombre="pregunta"/>{{ c(v).abiertas }} {{ textoAbiertas(c(v).abiertas) }} · clic para responder</p>
+                <p v-if="c(v).abiertas > 0" class="cola-linea abiertas"><Icono nombre="pregunta"/>{{ c(v).abiertas }} {{ textoAbiertas(c(v).abiertas) }} · <a class="enlace" :href="hrefVisita(v)">Abrir la Mesa de Dudas</a></p>
                 <p v-if="pendientes(v).length" class="cola-linea pend">Pendiente: {{ pendientes(v).join(', ') }}</p>
               </div>
             </div>

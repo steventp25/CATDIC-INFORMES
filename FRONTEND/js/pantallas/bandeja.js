@@ -1,7 +1,7 @@
 /* CATDIC-WEB · pantalla «Bandeja de trabajo».
    B3d construye la «Cola de visitas (todas las obras)» (Z15, el componente ColaVisitas de js/cola.js).
-   El resto de la Bandeja (pendientes de todas las obras, filtros y Mesa de Dudas) lo construye B3e; la ruta común de
-   pendientes es Fase D-a y se rotula como tal: no se simulan datos. */
+   B3e añade «Dudas abiertas (todas las obras)» (DudasBandeja), con enlace a la Mesa de Dudas de cada grupo.
+   La ruta común de pendientes es Fase D-a y se rotula como tal: no se simulan datos. */
 (function () {
   'use strict';
   var C = window.CATDIC = window.CATDIC || {};
@@ -23,12 +23,13 @@
           <p class="ayuda cola-nota">Procesar cola y Sincronizar desde Dropbox están en <a class="enlace" href="#/inicio">Inicio</a> y, por obra, en su pestaña «Visitas y trabajos».</p>
         </ColaVisitas>
 
+        <DudasBandeja :dudas="dudas || []" :estado="estadoDudas" :mensaje="mensajeDudas" :proyectos="proyectos" @reintentar="leerDudas"/>
+
         <section class="caja" aria-labelledby="t-pend">
           <div class="caja-cabeza"><h2 id="t-pend">Pendientes de todas las obras</h2><FaseD fase="D-a"/></div>
           <div class="vacio">
             <p class="vacio-t">Esta parte todavía no está construida.</p>
-            <p>Aquí irán los pendientes de todas las obras con filtros, y la Mesa de Dudas. La ruta común de pendientes es Fase D-a: hasta que exista, la bandeja no simula datos.</p>
-            <p>La construye la tarea <span class="num tarea">B3e</span> de la Fase B.</p>
+            <p>Aquí irán los pendientes de todas las obras con filtros. La ruta común de pendientes es Fase D-a: hasta que exista, la bandeja no simula datos. Las dudas abiertas están arriba.</p>
           </div>
         </section>
       </div>`

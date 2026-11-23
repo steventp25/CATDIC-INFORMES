@@ -7,7 +7,7 @@
                                                  pdf_generado, visita_fin, fin); se pide cada 2 s mientras el trabajo corre
    Los eventos viven en el servidor: se puede cerrar y volver a abrir sin perder nada.
    Al desmontarse cancela la petición en vuelo (AbortController) y el siguiente turno (clearTimeout).
-   Fuera de B3d: responder la duda aquí (Mesa de Dudas, B3e) y el visor del plano junto a la duda (B3b). */
+   Responder la duda se hace en la Mesa de Dudas (js/mesa-dudas.js), a la que enlaza cada duda. */
 (function () {
   'use strict';
   var C = window.CATDIC = window.CATDIC || {};
@@ -115,9 +115,9 @@
       },
       etiqueta: function (e) { return TXT_ELEMENTO[e] || e; },
       claseEl: function (e) { return CLASE_ELEMENTO[e] || ''; },
-      hrefVisita: function (vid) {
+      hrefVisita: function (vid, dudaId) {
         var p = this.obraDe[vid];
-        return p ? C.rutas.hashVisita(p, vid) : '';
+        return p ? C.rutas.hashVisita(p, vid, dudaId) : '';
       },
       textoVisita: function (v) {
         var n = v.numero !== null && v.numero !== undefined && v.numero !== '' ? 'Visita ' + v.numero : 'Visita';
@@ -244,10 +244,9 @@
                 <li v-for="d in v.dudas" :key="d.n" class="tr-duda">
                   <p class="tr-duda-p"><Icono nombre="pregunta"/>{{ d.pregunta }}</p>
                   <p class="tr-duda-m ayuda"><span v-if="d.elemento">{{ d.elemento }} · </span>Campo <span class="num">{{ d.campo }}</span><span v-if="d.nueva" class="etq"> nueva</span></p>
-                  <p class="tr-duda-a"><a v-if="hrefVisita(v.id)" class="enlace" :href="hrefVisita(v.id)">Ver la visita<Icono nombre="flecha"/></a><span v-else class="ayuda">Visita <span class="num">{{ v.id }}</span></span></p>
+                  <p class="tr-duda-a"><a v-if="hrefVisita(v.id)" class="enlace" :href="hrefVisita(v.id, d.id)" data-abrir-duda>Responder en la Mesa de Dudas<Icono nombre="flecha"/></a><span v-else class="ayuda">Visita <span class="num">{{ v.id }}</span></span></p>
                 </li>
               </ul>
-              <p class="ayuda">Mesa de Dudas: la construye B3e. Aquí no se responden las dudas.</p>
             </div>
 
             <ul v-if="v.avisos.length" class="tr-avisos"><li v-for="(a, i) in v.avisos" :key="i"><Icono nombre="info"/>{{ a }}</li></ul>

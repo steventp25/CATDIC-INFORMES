@@ -66,7 +66,8 @@
         };
         this.recargar();
       },
-      hrefObra: function (id, pestana) { return C.rutas.hashObra(id, pestana); }
+      hrefObra: function (id, pestana) { return C.rutas.hashObra(id, pestana); },
+      hrefMesaObra: function (id) { return C.rutas.hashMesaObra(id); }
     },
     template: `
       <div class="pagina">
@@ -115,7 +116,7 @@
                 <p class="of-acc">
                   <a class="enlace" :href="hrefObra(o.id, 'planos')">Planos y ficha<Icono nombre="flecha"/></a>
                   <a v-if="o.supervision" class="enlace" :href="hrefObra(o.id, 'visitas')">Visitas<Icono nombre="flecha"/></a>
-                  <a v-if="o.dudasObra > 0" class="enlace" :href="hrefObra(o.id, 'resumen')">Dudas de la obra: {{ o.dudasObra }}<Icono nombre="flecha"/></a>
+                  <a v-if="o.dudasObra > 0" class="enlace" :href="hrefMesaObra(o.id)" data-dudas-obra>Dudas de la obra: {{ o.dudasObra }}<Icono nombre="flecha"/></a>
                 </p>
               </li>
             </ul>

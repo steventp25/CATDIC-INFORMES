@@ -16,6 +16,7 @@
     methods: {
       lista: function (x) { return Array.isArray(x) ? x : []; },
       hrefVisita: function (p, d) { return d && d.visita_id ? C.rutas.hashVisita(p.id, d.visita_id) : ''; },
+      hrefMesa: function (p) { return this.hrefVisita(p, this.lista(p.dudas_creadas)[0]); },
       contadores: function (p) {
         var n = function (v) { return typeof v === 'number' ? v : null; };
         var sellados = this.lista(p.planos_sellados);
@@ -60,6 +61,7 @@
             <summary>{{ lista(p.omitidas).length }} {{ lista(p.omitidas).length === 1 ? 'carpeta omitida' : 'carpetas omitidas' }}</summary>
             <ul><li v-for="(o, i) in lista(p.omitidas)" :key="i"><Icono nombre="carpeta"/>Omitida: {{ o.nombre_carpeta }} — {{ o.motivo }}</li></ul>
           </details>
+          <p v-if="lista(p.dudas_creadas).length && hrefVisita(p, lista(p.dudas_creadas)[0])" class="sync-mesa"><Icono nombre="pregunta"/><a class="enlace" :href="hrefMesa(p)" data-abrir-mesa-sync>{{ lista(p.dudas_creadas).length }} {{ lista(p.dudas_creadas).length === 1 ? 'duda nueva' : 'dudas nuevas' }} · Abrir la Mesa de Dudas</a></p>
           <details v-if="lista(p.dudas_creadas).length" class="sync-lista sync-dudas" :open="lista(p.dudas_creadas).length <= 5">
             <summary>{{ lista(p.dudas_creadas).length }} {{ lista(p.dudas_creadas).length === 1 ? 'duda creada' : 'dudas creadas' }}</summary>
             <ul><li v-for="(d, i) in lista(p.dudas_creadas)" :key="i"><Icono nombre="pregunta"/>
@@ -92,7 +94,7 @@
             <span class="res-carpeta">{{ v.nombre_carpeta }}</span>
             <span class="est" :class="claseEstado(v.estado)"><Icono v-if="v.estado === 'Con dudas'" nombre="pregunta"/>{{ v.estado }}</span>
             <span v-if="v.lector" class="ayuda">{{ v.lector }}</span>
-            <a v-if="v.dudas > 0" class="enlace" :href="hrefVisita(v)" :data-abrir-dudas-visita="v.id">Dudas de la visita: {{ v.dudas }}<Icono nombre="flecha"/></a>
+            <a v-if="v.dudas > 0" class="enlace" :href="hrefVisita(v)" :data-abrir-dudas-visita="v.id">{{ v.dudas }} {{ v.dudas === 1 ? 'duda nueva' : 'dudas nuevas' }} · Abrir la Mesa de Dudas<Icono nombre="flecha"/></a>
           </li>
         </ul>
         <details v-if="resultado.avisos.length" class="sync-lista" :open="resultado.avisos.length <= 5">

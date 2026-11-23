@@ -93,7 +93,7 @@
       var ds = deObra[pid], c = cuenta(ds);
       filas.push({
         clave: 'o:' + pid, obraId: pid, obra: nombreObra(pid), donde: 'Dudas de la obra (sin visita)',
-        href: C.rutas.hashObra(pid, 'resumen'), dias: null, fecha: null,
+        href: C.rutas.hashMesaObra(pid), dias: null, fecha: null,
         rango: c.bq ? 0 : 1, bloq: c.bq > 0, tipo: 'Duda de obra', motivo: textoDudas(c), siguiente: 'Responder las dudas de la obra'
       });
     });
