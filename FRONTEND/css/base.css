@@ -300,7 +300,7 @@ main { padding: var(--esp-5) clamp(16px, 3vw, 40px) 64px; min-width: 0; }
 .cola-enc { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 .cola-f { display: grid; grid-template-columns: minmax(0, 1fr); gap: 4px var(--esp-3); padding: var(--esp-3) var(--esp-2) var(--esp-3) var(--esp-3); border-bottom: 1px solid var(--borde); border-left: 4px solid transparent; min-width: 0; }
 .cola-f:hover { background: var(--superficie-2); }
-.cola-f.con-dudas { border-left-color: var(--dudas-borde); background: var(--dudas-suave); }
+.cola-f.con-dudas { background: var(--dudas-suave); box-shadow: inset 0 0 0 1.5px var(--dudas-borde); }
 .cola-f.es-sel { outline: 2px solid var(--foco); outline-offset: -2px; }
 .cola-c { min-width: 0; overflow-wrap: anywhere; display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 8px; }
 .cola-c > * { min-width: 0; }
@@ -336,12 +336,12 @@ main { padding: var(--esp-5) clamp(16px, 3vw, 40px) 64px; min-width: 0; }
 .acc-botones { display: flex; flex-wrap: wrap; gap: var(--esp-3); }
 .pv-botones { margin-bottom: var(--esp-2); }
 .pestana-visitas { display: grid; gap: var(--esp-5); }
-.panel { border: 1px solid var(--borde-fuerte); border-left-width: 5px; background: var(--superficie-2); padding: var(--esp-3) var(--esp-4); display: grid; gap: 6px; min-width: 0; }
+.panel { border: 1.5px solid var(--borde-fuerte); background: var(--superficie-2); padding: var(--esp-3) var(--esp-4); display: grid; gap: 6px; min-width: 0; }
 .panel > * { min-width: 0; overflow-wrap: anywhere; }
-.p-ok { border-left-color: var(--ok-tinta); background: var(--ok-fondo); }
-.p-corre { border-left-color: var(--sel-borde); background: var(--aviso-fondo); }
-.p-mal { border-left-color: var(--alerta); background: var(--error-fondo); }
-.p-info { border-left-color: var(--borde-fuerte); }
+.p-ok { border-color: var(--ok-tinta); background: var(--ok-fondo); }
+.p-corre { border-color: var(--sel-borde); background: var(--aviso-fondo); }
+.p-mal { border-color: var(--alerta); background: var(--error-fondo); }
+.p-info { border-color: var(--borde-fuerte); }
 .panel-cab { display: flex; justify-content: space-between; align-items: flex-start; gap: var(--esp-3); }
 .panel-t { display: flex; gap: 8px; align-items: flex-start; font-weight: 700; font-size: 0.9375rem; margin: 0; }
 .panel-t .ico { margin-top: 0.15em; }
@@ -376,16 +376,16 @@ main { padding: var(--esp-5) clamp(16px, 3vw, 40px) 64px; min-width: 0; }
 .tr-visita { display: grid; gap: var(--esp-3); }
 .tr-visita .caja-cabeza { margin-bottom: 0; }
 .tr-elementos, .tr-dudas ul, .tr-avisos, .tr-pdf ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
-.tr-el { display: flex; flex-wrap: wrap; gap: 2px var(--esp-3); align-items: baseline; padding: 6px 10px; border: 1px solid var(--borde); border-left-width: 4px; overflow-wrap: anywhere; }
+.tr-el { display: flex; flex-wrap: wrap; gap: 2px var(--esp-3); align-items: baseline; padding: 6px 10px; border: 1.5px solid var(--borde); overflow-wrap: anywhere; }
 .tr-el-t { font-weight: 600; flex: 1 1 14rem; min-width: 0; }
 .tr-el-e { font-size: 0.8125rem; display: inline-flex; gap: 4px; align-items: baseline; }
 .tr-el-ficha { flex-basis: 100%; font-size: 0.8125rem; color: var(--tinta-2); }
-.el-listo { border-left-color: var(--ok-tinta); }
-.el-corre { border-left-color: var(--sel-borde); background: var(--aviso-fondo); }
-.el-espera { border-left-color: var(--dudas-borde); background: var(--dudas-suave); }
-.el-ant { border-left-color: var(--borde-fuerte); }
+.el-listo { border-color: var(--ok-tinta); }
+.el-corre { border-color: var(--sel-borde); background: var(--aviso-fondo); }
+.el-espera { border-color: var(--dudas-borde); background: var(--dudas-suave); }
+.el-ant { border-color: var(--borde-fuerte); }
 .tr-sub { font-size: 0.8125rem; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 6px; }
-.tr-duda { border: 1px solid var(--dudas-borde); border-left-width: 4px; background: var(--dudas-suave); padding: 6px 10px; display: grid; gap: 2px; overflow-wrap: anywhere; }
+.tr-duda { border: 1.5px solid var(--dudas-borde); background: var(--dudas-suave); padding: 6px 10px; display: grid; gap: 2px; overflow-wrap: anywhere; }
 .tr-duda-p { display: flex; gap: 6px; align-items: flex-start; font-weight: 600; }
 .tr-avisos li { display: flex; gap: 6px; align-items: flex-start; font-size: 0.875rem; overflow-wrap: anywhere; }
 .tr-pdf li { font-size: 0.8125rem; overflow-wrap: anywhere; }
