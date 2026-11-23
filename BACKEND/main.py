@@ -7,9 +7,11 @@ from typing import Optional
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
+import informes_obra
 import procesador_cola
 from database import get_connection, inicializar_bd, sembrar_datos_iniciales_catdic
 from mesa_dudas import router as router_mesa_dudas
@@ -181,6 +183,28 @@ def eventos_trabajo(trabajo_id: str, desde: int = 0):
     if procesador_cola.obtener_trabajo(trabajo_id) is None:
         raise HTTPException(status_code=404, detail="Trabajo no encontrado.")
     return procesador_cola.listar_eventos(trabajo_id, max(0, desde))
+
+
+# --- Etapa 5 · B3g: informes de una obra (solo lectura) ---
+@app.get("/api/proyectos/{proyecto_id}/informes")
+def informes_de_la_obra(proyecto_id: str):
+    """Los PDF que generó el procesador para las visitas de la obra, del más nuevo al más viejo."""
+    try:
+        return {"informes": informes_obra.informes_de_obra(proyecto_id)}
+    except informes_obra.ObraNoEncontrada as e:
+        raise HTTPException(status_code=404, detail=str(e))
+
+
+@app.get("/api/informes/archivo")
+def abrir_informe(ruta: str = ""):
+    """Abre en el navegador un PDF publicado por el procesador. Solo sirve rutas registradas tal cual en un evento
+    `pdf_generado`: cualquier otra, exista o no el archivo, da 404."""
+    if not informes_obra.ruta_registrada(ruta):
+        raise HTTPException(status_code=404, detail="Esa ruta no es la de un informe generado por el sistema.")
+    archivo = Path(ruta)
+    if not archivo.is_file():
+        raise HTTPException(status_code=404, detail="El archivo de este informe ya no está en la carpeta.")
+    return FileResponse(archivo, media_type="application/pdf", filename=archivo.name, content_disposition_type="inline")
 
 
 app.include_router(router_mesa_dudas)
