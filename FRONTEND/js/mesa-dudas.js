@@ -279,8 +279,8 @@
                     <span class="etq" :class="d.categoria === 'DUDA_BLOQUEANTE' ? 'etq-acento' : ''"><Icono :nombre="d.categoria === 'DUDA_BLOQUEANTE' ? 'alerta' : 'info'"/>{{ categoria(d) }}</span>
                     <span v-if="d.resuelta" class="etq"><Icono nombre="check"/>Resuelta</span>
                   </span>
-                  <span class="mesa-item-p">{{ d.pregunta }}</span>
-                  <span class="mesa-item-m">{{ etiquetaCampo(d.campo_afectado) }}<template v-if="d.id_elemento"> · {{ d.id_elemento }}</template></span>
+                  <span class="mesa-item-p"><template v-if="d.pregunta && String(d.pregunta).trim()">{{ d.pregunta }}</template><Pendiente v-else/></span>
+                  <span class="mesa-item-m"><template v-if="d.campo_afectado">{{ etiquetaCampo(d.campo_afectado) }}</template><Pendiente v-else/><template v-if="d.id_elemento"> · {{ d.id_elemento }}</template></span>
                 </a>
               </li>
             </ul>
@@ -296,9 +296,9 @@
               </p>
             </header>
 
-            <p class="mesa-pregunta" data-pregunta>{{ actual.pregunta }}</p>
+            <p class="mesa-pregunta" data-pregunta><template v-if="actual.pregunta && String(actual.pregunta).trim()">{{ actual.pregunta }}</template><Pendiente v-else/></p>
             <p v-if="esEtiqueta(actual.campo_afectado)" class="mesa-meta" data-etiqueta-visita>Etiqueta en la visita: <b class="num">{{ etiquetaVisita(actual) }}</b><template v-if="fotos(actual)"> · {{ fotos(actual) }}</template></p>
-            <p v-else class="mesa-meta">Campo: <b>{{ etiquetaCampo(actual.campo_afectado) }}</b><template v-if="actual.id_elemento"> · Elemento: <b class="num">{{ actual.id_elemento }}</b></template></p>
+            <p v-else class="mesa-meta">Campo: <b v-if="actual.campo_afectado">{{ etiquetaCampo(actual.campo_afectado) }}</b><Pendiente v-else/><template v-if="actual.id_elemento"> · Elemento: <b class="num">{{ actual.id_elemento }}</b></template></p>
             <p class="mesa-meta">Creada: <span class="num">{{ fechaHora(actual.creado) }}</span><template v-if="actual.resuelta"> · Resuelta: <span class="num">{{ fechaHora(actual.resuelto_en) }}</span></template></p>
             <p v-if="actual.resuelta" class="mesa-respuesta" data-respuesta>Respuesta: {{ actual.respuesta || '—' }}</p>
 

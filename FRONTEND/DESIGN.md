@@ -69,7 +69,7 @@ Qué se anima
 |---|---|---|
 | Diálogos (Nueva obra, Subir visita, Hacer informe) | Entrada: opacidad + `scale(0.97→1)`, y el fondo se funde. Siguen centrados. | 200 ms |
 | Confirmar plano (pantalla completa) | Solo fundido, sin escala. | 200 ms |
-| Avisos de resultado (error al procesar, resultado de sincronizar, regeneración, confirmación del editor) | Entrada: opacidad + `scale(0.98)`, origen arriba a la izquierda. Los botones de arriba no se mueven. | 160 ms |
+| Avisos de resultado (error al procesar, resultado de sincronizar, regeneración, confirmación del editor). Los de una línea (Mesa, Confirmar plano, Datos de la obra) tienen **sitio reservado** (`.sitio-aviso`, `.conf-msgs`) y no empujan lo de debajo; los paneles de varias líneas se insertan al final de su bloque | Entrada: opacidad + `scale(0.98)`, origen arriba a la izquierda. Los botones de arriba no se mueven. | 160 ms |
 | Presionar controles compactos (`.btn`, navegación, pestañas) | `scale(0.97)` | 140 ms |
 | Presionar filas anchas (`.fila-a`, `.of`, `.mesa-item`, `.conf-t`) | `scale(0.985)`: a 0.97 una fila de 900 px se correría unos 27 px. | 140 ms |
 | Visor: acercar, alejar, Ajustar, Ir al recuadro, Ir a la ubicación, Ir al detalle | Suaviza `transform`, solo si el clic vino del puntero. | 180 ms |
@@ -80,7 +80,10 @@ Qué no se anima, y por qué
 - Cualquier cosa disparada por teclado: el atajo debe sentirse inmediato (visor con `+`, `-`, flechas, rueda y arrastre incluidos; el arrastre va 1:1).
 - Cambios de pantalla y de pestaña.
 - Filtros de la Mesa de Dudas y de la Bandeja: se filtra con frecuencia y animar estorba.
-- La salida de los diálogos: el componente se desmonta al emitir `cerrar`, así que cierra al instante.
+- La salida de los diálogos (decidido en B5a): cierra al instante.
+  - Una salida de ~150 ms exigiría retrasar el desmontaje o el foco, y un clic rápido en el disparador durante ese tiempo dejaría el diálogo a medias.
+  - Se abren y cierran muchas veces al día: lo inmediato se siente más rápido que la salida más fina.
+  - La entrada (200 ms) ya explica de dónde viene; al salir no hay nada que explicar.
 - Desplazamiento del tablero de Órdenes y su sombra de borde: son indicios, no animaciones.
 
 ## Accesibilidad
