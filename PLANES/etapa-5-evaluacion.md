@@ -273,3 +273,35 @@ Con B3f, quedan aprobadas **B3a, B3b, B3c, B3d, B3e, B3f, B3g y B3g-2**. B3h (re
 - **Alcance del cambio.** Entre `a22f20e` y `83d827d` solo cambian `FRONTEND/js/confirmar-plano.js` y `PLANES/`.
   - No volví a correr la suite: ningún archivo de `BACKEND/` cambió desde la corrida sobre `a22f20e` (977 pasan, 3 se omiten y fallan las 2 de Dropbox).
 - **Para B5:** los 4 abiertos de B4.
+
+## Evaluación 10 · 23/11/2026 · Planificador (auditoría) · Fase B · B5 cierre (rama `claude/etapa5-fase-b-0020e1`, `a245f46`)
+**Veredicto: APROBADO.** Con B5 se cierra la Fase B. La fusión la hace Steven.
+
+### Bloqueantes
+- Ninguno.
+
+### Alcance comprobado
+- **Archivos.** Entre `83d827d` (B4 aprobada) y `a245f46` solo cambian `FRONTEND/` y `PLANES/`: 15 archivos de código, 86 líneas añadidas y 44 quitadas.
+- **No cambian** `BACKEND/`, `FRONTEND/clasico/`, `FRONTEND/vendor/` ni `FRONTEND/maquetas/`. El tablero clásico se conserva, como pidió Steven.
+- **Suite.** No la volví a correr, porque `BACKEND/` no cambió desde la corrida sobre `a22f20e`: 977 pasan, 3 se omiten y fallan las 2 conocidas de Dropbox. El Líder reporta lo mismo sobre `a245f46`.
+
+### En el navegador (copia de `a245f46`, BD sintética, puerto 8768, 375×812)
+- **Órdenes de trabajo.**
+  - Sin desbordamiento horizontal (`scrollWidth` = 375).
+  - La pestaña inicial es «En proceso 1», con la orden: se mantiene la corrección de B3f.
+- **Foco con Tab real.**
+  - El orden es: saltar al contenido → barra → filtros → «En proceso» → enlace de la obra.
+  - El enlace de la obra queda en y = 664–708, por encima de la barra inferior fija (que empieza en y = 751).
+  - `html` tiene `scroll-padding-bottom: 88px`, más que el alto de la barra (61 px). Es la corrección de B5b.
+
+### Observaciones (no bloquean)
+- **Paneles que empujan el contenido.** La decisión del Líder de dejar que los paneles de resultado de la cola empujen unos 100 px es razonable: aparecen donde se hizo clic. Va a la lista de Steven como gusto, no como defecto.
+- **No repetí** la matriz de 280 visitas ni el contraste: los reporta el Líder con sus cifras (contraste mínimo de texto 5.26:1, bordes 3.29:1).
+- **Para Steven** (de producto, ninguna necesita backend):
+  - ¿volver a mostrar la placa «Web Local v2.0»?
+  - ¿abrir la Mesa sola al sincronizar?
+  - N20: ¿«disponible hoy» / «desarrollo futuro» en «Crear informe»?
+  - Quedan como huecos N15 (filtros de la Bandeja) y N18 (foto original en la Mesa).
+
+### Estado de la Fase B
+Aprobadas: B1, B2, B3a–B3g-2, B4 y B5. B3h (retirar el tablero clásico) sigue **sin autorizar**. La rama está lista para que Steven la revise y decida el PR y la fusión.

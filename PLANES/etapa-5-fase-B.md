@@ -33,7 +33,7 @@ Plan madre: `PLANES/etapa-5.md` (decisiones D5–D8, tareas B0–B5). Este archi
 | B3f | **(8.º)** Órdenes de trabajo (kanban Z16), de solo lectura: no hay ruta para crear ni mover órdenes (Fase D) | Ejecutor Sonnet (subagente, en este worktree) + revisión del Líder | esta rama (`9c7cc93`, `bf8d9b6`; informe `B3f.md` en `af169ab`) | **APROBADA** (auditoría del Director, 23/11, sobre `d7cec65`); falta que Steven la vea |
 | B3h | **(SIN AUTORIZACIÓN: Steven, 20/11, «Conserva el tablero clásico»)** Retiro del clásico: checklist de paridad de B0 §9 completa en el tablero nuevo; se borran `FRONTEND/clasico/` y `test_clasico_entrega_el_tablero_anterior` (esta prueba es de `BACKEND/`: pide excepción al Director) | Líder + Ejecutor | — | pendiente |
 | B4 | Movimiento y pulido (`animate`, `choreograph`, `emil-design-eng`), `prefers-reduced-motion`, más las notas «Para B4» de B3b, B3c y B3f | Ejecutor Sonnet (subagente, en este worktree) + revisión del Líder | esta rama (`c69a84a`, `e3baf7d`, `5da950a`, `1ea2931`, `6e8d386`; Líder `38c6d56`; corrección de la auditoría `41e7468`; encargo `B4-brief.md`, informe `B4.md`) | **APROBADA** (reauditoría del Director, 23/11, sobre `83d827d`); falta que Steven la vea |
-| B5 | `break-ui`, teclado, contraste, 1280/1920, paridad con B0, cierre; más los 4 abiertos de B4. **No se retira `/clasico`** (Steven no lo autorizó). En dos turnos: B5a (rotura y abiertos) y B5b (teclado, contraste, paridad y cierre) | Ejecutor Sonnet (subagente, en este worktree) + revisión del Líder | esta rama (B5a `fa7a8a6`…`a5d2001`; B5b `e2ef8e3`, `78f9776`, `a743dc7`, `156311a`; encargo `B5-brief.md`, informes `B5a.md` y `B5b.md`) | **hecha, revisada por el Líder; espera la auditoría del Director** |
+| B5 | `break-ui`, teclado, contraste, 1280/1920, paridad con B0, cierre; más los 4 abiertos de B4. **No se retira `/clasico`** (Steven no lo autorizó). En dos turnos: B5a (rotura y abiertos) y B5b (teclado, contraste, paridad y cierre) | Ejecutor Sonnet (subagente, en este worktree) + revisión del Líder | esta rama (B5a `fa7a8a6`…`a5d2001`; B5b `e2ef8e3`, `78f9776`, `a743dc7`, `156311a`; encargo `B5-brief.md`, informes `B5a.md` y `B5b.md`) | **APROBADA** (auditoría del Director, 23/11, sobre `a245f46`; Evaluación 10); falta que Steven la vea |
 
 Las pestañas **Avance** y **Cierre** de la obra entran en **B3b** con Resumen (Director, 19/11). Sus indicadores muestran «pendiente de verificar» hasta D15, sin números inventados.
 
@@ -66,6 +66,16 @@ Hueco reservado en la navegación: "Lectura asistida" (Fase C, no es de esta fas
 - Pendiente al elegir: telemetría del sorteo (`--from b429ec8dc7555d53ac6ca00d75b3dc17 --scope direction --mode operate --kind <assigned|pick|challenger>`), contrato de dirección y `DESIGN.md` (se escribe en B2).
 - Necesidades de Fase D que salen de B1 (B0 §10): D-a ruta común de la Bandeja, vencimientos y actividad reciente; D-b indicadores (tras D15); D-c guardar trabajos independientes.
 
+## Preguntas de producto para Steven (cierre de la Fase B, 23/11/2026)
+Ninguna pide backend. Se le preguntan a la vuelta de su viaje (24/11) y no se construye nada hasta que conteste.
+1. **Placa «Web Local v2.0».** El tablero anterior la mostraba junto a la marca «Control Taller». El nuevo dice «CATDIC · Control de obras», sin placa. ¿La vuelves a querer?
+2. **Abrir la Mesa de Dudas sola.** El tablero anterior la abría al terminar de sincronizar o de subir una visita con dudas. El nuevo muestra un enlace a la Mesa. ¿Quieres que se abra sola?
+3. **N20 · Servicios en «Crear informe».** ¿Se listan los servicios marcados como «disponible hoy» o «desarrollo futuro»? Hoy solo aparecen los que existen.
+
+Quedan anotados como huecos, sin pregunta abierta:
+- **N15:** la Bandeja no tiene filtros.
+- **N18:** la Mesa muestra la etiqueta y la página, pero no la foto original.
+- **Paneles de la cola:** los de varias líneas empujan unos 100 px lo de debajo. Es una decisión del Líder que el Director da por razonable; para Steven es cuestión de gusto, no un defecto.
 ## Decisiones de Steven
 - **19/11/2026 · Tablero clásico:** «EL TABLERO CLASICO NO LO QUIERO VOLVER A VER» (cita relayada por el Director). Consecuencias:
   - Desde B3a, ningún enlace ni mención al clásico en el tablero nuevo.
@@ -74,6 +84,10 @@ Hueco reservado en la navegación: "Lectura asistida" (Fase C, no es de esta fas
 - **19/11/2026 · Estilo visual:** «Plano sellado» (respuesta textual de Steven, relayada por el Director). Se construye con el estilo B de `FRONTEND/maquetas/v2/` (`plano.html`, `estilo-plano.css`). Hormigón y Tablero quedan como antecedente, sin borrarlos. Telemetría del sorteo de `impeccable` enviada (`--kind pick`: «choice recorded»).
 
 ## Bitácora (lo más nuevo arriba)
+- 23/11/2026 · Director: **B5 APROBADA** sobre `a245f46` (Evaluación 10, copiada en `etapa-5-evaluacion.md`). **La Fase B queda cerrada.**
+  - Aprobadas: B1, B2, B3a–B3g-2, B4 y B5. B3h (retirar el tablero clásico) sigue sin autorizar.
+  - Sin push ni PR: la rama espera a Steven (de viaje el 24/11), que decide el PR y la fusión. No se arranca trabajo nuevo.
+  - Las 3 preguntas de producto para Steven están en la sección «Preguntas de producto para Steven».
 - 23/11/2026 · Líder: **B5b revisada, sin bloqueos; con eso B5 y la Fase B quedan listas para la auditoría del Director** (commits `e2ef8e3`, `78f9776`, `a743dc7`, `156311a`; 9 archivos, sin backend ni `/clasico`). Informe `PLANES/etapa-5-reportes/B5b.md`.
   - Teclado: 13 pantallas y 6 diálogos a 1280 y 375. Se arreglaron 53 paradas de Tab que en móvil quedaban tras la barra fija (`scroll-padding` en `html`) y la fuga del foco en el visor y el editor (un grupo de radios cuenta como una parada).
   - Contraste: todo el texto pasa de 5.26:1 en tokens y de 5.9:1 en 15.246 textos reales. Se subieron a 3:1 `--borde-fuerte`, `--est-cola-borde` y `--est-rev-borde`. El Líder recalculó los pares cambiados: mínimo 3.29:1.
