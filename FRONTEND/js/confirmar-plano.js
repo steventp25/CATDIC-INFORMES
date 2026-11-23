@@ -38,7 +38,7 @@
      primera en mayúscula, sin inventar su significado. La clave original queda en `title` y en `data-clave` para quien la necesite. */
   var COMPROBACIONES = {
     celdas_completas: 'Hay celdas vacías o fuera de la tabla',
-    unidades: 'Hay valores con unidades que no corresponden',
+    unidades: 'Hay valores fuera de la unidad o del rango esperado',
     total_de_barras: 'Hay acero que no tiene el formato de barras esperado',
     ids_duplicados: 'Hay filas repetidas',
     espesor_total: 'H no es igual a h1 + h2',
