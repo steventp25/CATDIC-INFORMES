@@ -43,9 +43,11 @@ Informes carga v1 y v2. Campo v11 exporta siempre v2.
 
 - Las letras son las de `ROTULOS` en `BACKEND/generators/stp_mived.py`. Una letra que no es del juego de `fila_stp`
   es un error del paquete (va a duda, no se usa).
-- Un paquete v2 sin `obra` en un elemento equivale a `obra` vacío (todo conforme, salvo estado Pendiente).
+- Un elemento v2 **sin** la clave `obra` no se toma como conforme: Campo v11 siempre la exporta, así que falta por un
+  error; se trata como `fila_stp` que no coincide (duda `elemento_visita:pNNN:obra`, nada conforme por omisión).
 - `mediciones` (texto libre) sigue existiendo y sigue siendo solo una nota: nunca llena OBRA.
-- `estado` es `Pendiente`, `Observación` o `Conforme` (los del selector de Campo). Vacío se trata como `Observación`.
+- `estado` es `Pendiente`, `Observación` o `Conforme` (los del selector de Campo). Vacío se trata como `Observación`;
+  cualquier otro valor se trata como `Pendiente` (con su duda que lo explica).
 
 ### Filas por tipo (las mismas del STP-MIVED)
 
