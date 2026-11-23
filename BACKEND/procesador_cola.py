@@ -27,6 +27,7 @@ from typing import Dict, List, Optional, Tuple
 import config
 import pymupdf
 from database import _respaldar_bd, get_connection, usuario_auditoria
+from equivalencias_nivel import clave_nivel_visita, equivalencia_de, normalizar_nivel
 from generators import fi_mived, stp_mived
 from generators.comun import localizacion as m3_localizacion
 from generators.comun import salida
@@ -683,11 +684,23 @@ class ProcesoVisita:
                          f"{ev['nivel']} ({', '.join(c['uid'] + ' ' + c['ejes'] for c in candidatos)}). Indica el uid "
                          "del que corresponde; no se elige uno solo.")
             else:
+                equivalencia = self._duda_de_equivalencia(ev, ident)
+                if equivalencia:  # D11: diseño sin EJES y nivel de la visita sin equivalencia (T6)
+                    espera(f"cruce:{pagina}:equivalencia", equivalencia)
+                    return fin({"estado": "espera"})
                 texto = (f"Elemento '{etiqueta}': ningún elemento de diseño con {que} en el nivel {ev['nivel']} "
                          "(ID + Nivel + Ejes, §4.2). Revisa el plano o indica el elemento.")
             espera(f"cruce:{pagina}", texto, candidatos[0] if len(candidatos) > 0 else None)
             return fin({"estado": "espera"})
-        c = candidatos[0]
+        c = dict(candidatos[0])
+        if c["ejes"] == PENDIENTE:
+            # Diseño sin EJES (D11): los EJES de la ficha son los de la visita (o los de la respuesta de Steven)
+            ejes = ident.get("ejes") or (ev["ejes"] if not _vacio(ev["ejes"]) else None)
+            if ejes is None:
+                espera(f"cruce:{pagina}:ejes", f"El elemento de diseño {c['id_elemento']} no trae ejes y el elemento "
+                                               f"'{etiqueta}' de la visita tampoco ({PENDIENTE}): indica el cruce (§4.2).", c)
+                return fin({"estado": "espera"})
+            c["ejes"] = ejes
         if ident.get("ejes") is None and not ident.get("uid") and c["ejes"] != EJE_LOSA:
             espera(f"cruce:{pagina}", f"Elemento '{etiqueta}': la respuesta da solo el ID '{ident['id']}' y el elemento "
                                       f"de diseño tiene ejes '{c['ejes']}': indica también el cruce (§4.2).", c)
@@ -714,8 +727,14 @@ class ProcesoVisita:
         return fin({"estado": "listo", "ficha": ficha, "uid_diseno": c["uid"]})
 
     def _candidatos(self, ev, ident: Dict) -> List:
+        """
+        Elementos de diseño que cruzan con el elemento de la visita (§4.2). El nivel se compara normalizado
+        (`normalizar_nivel`). Un candidato con EJES reales exige los mismos EJES. Uno con EJES "pendiente de
+        verificar" (el cuadro de columnas no da ejes, D11) se acepta por ID + nivel; además de la escritura literal
+        del nivel, solo ahí vale la equivalencia que el usuario definió (S-2 -> rango impreso). Nunca se deduce.
+        """
         proyecto_id = self.contexto["proyecto"]["id"]
-        niveles = niveles_de_diseno(ev["nivel"])
+        niveles = {normalizar_nivel(n) for n in niveles_de_diseno(ev["nivel"])}
 
         def leer(conn):
             if ident.get("uid"):
@@ -724,13 +743,42 @@ class ProcesoVisita:
             else:
                 filas = conn.execute("SELECT * FROM elementos_diseno WHERE proyecto_id = ? AND UPPER(id_elemento) = ?",
                                      (proyecto_id, ident["id"].upper())).fetchall()
-            filas = [f for f in filas if " ".join(f["nivel_rango"].upper().split()) in niveles]
+            traducido = equivalencia_de(conn, proyecto_id, ev["nivel"])
+            traducido = normalizar_nivel(traducido) if traducido else None
+            filas = [f for f in filas if normalizar_nivel(f["nivel_rango"]) in niveles
+                     or (f["ejes"] == PENDIENTE and traducido is not None and normalizar_nivel(f["nivel_rango"]) == traducido)]
             if ident.get("uid"):
                 return filas
             if ident.get("ejes") is None:  # solo el ID: _elemento exige que el único candidato sea de ejes '—'
                 return filas
-            return [f for f in filas if f["ejes"] == ident["ejes"]]
+            return [f for f in filas if f["ejes"] == ident["ejes"] or f["ejes"] == PENDIENTE]
         return _con_conexion(leer)
+
+    def _duda_de_equivalencia(self, ev, ident: Dict) -> Optional[str]:
+        """
+        Texto de la duda cuando no hay candidato y la causa es el nivel de un elemento de diseño sin EJES (D11):
+        falta la equivalencia del nivel de la visita, o la que hay no cae en ningún rango de ese ID. None si no aplica.
+        """
+        if ident.get("uid"):
+            return None
+        proyecto_id = self.contexto["proyecto"]["id"]
+
+        def leer(conn):
+            filas = conn.execute("SELECT nivel_rango FROM elementos_diseno WHERE proyecto_id = ? AND "
+                                 "UPPER(id_elemento) = ? AND ejes = ?", (proyecto_id, ident["id"].upper(), PENDIENTE)).fetchall()
+            return [f["nivel_rango"] for f in filas], equivalencia_de(conn, proyecto_id, ev["nivel"])
+        rangos, equivalencia = _con_conexion(leer)
+        if not rangos:
+            return None
+        clave = clave_nivel_visita(ev["nivel"])
+        donde = f"PUT /api/proyectos/{proyecto_id}/equivalencias-nivel"
+        lista = ", ".join(sorted(set(rangos)))
+        if equivalencia is None:
+            return (f"Elemento '{ev['etiqueta_original']}': el plano trae {ident['id']} sin ejes (solo por rango de nivel: "
+                    f"{lista}) y no se puede cruzar con el nivel {clave} de la visita: falta la equivalencia {clave} → "
+                    f"rango impreso de la obra. Defínela en {donde} (no se adivina).")
+        return (f"Elemento '{ev['etiqueta_original']}': la equivalencia definida {clave} → '{equivalencia}' no corresponde a "
+                f"ningún rango de {ident['id']} en el plano ({lista}). Corrígela en {donde}.")
 
     def _ficha(self, ev, c) -> Tuple[Optional[Dict], List[Tuple[str, str]]]:
         """Arma la ficha del generador (Capa 1 + Capa 2; la Capa 3 la calcula el generador). Devuelve (ficha, faltas)."""

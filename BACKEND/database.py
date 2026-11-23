@@ -303,6 +303,21 @@ def inicializar_bd():
     );
     """)
 
+    # 13. EQUIVALENCIA DE NIVELES (Etapa 7 · T6): nivel de la visita (S-2) -> rango impreso del plano (E-1 @ E-2).
+    #     Solo la escribe el usuario. Un nivel de visita tiene una sola equivalencia por obra; un rango impreso sí
+    #     puede servir a varios niveles.
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS equivalencias_nivel (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        proyecto_id TEXT NOT NULL REFERENCES proyectos(id) ON DELETE CASCADE,
+        nivel_visita TEXT NOT NULL,          -- 'S-2' (normalizado)
+        rango_impreso TEXT NOT NULL,         -- 'E-1 @ E-2', tal cual está impreso en el plano
+        actualizado_por TEXT NOT NULL,
+        actualizado TEXT NOT NULL,
+        UNIQUE(proyecto_id, nivel_visita)
+    );
+    """)
+
     conn.commit()
     conn.close()
 
