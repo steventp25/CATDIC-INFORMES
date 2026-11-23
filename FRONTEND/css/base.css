@@ -609,7 +609,7 @@ main { padding: var(--esp-5) clamp(16px, 3vw, 40px) 64px; min-width: 0; }
 /* ───────── B3b: Resumen, Planos y ficha, Avance, Cierre, editor de recuadros y Datos de la obra ───────── */
 .pestana-resumen, .pestana-planos, .pestana-avance, .pestana-cierre { display: grid; gap: var(--esp-5); min-width: 0; }
 
-/* Indicadores (siempre «pendiente de verificar»): el hueco lleva la X del patrón, nunca un 0 % ni una barra */
+/* Indicadores (siempre «pendiente de verificar»): el hueco lleva la X del patrón, nunca un cero por ciento ni una barra */
 .ind-rejilla { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--esp-3); }
 @container caja (min-width: 720px) { .ind-rejilla { grid-template-columns: repeat(3, minmax(0, 1fr)); } .ind-rejilla.ind-uno { grid-template-columns: minmax(0, 28rem); } .ind-rejilla.ind-dos { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @container caja (min-width: 480px) and (max-width: 719px) { .ind-rejilla.ind-dos { grid-template-columns: repeat(2, minmax(0, 1fr)); } }

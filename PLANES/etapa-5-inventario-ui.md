@@ -590,7 +590,7 @@ Las secciones 1–9 son la **paridad**: lo que el tablero ya hace y no puede per
 | N26 | Temas, teclado, contraste y sin conexión | Temas que se ofrezcan con contraste ≥ 4.5:1 en texto; foco visible; 0 peticiones a internet | — |
 | N27 | Trazabilidad | Todo dato muestra su origen (plano, visita, cálculo) o queda «pendiente de verificar» | — |
 
-### 10.8 Revisión de B5b (24/11/2026)
+### 10.8 Revisión de B5b (23/11/2026)
 
 Estado de cada necesidad en el tablero nuevo. «Fase D-x» = depende del backend de esa fase y la interfaz lo dice, sin simular. «Hueco» = no se hizo y no necesita backend.
 

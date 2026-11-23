@@ -16,7 +16,7 @@ Es una herramienta de trabajo (modo *Operate*). El estilo vive en los detalles; 
 1. **El plano manda.** Los datos van en Consolas, dentro de celdas de cajetín con líneas de tinta, y siempre con su fuente al lado.
 2. **Lo que falta es un estado, no un vacío.**
    - `.pendiente` muestra «pendiente de verificar» en un recuadro discontinuo.
-   - En los indicadores, el hueco lleva una X. Nunca se dibuja una barra vacía ni 0 %.
+   - En los indicadores, el hueco lleva una X. Nunca se dibuja una barra vacía ni un cero por ciento.
 3. **Lo que pide backend nuevo se rotula.** `.fase-d` es una píldora discontinua «… · Fase D-a/b/c», sin simular datos.
 4. **El rojo es del plano.** `--rojo-plano` (`RGB(220,0,0)`) se reserva para recuadros de localización. Los errores usan `--alerta`, que es otro rojo.
 5. **Sin red.**
@@ -58,8 +58,8 @@ Es una herramienta de trabajo (modo *Operate*). El estilo vive en los detalles; 
 Principio: el movimiento solo confirma una acción del puntero o explica de dónde viene algo. Nada decora.
 
 Reglas
-- Solo `transform`, `opacity` y color/fondo/borde (estos, hasta 150 ms). Nada de `height`, `width`, `top`, `margin` ni `transition: all`.
-- Curva `--ease-out` de `tokens.css`; nunca `ease-in`. Total ≤ 300 ms.
+- Solo `transform`, `opacity` y color/fondo/borde (estos, hasta 150 ms). Nada de `height`, `width`, `top`, `margin` ni transiciones de todas las propiedades a la vez.
+- Curva `--ease-out` de `tokens.css`; nunca la curva de entrada (la que arranca lenta). Total ≤ 300 ms.
 - Las entradas parten de `scale(0.97)` + `opacity: 0` con `@starting-style`, dentro de `@media (prefers-reduced-motion: no-preference)`.
 - Todo `:hover` va dentro de `@media (hover: hover) and (pointer: fine)`.
 - Sin movimiento reducido no hay escala ni desplazamiento: queda solo el color. La regla global de `base.css` queda de red de seguridad.

@@ -2,7 +2,7 @@
 
    ── Indicador (<Indicador/>) ─────────────────────────────────────────────────────────────────────────────────────
    Los 3 indicadores de la obra (N8, N9 y N10 de B0 §10.3) se muestran SIEMPRE «pendiente de verificar»: con su fórmula, el motivo
-   (falta la decisión D15) y el rótulo «Fase D-b». Nunca como 0 % ni como barra, y nunca calculados con el número de archivos,
+   (falta la decisión D15) y el rótulo «Fase D-b». Nunca como cero por ciento ni como barra, y nunca calculados con el número de archivos,
    versiones o visitas (N11). El hueco lleva una X (el patrón de «pendiente» del estilo Plano sellado).
    props   codigo ('n8' | 'n9' | 'n10')
 

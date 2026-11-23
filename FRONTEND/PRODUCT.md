@@ -9,7 +9,7 @@
 web
 
 ## Users
-Steven, ingeniero civil de CATDIC (Consultoría y Asistencia Técnica de Ingeniería Civil, Santo Domingo). Es el único usuario hoy, en su PC con Windows, en `http://localhost:8000`. Usa la app en jornadas largas de oficina para convertir visitas a obra y planos estructurales sellados en informes de supervisión (MIVED) y de levantamiento (HV). Más adelante podría haber más usuarios en red local *(inferido del §1.2 de CLAUDE.md; sin roles en esta etapa)*.
+Steven, ingeniero civil de CATDIC (Consultoría y Asistencia Técnica de Ingeniería Civil, Santo Domingo). Es el único usuario hoy, en su PC con Windows, en `localhost:8000`. Usa la app en jornadas largas de oficina para convertir visitas a obra y planos estructurales sellados en informes de supervisión (MIVED) y de levantamiento (HV). Más adelante podría haber más usuarios en red local *(inferido del §1.2 de CLAUDE.md; sin roles en esta etapa)*.
 
 ## Product Purpose
 Sustituir al 100 % los chats manuales con IA y el antiguo FileMaker: un tablero local donde se registran obras y sus planos vigentes, se sincronizan las visitas desde Dropbox, se confirman los datos de diseño extraídos del plano, se responden las dudas en la Mesa de Dudas y se procesa la cola de visitas para generar los PDF. Éxito: ningún dato de ingeniería llega a un informe sin fuente y sin confirmación de Steven.
@@ -21,7 +21,7 @@ Cada valor de diseño que muestra la app está anclado a una celda impresa del p
 - Navegación principal: Inicio · Mis obras · Bandeja de trabajo · Informes · Configuración, y «Crear informe» siempre a mano.
 - Dentro de cada obra: Resumen · Visitas y trabajos · Planos y ficha · Avance · Informes · Cierre.
 - Trabajos independientes: «Crear informe» arma un pedido sin obra de seguimiento (servicios, datos y fuentes, revisión, preparar) que puede vincularse después a una obra. Guardarlo pide backend nuevo (Fase D-c).
-- Indicadores del Resumen de obra: avance por entrepisos, expediente completo y documentación al día. Sus definiciones son de Steven (D15). Hasta entonces se muestran «pendiente de verificar». La falta de datos nunca se muestra como 0 %, y no se cuentan archivos, versiones ni visitas como sustituto.
+- Indicadores del Resumen de obra: avance por entrepisos, expediente completo y documentación al día. Sus definiciones son de Steven (D15). Hasta entonces se muestran «pendiente de verificar». La falta de datos nunca se muestra como cero por ciento, y no se cuentan archivos, versiones ni visitas como sustituto.
 - Referencias de patrón: Procore (resumen del proyecto), Autodesk Construction Cloud (prioridades por vencimiento), PlanRadar (lista ↔ plano ↔ detalle, versiones de plano) y Fieldwire (expediente del trabajo).
 
 ## Operating Context
