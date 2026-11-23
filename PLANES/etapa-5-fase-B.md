@@ -23,9 +23,9 @@ Plan madre: `PLANES/etapa-5.md` (decisiones D5–D8, tareas B0–B5). Este archi
 | B1 v3 | 3 estilos sobre la organización D6, 5 pantallas, en `FRONTEND/maquetas/v2/` + `NOTAS.md`; B0 §10 «Necesidades nuevas»; `PRODUCT.md` al día | Líder | esta rama | **auditada y aprobada (19/11)** |
 | — | **Puerta de Steven:** elige estilo (vía Director) | Steven | — | **resuelta 19/11: «Plano sellado»** |
 | B2 | Base: estructura de `FRONTEND/`, `vendor/` local, tokens del estilo B, armazón con navegación D6, cliente API, `/clasico/` (encargo `PLANES/etapa-5-reportes/B2-brief.md`) | Ejecutor Sonnet (subagente, en este worktree) + revisión del Líder | esta rama (`d254519`…`485b3ea`, Líder `a7a1f3f`, `078d4f3`, prueba de backend) | **aprobada por el Director (19/11)** |
-| B3a | Inicio y Mis obras, con Nueva obra (encargo `PLANES/etapa-5-reportes/B3a-brief.md`) | Ejecutor Sonnet (subagente, en este worktree) + revisión del Líder | esta rama (`ddca35f`, `30bea9a`, `6f6d73a`, `69ed72f`, Líder: corrección móvil) | **hecha, esperando auditoría y que Steven la vea** |
-| B3d | **(2.º; encargo `PLANES/etapa-5-reportes/B3d-brief.md`; informe `B3d.md`)** Visitas y trabajos: **Procesar cola** con el seguimiento del trabajo (polling cada 2 s), **Sincronizar desde Dropbox** con su resultado (Z8), cola de visitas de todas las obras (Z15) y de cada obra, subir visita / conectar Dropbox (M3), avance del procesador (cubre T10b) | Ejecutor Sonnet (subagente, en este worktree) + revisión del Líder | esta rama (`30a1ef0`, `534e9a8`, `f7115a3`, `d134d01`, `e3c64c4`, `452a33b`, `28f44b7`; Líder `65f0916`) | **hecha, esperando auditoría y que Steven la vea** |
-| B3g | **(3.º; Director a pedido de Steven, 22/11; encargo `PLANES/etapa-5-reportes/B3g-brief.md`)** Informes dentro de la obra: lista de informes generados con «Abrir PDF», «Hacer informe» (elegir visita, procesar y avance en vivo de B3d) y «Crear informe» lleva a elegir obra. **Excepción de backend:** `BACKEND/informes_obra.py`, `GET /api/proyectos/{id}/informes`, `GET /api/informes/archivo` (solo rutas registradas en `pdf_generado`) y `tests/test_informes_obra.py` | Ejecutor Sonnet (subagente, en este worktree) + revisión del Líder | esta rama | **en curso** |
+| B3a | Inicio y Mis obras, con Nueva obra (encargo `PLANES/etapa-5-reportes/B3a-brief.md`) | Ejecutor Sonnet (subagente, en este worktree) + revisión del Líder | esta rama (`ddca35f`, `30bea9a`, `6f6d73a`, `69ed72f`, Líder: corrección móvil) | **aprobada (Director, 22/11; Steven: «Sí, sigue así»)** |
+| B3d | **(2.º; encargo `PLANES/etapa-5-reportes/B3d-brief.md`; informe `B3d.md`)** Visitas y trabajos: **Procesar cola** con el seguimiento del trabajo (polling cada 2 s), **Sincronizar desde Dropbox** con su resultado (Z8), cola de visitas de todas las obras (Z15) y de cada obra, subir visita / conectar Dropbox (M3), avance del procesador (cubre T10b) | Ejecutor Sonnet (subagente, en este worktree) + revisión del Líder | esta rama (`30a1ef0`, `534e9a8`, `f7115a3`, `d134d01`, `e3c64c4`, `452a33b`, `28f44b7`; Líder `65f0916`) | **aprobada (Director, 22/11; Steven: «Sí, sigue así»)** |
+| B3g | **(3.º; Director a pedido de Steven, 22/11; encargo `PLANES/etapa-5-reportes/B3g-brief.md`)** Informes dentro de la obra: lista de informes generados con «Abrir PDF», «Hacer informe» (elegir visita, procesar y avance en vivo de B3d) y «Crear informe» lleva a elegir obra. **Excepción de backend:** `BACKEND/informes_obra.py`, `GET /api/proyectos/{id}/informes`, `GET /api/informes/archivo` (solo rutas registradas en `pdf_generado`) y `tests/test_informes_obra.py` | Ejecutor Sonnet (subagente, en este worktree) + revisión del Líder | esta rama (`a87738d`, `5d03273`, `30ad788`, `051b816`; informe `B3g.md`) | **hecha, esperando auditoría y que Steven la vea** |
 | B3e | **(4.º)** **Mesa de Dudas** completa (M1: por visita y por obra, responder, conflictos) y Bandeja de trabajo con lo que hay hoy (la ruta común es Fase D-a). Construye el **visor de revisión compartido** (Ubicación · Detalle · Abrir plano, ver abajo). **Excepción de backend:** `GET /api/dudas/{id}/refs` | Ejecutor | — | pendiente |
 | B3b | **(5.º)** Obra: Resumen, Avance, Cierre, Planos y ficha (cambiar plano con el formulario de B3a, datos de la obra M5), visor y recuadros (M4) | Ejecutor | — | pendiente |
 | B3c | **(6.º)** Revisión de planos: confirmar datos del plano (M6) | Ejecutor | — | pendiente |
@@ -73,6 +73,20 @@ Hueco reservado en la navegación: "Lectura asistida" (Fase C, no es de esta fas
 - **19/11/2026 · Estilo visual:** «Plano sellado» (respuesta textual de Steven, relayada por el Director). Se construye con el estilo B de `FRONTEND/maquetas/v2/` (`plano.html`, `estilo-plano.css`). Hormigón y Tablero quedan como antecedente, sin borrarlos. Telemetría del sorteo de `impeccable` enviada (`--kind pick`: «choice recorded»).
 
 ## Bitácora (lo más nuevo arriba)
+- 22/11/2026 · Líder: **B3g hecha, esperando auditoría y que Steven la vea** (informe `PLANES/etapa-5-reportes/B3g.md`).
+  - **Revisión:**
+    - el backend se queda dentro de la excepción: `informes_obra.py` y `test_informes_obra.py`, nuevos, y en `main.py` solo las 2 rutas y sus imports;
+    - `/api/informes/archivo` solo sirve rutas idénticas a las de un `pdf_generado`;
+    - no se tocaron `procesador_cola.py`, `database.py`, `clasico/` ni su prueba;
+    - 0 menciones al clásico, 0 URL externas y sin franjas laterales.
+  - **Avance en vivo:** se extrajo a `js/avance-trabajo.js` (`AvanceTrabajo`), que ahora usan `#/trabajo/<id>` y la pestaña Informes.
+  - **Pruebas:**
+    - las de `test_informes_obra.py` y `test_frontend_servido.py` pasan (13);
+    - suite del Ejecutor: 953 pasan con todo en el scratch, y 955 pasan con 2 fallas, las de Dropbox, sin `CATDIC_DROPBOX_RAIZ`.
+  - **Límite:** no se generó un PDF real de punta a punta, porque la copia de la BD no tiene datos de diseño que den PDF. La lista se probó con eventos y PDF sintéticos.
+- 22/11/2026 · Director: **B3a y B3d APROBADAS** sobre `4422678`, sin bloqueantes. La evaluación está en `PLANES/etapa-5-evaluacion.md`.
+  - Steven las vio en una copia de la rama (puerto 8767) y respondió: «Sí, sigue así».
+  - «Sincronizar desde Dropbox» se queda solo en Inicio; en la obra basta con «Conectar con Dropbox».
 - 22/11/2026 · Líder: **B3d hecha, esperando auditoría y que Steven la vea** (informe `PLANES/etapa-5-reportes/B3d.md`).
   - **Revisión:**
     - toda la entrega está en `FRONTEND/**` y el informe, sin tocar `clasico/`, `maquetas/`, `vendor/` ni `BACKEND/`;
