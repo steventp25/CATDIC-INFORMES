@@ -783,5 +783,12 @@ main { padding: var(--esp-5) clamp(16px, 3vw, 40px) 64px; min-width: 0; }
   .conf-acc .btn { flex: 1 1 auto; }
   .conf .certifico input { width: 24px; height: 24px; }
 }
+@container conf (max-width: 599.98px) {
+  /* En el teléfono la tabla de valores cabe en el ancho: sin desplazamiento lateral que esconda «tabla: …» o el Estado. */
+  .conf-tabla { min-width: 0; }
+  .conf-tabla th, .conf-tabla td { padding: 8px 6px; }
+  .conf-niv { display: block; }
+  .conf-tabla thead th { overflow-wrap: normal; letter-spacing: 0.04em; }
+}
 @container det (min-width: 760px) { .conf-dos { grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr); } }
 .conf-det .ed-aviso, .conf-msgs .ed-aviso { display: flex; gap: 6px; align-items: flex-start; }

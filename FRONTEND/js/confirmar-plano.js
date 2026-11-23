@@ -406,7 +406,7 @@
                     <h4 class="conf-sub">Valores propuestos que vienen de esta tabla ({{ campos.length }})</h4>
                     <p v-if="!campos.length" class="ayuda" data-sin-campos>Ningún elemento toma valores de esta tabla.</p>
                     <template v-else>
-                      <p v-if="dudosos" class="ed-aviso" data-valores-dudosos><Icono nombre="alerta"/>{{ dudosos }} {{ dudosos === 1 ? 'valor pendiente no coincide' : 'valores pendientes no coinciden' }} con la tabla o no tienen fuente: quedan «pendiente de verificar». Resuélvelos en la <a :href="hrefMesa">Mesa de Dudas de la obra</a>.</p>
+                      <p v-if="dudosos" class="ed-aviso" data-valores-dudosos><Icono nombre="alerta"/><span>{{ dudosos === 1 ? '1 valor pendiente no coincide con la tabla o no tiene fuente: queda «pendiente de verificar». Resuélvelo' : dudosos + ' valores pendientes no coinciden con la tabla o no tienen fuente: quedan «pendiente de verificar». Resuélvelos' }} en la <a :href="hrefMesa">Mesa de Dudas de la obra</a>.</span></p>
                       <div class="conf-tabla-cont" tabindex="-1">
                         <table class="conf-tabla" data-campos>
                           <caption class="sr">Valores propuestos que vienen de la tabla {{ nombre(det.tabla) }}</caption>
