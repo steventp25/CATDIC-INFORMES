@@ -483,6 +483,8 @@ main { padding: var(--esp-5) clamp(16px, 3vw, 40px) 64px; min-width: 0; }
 .aviso-ok { margin-bottom: var(--esp-3); }
 .aviso .ico { flex: none; }
 .mesa { display: grid; gap: var(--esp-3); align-content: start; }
+.mesa, .mesa-det { scroll-margin-top: var(--esp-3); }
+.mesa h2[tabindex="-1"]:focus, .mesa h3[tabindex="-1"]:focus { outline: none; }  /* foco de programa al abrir la Mesa: sin marco */
 .mesa-cab { align-items: flex-start; }
 .mesa-tit { min-width: 0; }
 .mesa-sub { margin: 2px 0 0; font-size: 0.9375rem; font-weight: 600; overflow-wrap: anywhere; }

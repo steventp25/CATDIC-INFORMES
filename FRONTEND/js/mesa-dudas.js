@@ -36,7 +36,7 @@
     },
     emits: ['actualizar'],
     data: function () {
-      return { estado: 'cargando', mensaje: '', dudas: [], entradas: {}, refs: {}, aviso: '', conflicto: '', ancho: 1200, n: 0, nRefs: 0 };
+      return { vistaPendiente: false, estado: 'cargando', mensaje: '', dudas: [], entradas: {}, refs: {}, aviso: '', conflicto: '', ancho: 1200, n: 0, nRefs: 0 };
     },
     computed: {
       ruta: function () { return C.rutas.ruta; },
@@ -84,13 +84,15 @@
     },
     watch: {
       'obra.id': function () { this.cargar(); },
-      visitaId: function () { this.cargar(); },
+      visitaId: function () { this.pedirVista(); this.cargar(); },
+      idSel: function () { this.pedirVista(); },
       'actual.id': function (id) { if (id !== undefined) this.leerRefs(this.actual); }
     },
     created: function () { this.cargar(); },
     mounted: function () {
       var self = this, el = this.$refs.raiz;
       if (el) this.ancho = el.clientWidth || this.ancho;
+      this.pedirVista();
       if (window.ResizeObserver && el) {
         this._ro = new ResizeObserver(function () { self.ancho = el.clientWidth || self.ancho; });
         this._ro.observe(el);
@@ -116,6 +118,7 @@
           });
           self.estado = 'listo';
           if (self.actual) self.leerRefs(self.actual);
+          if (self.vistaPendiente) self.ponerAVista();
         }, function (e) {
           if (n !== self.n) return;
           self.mensaje = e && e.estado === 0 ? MSG_CONEXION + (e.detalle ? ' (' + e.detalle + ')' : '') : ((e && e.mensaje) || MSG_CONEXION);
@@ -227,16 +230,26 @@
         var s = String(v);
         return /^\d{4}-\d{2}-\d{2}/.test(s) ? (C.formato.fecha(s) || s) : s;
       },
-      enfocarDetalle: function () {
+      // Auditoría B3e (Director, 23/11): al abrir la Mesa (?visita=, ?dudas=obra) o cambiar de duda (&duda=) desde una
+      // página desplazada, la Mesa (o el detalle de esa duda) se pone a la vista y el foco va a su encabezado.
+      pedirVista: function () { this.vistaPendiente = true; this.ponerAVista(); },
+      ponerAVista: function () {
         var self = this;
-        this.$nextTick(function () { var h = self.$refs.tit; if (h && h.focus) h.focus({ preventScroll: false }); });
+        this.$nextTick(function () {
+          var det = self.idSel && self.$refs.tit, h = det || self.$refs.cab, caja = det ? det.closest('.mesa-det') : self.$refs.raiz;
+          if (!h || !caja) return;
+          if (h.focus) h.focus({ preventScroll: true });
+          if (caja.scrollIntoView) caja.scrollIntoView({ block: 'start' });
+          // Con &duda= el detalle solo existe cuando llegan las dudas: se repite tras cargar.
+          if (det || self.estado !== 'cargando') self.vistaPendiente = false;
+        });
       }
     },
     template: `
       <section ref="raiz" class="caja mesa" :class="{ 'mesa-ancha': ancha }" aria-labelledby="mesa-t" data-mesa :data-modo="modoVisita ? 'visita' : 'obra'">
         <div class="caja-cabeza mesa-cab">
           <div class="mesa-tit">
-            <h2 id="mesa-t">Mesa de Dudas</h2>
+            <h2 id="mesa-t" ref="cab" tabindex="-1">Mesa de Dudas</h2>
             <p class="mesa-sub" :data-mesa-obra="modoVisita ? null : ''">{{ titulo }}<span v-if="visita && modoVisita" class="est" style="margin-inline-start:.5em" :class="claseEstado(visita.estado)">{{ visita.estado }}</span></p>
           </div>
           <a class="btn btn-sec" :href="hrefCerrar" data-cerrar-mesa><Icono nombre="cerrar"/>Cerrar</a>
