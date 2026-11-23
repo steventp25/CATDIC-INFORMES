@@ -336,7 +336,7 @@
                 <li v-for="t in tablas" :key="t.id">
                   <button type="button" class="conf-t" :class="{ 'es-sel': t.id === selId, 'no-vig': !t.vigente }" :aria-current="t.id === selId ? 'true' : null" :data-tabla="t.clave" @click="elegir(t)">
                     <span class="conf-t-cab"><b class="conf-t-n">{{ nombre(t.tabla) }}</b><span class="est" :class="insignia(t.resultado).clase"><Icono :nombre="insignia(t.resultado).icono"/>{{ insignia(t.resultado).texto }}</span></span>
-                    <span class="conf-t-m num">pág. {{ t.pagina }} · hoja {{ t.hoja }} · {{ t.nivel_rango }}</span>
+                    <span class="conf-t-m num">pág. {{ t.pagina }} · hoja {{ txt(t.hoja) ? t.hoja : "pendiente de verificar" }} · {{ txt(t.nivel_rango) ? t.nivel_rango : "pendiente de verificar" }}</span>
                     <span v-if="t.resultado === 'rojo'" class="conf-t-f"><Icono nombre="alerta"/>Falla: {{ fallas(t) }}</span>
                     <span v-if="!t.vigente" class="conf-t-nv"><Icono nombre="reloj"/>No vigente: {{ (t.motivos_no_vigente || [])[0] || 'pendiente de verificar' }}</span>
                     <span v-if="t.id === selId" class="conf-t-sel"><Icono nombre="check"/>Tabla elegida</span>
@@ -362,7 +362,7 @@
                   <span class="est" :class="insignia(det.resultado).clase" data-resultado><Icono :nombre="insignia(det.resultado).icono"/>{{ insignia(det.resultado).texto }}</span>
                   <span v-if="!det.vigente" class="est est-cola"><Icono nombre="reloj"/>No vigente</span>
                 </div>
-                <p class="conf-meta num" data-meta-tabla>{{ det.clave }} · pág. {{ det.pagina }} · hoja {{ det.hoja }} · nivel <template v-if="txt(det.nivel_rango)">{{ det.nivel_rango }}</template><Pendiente v-else/> · extraída <template v-if="fh(det.extraido_en)">{{ fh(det.extraido_en) }}</template><Pendiente v-else/></p>
+                <p class="conf-meta num" data-meta-tabla>{{ det.clave }} · pág. {{ det.pagina }} · hoja <template v-if="txt(det.hoja)">{{ det.hoja }}</template><Pendiente v-else/> · nivel <template v-if="txt(det.nivel_rango)">{{ det.nivel_rango }}</template><Pendiente v-else/> · extraída <template v-if="fh(det.extraido_en)">{{ fh(det.extraido_en) }}</template><Pendiente v-else/></p>
                 <p v-if="!det.vigente" class="ed-aviso" data-no-vigente><Icono nombre="reloj"/>No vigente: {{ (det.motivos_no_vigente || []).join('; ') || 'pendiente de verificar' }}. Vuelve a extraer para poder confirmarla.</p>
 
                 <section class="conf-sec" aria-label="Comprobaciones de la tabla">
