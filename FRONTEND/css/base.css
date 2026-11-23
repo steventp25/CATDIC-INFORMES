@@ -600,3 +600,95 @@ main { padding: var(--esp-5) clamp(16px, 3vw, 40px) 64px; min-width: 0; }
 .tr-regen-t .ico { margin-top: 0.15em; }
 .tr-regen-m, .tr-regen .ayuda, .tr-regen .tr-duda-a { margin: 0; font-size: 0.875rem; }
 .inf-sale-t .num { white-space: nowrap; }
+
+/* ───────── B3b: Resumen, Planos y ficha, Avance, Cierre, editor de recuadros y Datos de la obra ───────── */
+.pestana-resumen, .pestana-planos, .pestana-avance, .pestana-cierre { display: grid; gap: var(--esp-5); min-width: 0; }
+
+/* Indicadores (siempre «pendiente de verificar»): el hueco lleva la X del patrón, nunca un 0 % ni una barra */
+.ind-rejilla { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--esp-3); }
+@container caja (min-width: 720px) { .ind-rejilla { grid-template-columns: repeat(3, minmax(0, 1fr)); } .ind-rejilla.ind-uno { grid-template-columns: minmax(0, 28rem); } .ind-rejilla.ind-dos { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@container caja (min-width: 480px) and (max-width: 719px) { .ind-rejilla.ind-dos { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.ind { display: grid; gap: var(--esp-2); align-content: start; padding: var(--esp-3); border: 1.5px dashed var(--pend-borde); background: var(--superficie); min-width: 0; overflow-wrap: anywhere; }
+.ind-t { margin: 0; font-size: 0.9375rem; }
+.ind-f { margin: 0; display: grid; gap: 2px; font-size: 0.8125rem; }
+.ind-fe { font-size: 0.6875rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--tinta-2); }
+.ind-ft { color: var(--tinta-2); }
+.ind-hueco { display: flex; align-items: center; min-height: 3.25rem; padding: 0 var(--esp-3); border: 1px solid var(--borde-fuerte); background: var(--pend-patron), var(--superficie-2); background-repeat: no-repeat; background-size: 100% 100%, auto; background-blend-mode: normal; }
+.ind-hueco .pendiente { background: var(--superficie); }
+.ind-m { margin: 0; font-size: 0.8125rem; color: var(--tinta-2); }
+.ind-r { margin: 0; }
+.rs-nota { margin: 0 0 var(--esp-3); }
+
+/* Resumen y Cierre */
+.rs-sub { margin: var(--esp-4) 0 var(--esp-2); font-size: 0.8125rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--tinta-2); }
+.rs-sub:first-of-type { margin-top: 0; }
+.rs-fila { display: grid; gap: var(--esp-2); justify-items: start; padding: var(--esp-3); border: 1px solid var(--borde-fuerte); background: var(--superficie); overflow-wrap: anywhere; }
+.rs-fila.rs-falta { border: 1.5px solid var(--alerta); background: var(--error-fondo); }
+.rs-t { margin: 0; display: flex; gap: 6px; align-items: flex-start; font-weight: 650; }
+.rs-acc { display: flex; flex-wrap: wrap; gap: var(--esp-2); margin-bottom: var(--esp-3); }
+.rs-inf { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--esp-2); }
+.rs-inf-f { display: flex; flex-wrap: wrap; gap: var(--esp-2) var(--esp-3); align-items: center; justify-content: space-between; padding: var(--esp-2) var(--esp-3); border: 1px solid var(--borde-fuerte); min-width: 0; }
+.rs-inf-d { display: grid; gap: 2px; min-width: 0; flex: 1 1 14rem; }
+.rs-inf-n { font-weight: 650; overflow-wrap: anywhere; }
+.ci-nota { margin: 0 0 var(--esp-3); }
+.ci-hecho { display: grid; gap: var(--esp-2); padding: var(--esp-3) 0; border-top: 1px solid var(--borde); min-width: 0; }
+.ci-hecho:first-of-type { border-top: 0; }
+.ci-t { margin: 0; font-size: 0.9375rem; }
+.ci-n, .ci-ok { margin: 0; display: flex; flex-wrap: wrap; gap: 4px var(--esp-2); align-items: center; overflow-wrap: anywhere; }
+.ci-enl { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+
+/* Planos y ficha */
+.pp-nota { margin: 0 0 var(--esp-3); }
+.pp-lista { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--esp-2); }
+.pp-f { display: grid; grid-template-columns: minmax(0, 1fr); gap: 4px var(--esp-3); padding: var(--esp-2) var(--esp-3); border: 1px solid var(--borde-fuerte); min-width: 0; overflow-wrap: anywhere; }
+.pp-f.es-vigente { border: 1.5px solid var(--ok-tinta); background: var(--ok-fondo); }
+.pp-rev { font-weight: 700; }
+.pp-et, .pp-fecha, .pp-cert { font-size: 0.875rem; color: var(--tinta-2); }
+.pp-estado { justify-self: start; }
+@container caja (min-width: 640px) { .pp-f { grid-template-columns: 8rem minmax(0, 1.4fr) 8rem minmax(0, 1.2fr) auto; align-items: center; } .pp-estado { justify-self: end; } }
+.pp-reint { margin-top: var(--esp-2); }
+.pv-botones, .acc-botones { display: flex; flex-wrap: wrap; gap: var(--esp-2); }
+
+/* Visor con editor de recuadros */
+.vp-medio { display: grid; min-height: 0; grid-template-columns: minmax(0, 1fr); }
+.vp-medio.es-editor { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr) auto; }
+.vp-medio.es-editor { overflow: auto; grid-template-rows: minmax(45vh, 55vh) auto; }
+.vp-panel { min-height: 0; border-top: 1.5px solid var(--tinta); background: var(--superficie); padding: var(--esp-3); }
+@media (min-width: 900px) {
+  .vp-medio.es-editor { grid-template-columns: minmax(0, 1fr) 22rem; grid-template-rows: minmax(0, 1fr); overflow: hidden; }
+  .vp-panel { overflow: auto; border-top: 0; border-left: 1.5px solid var(--tinta); }
+}
+.vp-etq { font-family: var(--f-texto); font-weight: 700; paint-order: stroke; stroke: #fff; stroke-linejoin: round; } /* tamaño y grosor del halo van en los atributos (12/e y 3/e): constantes en pantalla */
+.vp-etq.es-loc { fill: var(--rojo-plano); }
+.vp-etq.es-det { fill: #1f4fa8; }
+.ed-panel { display: grid; gap: var(--esp-3); min-width: 0; overflow-wrap: anywhere; }
+.ed-t { margin: 0; font-size: 0.9375rem; }
+.ed-aviso { margin: 0; padding: var(--esp-2) var(--esp-3); border: 1.5px solid var(--sel-borde); background: var(--aviso-fondo); font-size: 0.875rem; }
+.ed-herr { display: grid; gap: var(--esp-2); }
+.ed-rec { display: grid; gap: var(--esp-2); padding: var(--esp-3); border: 1.5px solid var(--borde-fuerte); background: var(--superficie); min-width: 0; }
+.ed-rec.es-activo { border-color: var(--tinta); box-shadow: inset 0 0 0 1px var(--tinta); }
+.ed-rec-t { font-weight: 700; }
+.ed-rec-e { display: flex; flex-wrap: wrap; gap: 4px; }
+.ed-rec-d { margin: 0; font-size: 0.8125rem; color: var(--tinta-2); }
+.ed-rec-b { display: flex; flex-wrap: wrap; gap: var(--esp-2); }
+.ed-previa { max-width: 100%; height: auto; border: 1px solid var(--borde-fuerte); background: #fff; }
+.ed-ok { margin: 0; }
+.campo-i-et { display: grid; gap: 2px; font-size: 0.75rem; font-weight: 600; color: var(--tinta-2); }
+
+/* Datos de la obra */
+.dlg-datos { width: min(52rem, calc(100% - 32px)); }
+.dato-grupo { display: grid; gap: var(--esp-2); padding: var(--esp-3) 0; border-top: 1px solid var(--borde); }
+.dato-t { margin: 0; font-size: 0.9375rem; }
+.dato-ayuda { font-weight: 400; }
+.dato-ta { width: 100%; font-family: var(--f-mono, ui-monospace, Consolas, monospace); resize: vertical; }
+.dato-pie { display: flex; flex-wrap: wrap; gap: var(--esp-2) var(--esp-3); align-items: center; justify-content: space-between; }
+.dato-pie .ayuda { margin: 0; }
+.dato-comp { display: flex; gap: 6px; align-items: center; font-size: 0.875rem; }
+.dato-msg { margin: 0; display: flex; gap: 6px; align-items: flex-start; padding: var(--esp-2) var(--esp-3); border: 1.5px solid; font-weight: 600; font-size: 0.875rem; }
+.dato-msg.es-ok { border-color: var(--ok-tinta); background: var(--ok-fondo); }
+.dato-msg.es-mal { border-color: var(--alerta); background: var(--error-fondo); }
+@media (max-width: 899px) {
+  .pestana-planos .btn, .pestana-resumen .btn, .pestana-cierre .enlace, .ed-panel .btn, .dlg-datos .btn, .dlg-datos .dato-comp { min-height: 44px; }
+  .ed-panel select, .ed-panel .radio { min-height: 44px; }
+  .dato-comp input { width: 22px; height: 22px; }
+}

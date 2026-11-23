@@ -1,21 +1,13 @@
 /* CATDIC-WEB · pantalla de obra «#/obra/<id>/<pestaña>» (B2).
    Lectura real: la cabecera lee la obra de GET /api/dashboard (campo `proyectos`) y muestra su nombre y su cajetín.
    Cada campo que la respuesta no trae (vacío o «pendiente de verificar») se muestra como «pendiente de verificar».
-   Las 6 pestañas navegan; el contenido de cada una es el estado vacío de la tarea de B3 que la construye. */
+   Las 6 pestañas navegan: Resumen, Planos y ficha, Avance y Cierre las construye B3b; Visitas e Informes, B3a/B3d. */
 (function () {
   'use strict';
   var C = window.CATDIC = window.CATDIC || {};
   C.pantallas = C.pantallas || {};
 
   var F = function () { return C.formato; };
-  // Qué tarea de B3 construye cada pestaña (PLANES/etapa-5-fase-B.md).
-  var CONTENIDO = {
-    resumen: { titulo: 'Resumen', tarea: 'B3b', texto: 'Aquí irán los indicadores y los pendientes de la obra. Los tres indicadores se calculan en la Fase D-b, tras la decisión D15, y nunca se mostrarán como 0 %.' },
-    planos: { titulo: 'Planos y ficha', tarea: 'B3b', tarea2: 'B3c', texto: 'Aquí irán los planos, la ficha de la obra, el visor con recuadros y la revisión de los datos del plano.' },
-    avance: { titulo: 'Avance', tarea: 'B3b', texto: 'Aquí irá el avance por entrepisos de la obra. Se calcula en la Fase D-b, tras la decisión D15; hasta entonces se muestra «pendiente de verificar» y nunca 0 %.' },
-    cierre: { titulo: 'Cierre', tarea: 'B3b', texto: 'Aquí irá lo que falta para cerrar la obra: expediente completo y documentación al día. Ambos se calculan en la Fase D-b, tras la decisión D15; hasta entonces se muestran «pendiente de verificar».' }
-  };
-
   C.pantallas['obra'] = {
     data: function () { return { estado: 'cargando', mensaje: '', datos: null, solicitud: 0 }; },
     computed: {
@@ -54,7 +46,6 @@
           { etiqueta: 'Visitas registradas', valor: visitas.length }
         ];
       },
-      contenido: function () { return CONTENIDO[this.ruta.pestana] || CONTENIDO.resumen; }
     },
     created: function () { this.leer(); },
     watch: {
@@ -94,14 +85,10 @@
         '<PestanaVisitas v-if="obra && ruta.pestana === \'visitas\'" :obra="obra" :datos="datos" @actualizar="releer"/>' +
         '<PestanaInformes v-else-if="obra && ruta.pestana === \'informes\'" :obra="obra" :datos="datos" @actualizar="releer"/>' +
         '<MesaDudas v-else-if="obra && ruta.pestana === \'resumen\' && ruta.consulta && ruta.consulta.dudas === \'obra\'" :obra="obra" :datos="datos" visita-id="" @actualizar="releer"/>' +
-        '<section v-else-if="obra" class="caja" :aria-labelledby="\'t-pestana\'">' +
-          '<div class="caja-cabeza"><h2 id="t-pestana">{{ contenido.titulo }}</h2></div>' +
-          '<div class="vacio">' +
-            '<p class="vacio-t">Esta pestaña todavía no está construida.</p>' +
-            '<p>{{ contenido.texto }}</p>' +
-            '<p v-if="contenido.tarea">La construye la tarea <span class="num">{{ contenido.tarea }}</span><template v-if="contenido.tarea2"> y la <span class="num">{{ contenido.tarea2 }}</span></template> de la Fase B.</p>' +
-          '</div>' +
-        '</section>' +
+        '<PestanaResumen v-else-if="obra && ruta.pestana === \'resumen\'" :obra="obra" :datos="datos" @actualizar="releer"/>' +
+        '<PestanaPlanos v-else-if="obra && ruta.pestana === \'planos\'" :obra="obra" :datos="datos" @actualizar="releer"/>' +
+        '<PestanaAvance v-else-if="obra && ruta.pestana === \'avance\'" :obra="obra" :datos="datos"/>' +
+        '<PestanaCierre v-else-if="obra && ruta.pestana === \'cierre\'" :obra="obra" :datos="datos"/>' +
       '</div>'
   };
 })();
