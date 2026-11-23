@@ -113,5 +113,12 @@ Las claves se fijan en cada apartado de la skill (A4a–A4d) y se añaden aquí 
 - **COLUMNA (A4a):** `b_m` (lado horizontal de la sección dibujada), `h_m` (lado vertical), `acero_longitudinal`, `estribos` (puede citar dos textos); `seccion` solo si viene en un único texto `bXh`. Nombres alineados con `test_validador_diseno.py`. Detalle en `.claude/skills/extraer-plano/referencias/columnas.md`.
 - **LOSA (A4b):** `H` y `tipo_losa` (como enlace con la tabla de aplicación). Las dimensiones y el acero salen de la tabla que ya lee T6n (doble lectura).
 - **MURO H.A. (A4c):** `espesor`, `longitud`, `borde_<k>.longitud`, `borde_<k>.acero`, `borde_<k>.estribos` (k = 1, 2, 3, rotulados en el recorte de DETALLE), `alma.ASV`, `alma.ASH`, `alma.ganchos`.
+  - La numeración k la fija la lectura y se anota en `comprobaciones`. Muro recto: 1 es el extremo de arriba del dibujo y 2 el de abajo. Muro en L: 1 es el extremo del ala horizontal, 2 la esquina y 3 el extremo del ala vertical.
+  - En un muro en L, `longitud` va `null` con duda, porque tiene dos alas.
+  - Detalle en `.claude/skills/extraer-plano/referencias/muros.md`.
+- **MURO DE CONTENCION (A4c, detalle típico):**
+  - Campos: `espesor`, `longitud` (siempre `null`: el detalle no la da), `alma.ASV` y `alma.ASH` (`null` si el rótulo no dice la dirección).
+  - `id_elemento` es el título literal del detalle y lleva una duda para que Steven confirme a qué muro de la planta aplica.
+  - `nivel_rango` es el rótulo del nivel pedido (`SOTANO S - 2`).
 - **PORTICO, por tramo (A4d):** se fija en A4d (acero superior e inferior, adicionales con su largo, zonas de estribos, llamada de sección como enlace).
 - **Fundaciones (D12):** solo `espesor` de la platea y la tabla de f'c. Los *drops* van a `dudas_hoja`.

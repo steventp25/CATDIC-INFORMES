@@ -75,4 +75,5 @@ Deja `lotes/p14/` con `INSTRUCCIONES.md` autocontenido (lo esencial de esta skil
 ## Por tipo de elemento (orden D10)
 Lee la referencia del tipo antes de empezar sus hojas:
 - **Columnas** → `referencias/columnas.md` (A4a).
+- **Muros H.A. y muro de contención típico** → `referencias/muros.md` (A4c, lo justo para la visita 24).
 - Losas, muros, pórticos y fundaciones → se añaden en A4b, A4c, A4d y según D12. Mientras no estén, **no propongas esos tipos**: si una hoja los trae, anota en tu informe que quedan para su apartado.
