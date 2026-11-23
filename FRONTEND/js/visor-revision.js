@@ -412,7 +412,7 @@
         <div class="vp-int">
           <header class="vp-barra">
             <div class="vp-tit">
-              <h2 :id="uid + '-t'">Plano vigente<template v-if="etiqueta"> · {{ etiqueta }}</template></h2>
+              <h2 :id="uid + '-t'" class="nombre-largo">Plano vigente<template v-if="etiqueta"> · {{ etiqueta }}</template></h2>
               <p class="vp-leyenda" data-visor-leyenda><Icono :nombre="localizacion && localizacion.origen === 'propuesta' ? 'info' : 'plano'"/>{{ leyendaPropia || leyenda }}<template v-if="nota"> {{ nota }}</template></p>
             </div>
             <div class="vp-ctl">

@@ -182,7 +182,7 @@
       <dialog ref="dlg" class="dlg" :aria-labelledby="uid + '-t'" data-modal-informe @cancel.prevent="cancelar" @close="alCerrar" @keydown.tab="atrapar">
         <form class="dlg-form" @submit.prevent="lanzar" novalidate>
           <header class="dlg-cab">
-            <h2 :id="uid + '-t'" class="dlg-titulo"><Icono nombre="informes"/>{{ titulo }}</h2>
+            <h2 :id="uid + '-t'" class="dlg-titulo"><Icono nombre="informes"/><span class="nombre-largo" :title="titulo">{{ titulo }}</span></h2>
             <button type="button" class="btn btn-sec dlg-x" aria-label="Cerrar" :disabled="lanzando" @click="cancelar"><Icono nombre="cerrar"/></button>
           </header>
 

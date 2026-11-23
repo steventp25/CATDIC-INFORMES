@@ -337,7 +337,7 @@
         <div class="conf-int">
           <header class="conf-barra">
             <div class="conf-tit">
-              <h2 :id="uid + '-t'" ref="titulo" tabindex="-1">Confirmar datos del plano · {{ obra.nombre }}</h2>
+              <h2 :id="uid + '-t'" ref="titulo" tabindex="-1" class="nombre-largo" :title="'Confirmar datos del plano · ' + obra.nombre">Confirmar datos del plano · {{ obra.nombre }}</h2>
               <p class="ayuda">Revisa lo que el programa leyó del plano vigente. Nada se confirma solo: cada acción pide su casilla.</p>
             </div>
             <div class="conf-acc">

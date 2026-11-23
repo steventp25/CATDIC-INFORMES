@@ -396,6 +396,9 @@ main { padding: var(--esp-5) clamp(16px, 3vw, 40px) 64px; min-width: 0; }
 }
 .cola .pendiente { white-space: normal; font-size: 0.75rem; line-height: 1.3; padding: 0 4px; }
 .dlg-titulo { display: flex; align-items: center; gap: 8px; }
+/* B5a: un nombre de obra de 200 caracteres no se come la mitad del diálogo: tres líneas y el resto en el title (el nombre entero está en la pantalla de la obra). */
+.nombre-largo { overflow-wrap: anywhere; min-width: 0; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; line-clamp: 3; overflow: hidden; }
+.dlg-titulo > .nombre-largo { flex: 1 1 auto; }
 
 /* ======================================================================================================
    B3g · El avance en vivo como componente común y los informes dentro de la obra
