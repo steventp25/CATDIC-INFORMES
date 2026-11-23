@@ -45,6 +45,11 @@
     computed: {
       id: function () { return this.trabajoId; },
       corriendo: function () { return !!this.trabajo && this.trabajo.estado === 'corriendo'; },
+      // B3g-2: el trabajo es una regeneración (visita_inicio con `regenerar`, o `resumen.regenerar` al cerrar).
+      regenera: function () {
+        var r = this.trabajo && this.trabajo.resumen;
+        return !!(r && r.regenerar) || this.eventos.some(function (x) { return x.tipo === 'visita_inicio' && x.regenerar; });
+      },
       claseEstado: function () {
         var e = this.trabajo && this.trabajo.estado;
         return e === 'terminado' ? 'p-ok' : (e === 'corriendo' ? 'p-corre' : 'p-mal');
@@ -54,17 +59,17 @@
         return e === 'terminado' ? 'check' : (e === 'corriendo' ? 'reloj' : 'alerta');
       },
       textoEstado: function () {
-        var e = this.trabajo && this.trabajo.estado;
-        if (e === 'terminado') return 'El procesamiento terminó.';
-        if (e === 'fallido') return 'El procesamiento falló.';
-        if (e === 'corriendo') return this.perdido ? 'Se perdió el seguimiento del trabajo.' : 'Procesando la cola…';
+        var e = this.trabajo && this.trabajo.estado, reg = this.regenera;
+        if (e === 'terminado') return reg ? 'La regeneración terminó.' : 'El procesamiento terminó.';
+        if (e === 'fallido') return reg ? 'La regeneración falló.' : 'El procesamiento falló.';
+        if (e === 'corriendo') return this.perdido ? 'Se perdió el seguimiento del trabajo.' : (reg ? 'Regenerando el informe…' : 'Procesando la cola…');
         return 'Estado del trabajo: ' + (e || 'desconocido');
       },
       // Las visitas del trabajo, armadas con los eventos (en el orden en que empezaron).
       visitas: function () {
         var orden = [], por = {};
         function de(id) {
-          if (!por[id]) { por[id] = { id: id, numero: null, carpeta: '', estado: null, error: '', fin: false, elementos: [], idxEl: {}, dudas: [], avisos: [], pdf: [] }; orden.push(por[id]); }
+          if (!por[id]) { por[id] = { id: id, numero: null, carpeta: '', estado: null, error: '', fin: false, regenerar: false, generado: false, elementos: [], idxEl: {}, dudas: [], avisos: [], pdf: [] }; orden.push(por[id]); }
           return por[id];
         }
         function elemento(v, refs) {
@@ -77,7 +82,7 @@
           if (!ev.visita_id) return;
           var v = de(ev.visita_id);
           switch (ev.tipo) {
-            case 'visita_inicio': v.numero = ev.numero; v.carpeta = ev.carpeta || ''; break;
+            case 'visita_inicio': v.numero = ev.numero; v.carpeta = ev.carpeta || ''; v.regenerar = !!ev.regenerar; break;
             case 'elemento_inicio': elemento(v, ev).reintento = !!ev.reintento; break;
             case 'elemento_listo': { var e = elemento(v, ev); e.estado = ev.anterior ? 'anterior' : 'listo'; e.titulo = ev.titulo || ''; break; }
             case 'duda': {
@@ -89,7 +94,7 @@
             case 'aviso': v.avisos.push(ev.texto); break;
             case 'pdf_generado': v.pdf.push({ formato: ev.formato, ruta: ev.ruta, conDudas: !!ev.con_dudas, bytes: ev.bytes }); break;
             case 'visita_fin':
-              v.fin = true; v.estado = ev.estado || null; v.error = ev.error || '';
+              v.fin = true; v.estado = ev.estado || null; v.error = ev.error || ''; if (ev.regenerar) { v.regenerar = true; v.generado = !!ev.generado; }
               v.elementos.forEach(function (x) { if (x.estado === 'procesando') x.estado = 'espera'; });
               break;
           }
@@ -126,8 +131,10 @@
       estadoVisita: function (v) {
         if (v.error) return 'Con error';
         if (v.fin) return v.estado || 'Terminada';
-        return 'Procesando…';
+        return v.regenerar ? 'Regenerando…' : 'Procesando…';
       },
+      // El aviso del servidor repite «No se generó ninguna versión nueva del informe: …»; aquí solo va el motivo.
+      motivo: function (a) { return 'Motivo: ' + String(a || '').replace(/^No se generó ninguna versión nueva del informe:\s*/, ''); },
       hrefPdf: function (ruta) { return '/api/informes/archivo?ruta=' + encodeURIComponent(ruta); },
       hora: function (v) { return C.formato.fechaHora(v) || v; },
       claseVisita: function (v) { return v.error ? 'est-mal' : (v.fin ? C.cola.claseEstado(v.estado) : 'est-cola'); },
@@ -230,6 +237,17 @@
             </div>
             <p v-if="v.error" class="panel-e" role="alert">{{ v.error }}</p>
 
+            <div v-if="v.regenerar && v.fin && !v.error" class="tr-regen" :class="v.generado ? 'tr-regen-ok' : 'tr-regen-no'" role="status" data-regenerar-resultado :data-generado="v.generado ? 'si' : 'no'">
+              <p v-if="v.generado" class="tr-regen-t"><Icono nombre="check"/>Se generó la versión nueva del STP-MIVED. El informe anterior quedó como estaba.</p>
+              <template v-else>
+                <p class="tr-regen-t"><Icono nombre="alerta"/>No se generó ninguna versión nueva del informe.</p>
+                <p v-for="(a, i) in v.avisos" :key="'m' + i" class="tr-regen-m" data-regenerar-motivo>{{ motivo(a) }}</p>
+                <p v-if="!v.avisos.length" class="tr-regen-m">El servidor no dio el motivo: revisa las dudas de la visita.</p>
+              </template>
+              <p class="ayuda">La visita sigue «{{ v.estado || 'Procesada' }}». Los formularios MIVED ya incluyen esta visita; no se vuelven a modificar.</p>
+              <p v-if="!v.generado && hrefVisita(v.id)" class="tr-duda-a"><a class="enlace" :href="hrefVisita(v.id)" data-abrir-mesa-regenerar>Abrir la Mesa de Dudas de esta visita<Icono nombre="flecha"/></a></p>
+            </div>
+
             <ul v-if="v.elementos.length" class="tr-elementos">
               <li v-for="e in v.elementos" :key="e.uid" class="tr-el" :class="claseEl(e.estado)">
                 <span class="tr-el-t">{{ e.texto }}<span v-if="e.reintento" class="etq"> reintento</span></span>
@@ -249,7 +267,7 @@
               </ul>
             </div>
 
-            <ul v-if="v.avisos.length" class="tr-avisos"><li v-for="(a, i) in v.avisos" :key="i"><Icono nombre="info"/>{{ a }}</li></ul>
+            <ul v-if="v.avisos.length && !(v.regenerar && v.fin && !v.generado)" class="tr-avisos"><li v-for="(a, i) in v.avisos" :key="i"><Icono nombre="info"/>{{ a }}</li></ul>
 
             <div v-if="v.pdf.length" class="tr-pdf">
               <h3 class="tr-sub">Informes generados</h3>

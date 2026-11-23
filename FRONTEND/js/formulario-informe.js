@@ -2,7 +2,9 @@
    Props:  obra = { id, nombre }  ·  visitas = filas de `visitas` del tablero (solo las de esa obra)  ·  inicial = id de visita (opcional)
    Emite:  lanzado({ trabajoId, visita })  ·  cancelar()
    Elegir la visita → ver qué formatos saldrán → lanzar con POST /api/visitas/{id}/procesar (202, con el trabajo).
-   Solo se lanzan las visitas que el backend acepta: «Sin procesar», «En cola» y «Con dudas»; las demás se ven, deshabilitadas, con el motivo.
+   Se lanzan las visitas «Sin procesar», «En cola» y «Con dudas» con /procesar; una visita «Procesada» ofrece «Regenerar informe»
+   (B3g-2): POST /api/visitas/{id}/regenerar, solo después de una confirmación explícita (casilla marcada). Las demás se ven,
+   deshabilitadas, con el motivo.
    Los formatos que el sistema genera hoy son STP-MIVED y MIVED FI-01/02/03; el resto va como «disponible más adelante» y no se simula.
    Cambiar los formatos que pide una visita no tiene ruta en el backend: se rotula «Fase D».
    Los 404 y 409 se muestran con el `detail` del servidor. Ningún POST se reintenta solo.
@@ -14,6 +16,8 @@
   var contador = 0;
   var RE_TRABAJO = /trab-\d{8}-\d{6}-[0-9a-f]{6}/;
   var PROCESABLES = ['Sin procesar', 'En cola', 'Con dudas'];   // los estados que acepta procesador_cola.lanzar_trabajo
+  var REGENERABLE = 'Procesada';                                // el único estado que acepta POST /api/visitas/{id}/regenerar
+  var TEXTO_FI = 'Los formularios MIVED ya incluyen esta visita; no se vuelven a modificar.';
   // Los nombres con que `formatos_solicitados` puede traer los formularios MIVED (procesador_cola.FORMATOS_FI).
   var NOMBRES_FI = ['MIVED FI', 'MIVED FI-01/02/03', 'FI-01/02/03', 'FORMULARIOS MIVED', 'FI-01', 'FI-02', 'FI-03'];
 
@@ -40,7 +44,7 @@
   }
   function numeroDe(v) { var n = Number(v && v.numero); return isFinite(n) && v.numero !== null && v.numero !== '' ? n : null; }
 
-  C.informes = { FORMATOS: FORMATOS, PROCESABLES: PROCESABLES, formatosDe: formatosDe, claveFormato: clave };
+  C.informes = { FORMATOS: FORMATOS, PROCESABLES: PROCESABLES, REGENERABLE: REGENERABLE, formatosDe: formatosDe, claveFormato: clave };
 
   C.componentes.FormularioInforme = {
     props: {
@@ -51,7 +55,7 @@
     emits: ['lanzado', 'cancelar'],
     data: function () {
       contador++;
-      return { uid: 'fi' + contador, elegida: this.inicial || '', lanzando: false, error: '', trabajoOtro: '', cerrado: false, apertura: null };
+      return { uid: 'fi' + contador, elegida: this.inicial || '', lanzando: false, error: '', trabajoOtro: '', cerrado: false, apertura: null, confirmo: false };
     },
     computed: {
       formatos: function () { return FORMATOS; },
@@ -64,6 +68,13 @@
         });
       },
       lanzables: function () { var self = this; return this.visitas.filter(function (v) { return self.puede(v); }); },
+      regenera: function () { return !!this.visita && this.visita.estado === REGENERABLE; },
+      textoFI: function () { return TEXTO_FI; },
+      pideStp: function () { return (this.pedidos || []).some(function (p) { return p.id === 'STP-MIVED'; }); },
+      textoBoton: function () {
+        if (this.lanzando) return this.regenera ? 'Regenerando…' : 'Lanzando…';
+        return this.regenera ? 'Regenerar informe' : 'Procesar esta visita';
+      },
       visita: function () {
         var id = this.elegida;
         return id ? (this.visitas.filter(function (v) { return v.id === id; })[0] || null) : null;
@@ -100,10 +111,10 @@
     },
     beforeUnmount: function () { this.devolverFoco(); },
     methods: {
-      puede: function (v) { return PROCESABLES.indexOf(v.estado) !== -1; },
+      puede: function (v) { return PROCESABLES.indexOf(v.estado) !== -1 || v.estado === REGENERABLE; },
       motivo: function (v) {
         if (v.estado === 'En proceso') return 'Ya la está procesando un trabajo: espera a que termine.';
-        return 'Está «' + (v.estado || 'sin estado') + '»: el procesador solo acepta visitas Sin procesar, En cola o Con dudas.';
+        return 'Está «' + (v.estado || 'sin estado') + '»: solo se procesan las visitas Sin procesar, En cola o Con dudas, y de una visita Procesada se regenera el informe.';
       },
       claseEstado: function (e) { return C.cola.claseEstado(e); },
       fecha: function (v) { return C.formato.fecha(v.fecha_visita); },
@@ -141,26 +152,29 @@
         this.error = mensaje;
         this.$nextTick(function () { var el = self.$refs[ref]; if (el && el.focus) el.focus(); });
       },
-      elegir: function () { this.error = ''; this.trabajoOtro = ''; },
+      elegir: function () { this.error = ''; this.trabajoOtro = ''; this.confirmo = false; },
       lanzar: function () {
         var self = this, v = this.visita;
         if (this.lanzando) return;
         this.error = ''; this.trabajoOtro = '';
         if (!v) { this.fallo('Elige la visita de la que quieres hacer el informe.', 'error'); return; }
         if (!this.puede(v)) { this.fallo(this.motivo(v), 'error'); return; }
+        var regenera = v.estado === REGENERABLE;
+        // Regenerar crea una versión nueva: no se lanza sin la confirmación explícita (casilla marcada).
+        if (regenera && !this.confirmo) { this.fallo('Para regenerar el informe marca la casilla de confirmación: sale como versión nueva y solo es el STP-MIVED.', 'confirmar'); return; }
         this.lanzando = true;
-        C.api.post('/api/visitas/' + encodeURIComponent(v.id) + '/procesar').then(function (d) {
+        C.api.post('/api/visitas/' + encodeURIComponent(v.id) + (regenera ? '/regenerar' : '/procesar')).then(function (d) {
           var t = d && d.trabajo;
           self.lanzando = false;
           if (!t || !t.id) { self.fallo('El servidor aceptó la petición pero no devolvió el trabajo. Mira la Bandeja de trabajo antes de volver a intentarlo.', 'error'); return; }
-          C.cola.fijarTrabajo({ id: t.id, estado: 'corriendo', mensaje: (d && d.mensaje) || 'Trabajo lanzado.', proyecto: self.obra.id });
+          C.cola.fijarTrabajo({ id: t.id, estado: 'corriendo', mensaje: (d && d.mensaje) || (regenera ? 'Regeneración lanzada.' : 'Trabajo lanzado.'), proyecto: self.obra.id });
           self.cerrarDialogo();
-          self.$emit('lanzado', { trabajoId: t.id, visita: v });
+          self.$emit('lanzado', { trabajoId: t.id, visita: v, regenera: regenera });
         }, function (e) {
           self.lanzando = false;
           var m = RE_TRABAJO.exec((e && e.mensaje) || '');
           self.trabajoOtro = m ? m[0] : '';
-          self.fallo((e && e.mensaje) || 'No se pudo lanzar el procesamiento.', 'error');
+          self.fallo((e && e.mensaje) || (regenera ? 'No se pudo lanzar la regeneración.' : 'No se pudo lanzar el procesamiento.'), 'error');
         });
       }
     },
@@ -172,7 +186,7 @@
             <button type="button" class="btn btn-sec dlg-x" aria-label="Cerrar" :disabled="lanzando" @click="cancelar"><Icono nombre="cerrar"/></button>
           </header>
 
-          <p class="ayuda">El informe sale de una visita de la obra: el sistema la procesa y deja los PDF en la carpeta de salida. Solo se lanzan las visitas Sin procesar, En cola o Con dudas.</p>
+          <p class="ayuda">El informe sale de una visita de la obra: el sistema la procesa y deja los PDF en la carpeta de salida. Se lanzan las visitas Sin procesar, En cola o Con dudas; de una visita Procesada se puede regenerar el informe.</p>
 
           <fieldset class="opciones inf-visitas" :aria-describedby="uid + '-ayuda'" data-elegir-visita>
             <legend>1. Elige la visita</legend>
@@ -193,6 +207,7 @@
                       <span class="vis-op-f">Pide: <span v-if="nombresPedidos(v) !== null" class="num">{{ nombresPedidos(v) || 'ningún formato' }}</span><Pendiente v-else>formatos pendientes de verificar</Pendiente></span>
                     </span>
                     <span v-if="!puede(v)" :id="uid + '-m-' + v.id" class="vis-op-no"><Icono nombre="info"/>{{ motivo(v) }}</span>
+                    <span v-else-if="v.estado === 'Procesada'" class="vis-op-no" data-op-regenerable><Icono nombre="info"/>Ya procesada: se puede regenerar su informe como versión nueva.</span>
                   </span>
                 </label>
               </li>
@@ -202,7 +217,12 @@
           <section class="inf-formatos" aria-labelledby="inf-f-t" data-formatos>
             <h3 id="inf-f-t" class="tr-sub">2. Formatos</h3>
             <div v-if="visita" class="inf-sale" role="status" aria-live="polite" data-formatos-visita>
-              <p v-if="pedidos === null" class="ayuda"><Pendiente>formatos de la visita pendientes de verificar</Pendiente> El servidor no trae la lista de formatos que pide esta visita.</p>
+              <template v-if="regenera">
+                <p v-if="pideStp || pedidos === null" class="inf-sale-t" data-formatos-regenera><Icono nombre="check"/>Se vuelve a generar: <b class="num">STP-MIVED</b>, como versión nueva.</p>
+                <p v-else class="inf-sale-t inf-sale-no" data-formatos-regenera><Icono nombre="alerta"/>Esta visita no pide STP-MIVED, el único formato que se regenera: no se generará nada.</p>
+                <p class="ayuda"><Icono nombre="info"/>{{ textoFI }}</p>
+              </template>
+              <p v-else-if="pedidos === null" class="ayuda"><Pendiente>formatos de la visita pendientes de verificar</Pendiente> El servidor no trae la lista de formatos que pide esta visita.</p>
               <template v-else>
                 <p v-if="saldran.length" class="inf-sale-t"><Icono nombre="check"/>Saldrán de esta visita: <b class="num">{{ textoSaldran }}</b></p>
                 <p v-else class="inf-sale-t inf-sale-no"><Icono nombre="alerta"/>Esta visita no pide ningún formato que el sistema genere hoy.</p>
@@ -222,11 +242,25 @@
             <p class="ayuda inf-cambiar">Cambiar los formatos que pide una visita: <FaseD fase="D" texto="Sin ruta en el backend"/></p>
           </section>
 
+          <section v-if="regenera" class="inf-confirma" aria-labelledby="inf-c-t" data-confirmar-regenerar>
+            <h3 id="inf-c-t" class="tr-sub">3. Confirma la regeneración</h3>
+            <ul class="inf-confirma-l">
+              <li>Sale como <b>versión nueva</b> (v2, v3…) junto a las anteriores.</li>
+              <li><b>No se borra ni se cambia nada:</b> el informe que ya existe queda como está.</li>
+              <li><b>Solo es el STP-MIVED.</b> {{ textoFI }}</li>
+              <li>Se usan los datos que ya están en el sistema. Si hoy hay dudas abiertas, elementos en espera o el plano cambió, no se genera nada y se te dice por qué; la visita sigue Procesada.</li>
+            </ul>
+            <label class="certifico" data-confirmar-etiqueta>
+              <input ref="confirmar" type="checkbox" v-model="confirmo" :disabled="lanzando" data-confirmar-casilla>
+              <span>Entiendo que se generará una versión nueva del STP-MIVED y que los formularios MIVED no se tocan.</span>
+            </label>
+          </section>
+
           <p v-if="error" ref="error" class="dlg-error" role="alert" tabindex="-1" data-error-informe><Icono nombre="alerta"/><span>{{ error }}<template v-if="hrefOtro"> <a class="enlace" :href="hrefOtro" data-ver-otro-trabajo>Ver ese trabajo<Icono nombre="flecha"/></a></template></span></p>
 
           <footer class="dlg-pie">
             <button ref="cancelar" type="button" class="btn btn-sec" :disabled="lanzando" @click="cancelar">Cancelar</button>
-            <button type="submit" class="btn btn-pri" :disabled="lanzando || !lanzables.length" :aria-busy="lanzando ? 'true' : null" data-lanzar-informe><Icono nombre="rayo"/>{{ lanzando ? 'Lanzando…' : 'Procesar esta visita' }}</button>
+            <button type="submit" class="btn btn-pri" :disabled="lanzando || !lanzables.length" :aria-busy="lanzando ? 'true' : null" data-lanzar-informe><Icono nombre="rayo"/>{{ textoBoton }}</button>
           </footer>
         </form>
       </dialog>`

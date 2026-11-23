@@ -47,6 +47,10 @@
   /* «N visitas · P procesadas · X con dudas o con error · K PDF» (A9). */
   function resumirTrabajo(t) {
     var r = t.resumen || {}, vs = Array.isArray(r.visitas) ? r.visitas : [];
+    if (r.regenerar) {   // B3g-2: una regeneración no cambia el estado de la visita
+      var n = Array.isArray(r.pdf) ? r.pdf.length : 0;
+      return 'Regeneración del informe · ' + (n ? n + (n === 1 ? ' PDF nuevo' : ' PDF nuevos') : 'no se generó ninguna versión nueva') + ' · la visita sigue Procesada';
+    }
     var procesadas = vs.filter(function (v) { return v.estado === 'Procesada'; }).length;
     return vs.length + ' visitas · ' + procesadas + ' procesadas · ' + (vs.length - procesadas) + ' con dudas o con error · ' + (Array.isArray(r.pdf) ? r.pdf.length : 0) + ' PDF';
   }

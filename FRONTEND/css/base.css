@@ -586,3 +586,15 @@ main { padding: var(--esp-5) clamp(16px, 3vw, 40px) 64px; min-width: 0; }
 .db-sub { margin: var(--esp-3) 0 var(--esp-2); font-size: 0.8125rem; text-transform: uppercase; letter-spacing: 0.06em; }
 .db-res { margin: 0 0 var(--esp-3); font-weight: 600; }
 .sync-mesa { display: flex; gap: 6px; align-items: center; margin: var(--esp-2) 0; }
+
+/* B3g-2: regenerar el informe de una visita Procesada */
+.inf-confirma { display: grid; gap: var(--esp-2); padding: var(--esp-3); border: 1.5px solid var(--sel-borde); background: var(--aviso-fondo); overflow-wrap: anywhere; }
+.inf-confirma .tr-sub { margin: 0; }
+.inf-confirma-l { margin: 0; padding-left: 1.25rem; display: grid; gap: 4px; font-size: 0.875rem; }
+.inf-confirma .certifico { background: var(--superficie); }
+.tr-regen { display: grid; gap: 4px; padding: var(--esp-2) var(--esp-3); border: 1.5px solid var(--ok-tinta); background: var(--ok-fondo); overflow-wrap: anywhere; min-width: 0; }
+.tr-regen-no { border-color: var(--alerta); background: var(--error-fondo); }
+.tr-regen-t { display: flex; gap: 6px; align-items: flex-start; margin: 0; font-weight: 700; }
+.tr-regen-t .ico { margin-top: 0.15em; }
+.tr-regen-m, .tr-regen .ayuda, .tr-regen .tr-duda-a { margin: 0; font-size: 0.875rem; }
+.inf-sale-t .num { white-space: nowrap; }
