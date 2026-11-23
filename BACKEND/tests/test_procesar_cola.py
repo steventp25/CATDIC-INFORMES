@@ -5,6 +5,7 @@
 # BD, Dropbox, datos, caché y salida temporales. Todo es # SINTÉTICO: obra, plano, elementos de diseño, visita y
 # fotos inventados solo para probar las reglas; no son datos de ningún proyecto. Las pruebas que generan el STP
 # (Chromium de Playwright) se saltan con un mensaje si el navegador no está instalado.
+import base64
 import functools
 import io
 import json
@@ -343,6 +344,23 @@ def test_lector_corre_si_la_visita_no_fue_leida_y_queda_con_dudas(entorno):
     assert any(e["tipo"] == "aviso" and "Visita leída" in e["texto"] for e in eventos)
     assert _visita()["estado"] == "Con dudas"  # O1 del lector
     assert {d["campo_afectado"] for d in _abiertas()} >= {"elemento_visita:p001", "elemento_visita:p003"}
+
+
+def test_con_paquete_de_campo_se_carga_el_paquete_y_no_el_pdf(entorno):
+    # SINTÉTICO. La visita no tiene su PDF en la carpeta: con el paquete no hace falta.
+    buf = io.BytesIO()
+    Image.new("RGB", (800, 600), (90, 90, 90)).save(buf, format="JPEG")
+    foto = base64.b64encode(buf.getvalue()).decode("ascii")
+    paquete = {"formato": "catdic-paquete-visita", "version": 1, "visita": {"nivel": "S-4"}, "elementos": [
+        {"orden": 1, "tipo": "LOSA", "id": "L5", "ejes": {"caso": "losa"},
+         "fotos": [{"numero": 1, "base64": foto}, {"numero": 2, "base64": foto}]}]}
+    (entorno["carpeta_visita"] / "P.catdic-visita.json").write_text(json.dumps(paquete), encoding="utf-8")
+    _, eventos = _procesar()
+    with _bd() as conn:
+        filas = conn.execute("SELECT id_elemento, ejes, nivel FROM elementos_visita WHERE visita_id = ?", (VID,)).fetchall()
+    assert [tuple(f) for f in filas] == [("L5", "—", "S-4")]
+    assert any(e["tipo"] == "aviso" and "paquete de Campo" in e["texto"] for e in eventos)
+    assert not [d for d in _abiertas() if d["campo_afectado"] in ("lector_visita", "paquete_visita")]
 
 
 def test_o5_si_ya_hay_un_stp_de_su_fecha_no_se_regenera(entorno, monkeypatch):

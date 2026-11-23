@@ -38,10 +38,14 @@ ACCION_RECHAZAR = "RECHAZAR_PDF_VISITA"
 DUDA = "DUDA_BLOQUEANTE"
 CAMPO_PDF_VISITA = "lector_visita"
 ORIGEN_ESTADO_LECTOR = "lector_visita"  # origen_datos_json["estado"] cuando el lector abre dudas
+RESPUESTA_PDF_LEIDO = "resuelta por el lector: el PDF de la visita ya se lee"
 LADO_MAXIMO_PX = 1000   # §5.2
 CALIDAD_JPG = 72        # §5.2
 TAM_ETIQUETA_PT = 11.5  # la etiqueta mide 12 pt; "Creado el:" y las notas, 10 pt
 _RE_CREADO = re.compile(r"^\s*Creado el:\s*(.*)$")
+_RE_CREADO_CORTO = re.compile(r"^Creado:\s*(.*)$")         # Report & Run, varias fotos por página
+_RE_COMENTARIOS = re.compile(r"^Comentarios\b\s*(.*)$")
+AREA_MINIMA_FOTO_PT2 = 5000  # el logo del pie mide ~20×20 pt; una foto, decenas de miles de pt²
 _RE_NIVEL = re.compile(r"\bS-\d+\b", re.IGNORECASE)
 _RE_ID = re.compile(r"[A-Z]{1,3}\d{1,3}")
 _RE_EJE_UNA_LETRA = re.compile(r"[A-ZÑ]'?\d+'?|\d+'?[A-ZÑ]'?", re.IGNORECASE)
@@ -132,11 +136,91 @@ def _leer_texto_pagina(pagina, foto_bbox) -> Dict:
             "hora": " ".join(hora).strip() or None, "tiene_creado": marcador_y is not None}
 
 
+def _fotos_de_la_pagina(pagina) -> List[dict]:
+    """Fotos de la página ordenadas de arriba abajo (fuera el logo del pie y las imágenes diminutas)."""
+    pie = pagina.rect.height - 100
+    fotos = [i for i in pagina.get_image_info()
+             if i["bbox"][1] < pie and (i["bbox"][2] - i["bbox"][0]) * (i["bbox"][3] - i["bbox"][1]) >= AREA_MINIMA_FOTO_PT2]
+    return sorted(fotos, key=lambda i: (round(i["bbox"][1]), i["bbox"][0]))
+
+
+def _leer_bloque_derecho(pagina, foto_bbox, y_desde: float, y_hasta: float) -> Optional[Dict]:
+    """
+    Formato de varias fotos por página (Report & Run): a la DERECHA de cada foto, dentro de su
+    franja vertical [y_desde, y_hasta), van 'Creado:' + fecha, el título que escribió el técnico y,
+    después de 'Comentarios', los comentarios. El título se guarda LITERAL como etiqueta y los
+    comentarios como nota. Devuelve None si el bloque no trae 'Creado:'.
+    """
+    x1f = foto_bbox[2]
+    lineas = []
+    for bloque in pagina.get_text("dict")["blocks"]:
+        if bloque["type"] != 0:
+            continue
+        for linea in bloque["lines"]:
+            for s in linea["spans"]:
+                sx0, sy0 = s["bbox"][0], s["bbox"][1]
+                if s["text"].strip() and sx0 >= x1f - 1 and y_desde <= sy0 < y_hasta:
+                    lineas.append((sy0, sx0, s["text"]))
+    lineas.sort()
+    marcador_y = comentarios_y = None
+    hora, etiqueta, nota = [], [], []
+    for y, _, texto in lineas:
+        limpio = texto.strip()
+        if marcador_y is None:
+            m = _RE_CREADO_CORTO.match(limpio)
+            if m:
+                marcador_y = y
+                if m.group(1).strip():
+                    hora.append(m.group(1).strip())
+            continue
+        if abs(y - marcador_y) <= 3:
+            hora.append(limpio)
+        elif comentarios_y is None and _RE_COMENTARIOS.match(limpio):
+            comentarios_y = y
+            resto = _RE_COMENTARIOS.match(limpio).group(1).strip()
+            if resto:
+                nota.append(resto)
+        elif comentarios_y is None:
+            etiqueta.append(limpio)
+        else:
+            nota.append(limpio)
+    if marcador_y is None:
+        return None
+    return {"etiqueta": " ".join(etiqueta).strip(), "nota": " ".join(nota).strip(),
+            "hora": " ".join(hora).strip() or None}
+
+
+def _leer_varias_fotos_por_pagina(doc) -> Optional[List[Dict]]:
+    """Lee el formato de varias fotos por página; None si alguna foto no trae su bloque con 'Creado:'."""
+    fotos, orden = [], 0
+    for n, pagina in enumerate(doc, start=1):
+        imagenes = _fotos_de_la_pagina(pagina)
+        if not imagenes:
+            return None
+        pie = pagina.rect.height - 100
+        # Franja de cada foto: del punto medio con la foto anterior al punto medio con la siguiente
+        # (la foto puede ir centrada en su celda, más abajo que su texto). La cabecera queda fuera
+        # porque está a la izquierda del borde derecho de las fotos.
+        cortes = [0.0] + [(imagenes[k]["bbox"][3] + imagenes[k + 1]["bbox"][1]) / 2
+                          for k in range(len(imagenes) - 1)] + [pie]
+        for k, img in enumerate(imagenes):
+            texto = _leer_bloque_derecho(pagina, img["bbox"], cortes[k], cortes[k + 1])
+            if texto is None:
+                return None
+            orden += 1
+            fotos.append({"pagina": n, "orden": orden, "varias_por_pagina": True,
+                          "foto_bbox": tuple(img["bbox"]), **texto})
+    return fotos
+
+
 def leer_pdf_visita(ruta_pdf: Path) -> List[Dict]:
     """
-    Lista de páginas de la visita en el orden del PDF:
-    [{pagina, etiqueta, nota, hora, foto_bbox}]. Lanza ValueError si no tiene estructura de visita
-    (alguna página sin foto o sin 'Creado el:'): no se carga nada a medias ni se descarta nada.
+    Lista de fotos de la visita en el orden del PDF:
+    [{pagina, orden, etiqueta, nota, hora, foto_bbox}]. `orden` es el número de la foto en la visita
+    (en el formato de una foto por página coincide con la página). Acepta dos formatos:
+    - una foto por página con 'Creado el:' debajo o al lado (visitas #17, #18, #20);
+    - varias fotos por página con 'Creado:', título y 'Comentarios' a la derecha de cada foto (Report & Run).
+    Lanza ValueError si no encaja en ninguno: no se carga nada a medias ni se descarta nada.
     """
     paginas, anomalas = [], []
     with pymupdf.open(str(ruta_pdf)) as doc:  # solo lectura: nunca se guarda
@@ -151,12 +235,16 @@ def leer_pdf_visita(ruta_pdf: Path) -> List[Dict]:
             if not texto["tiene_creado"]:
                 anomalas.append((n, "sin 'Creado el:'"))
                 continue
-            paginas.append({"pagina": n, "foto_bbox": tuple(foto["bbox"]), **{
+            paginas.append({"pagina": n, "orden": n, "foto_bbox": tuple(foto["bbox"]), **{
                 k: texto[k] for k in ("etiqueta", "nota", "hora")}})
+        if anomalas:
+            varias = _leer_varias_fotos_por_pagina(doc)
+            if varias:
+                return varias
     if anomalas:
         detalle = ", ".join(f"p. {n} {motivo}" for n, motivo in anomalas[:10])
         raise ValueError(f"'{Path(ruta_pdf).name}' no tiene la estructura de una visita "
-                         f"(una foto y 'Creado el:' por página): {detalle}.")
+                         f"(una foto y 'Creado el:' por página, o varias fotos con 'Creado:' al lado): {detalle}.")
     return paginas
 
 
@@ -219,10 +307,11 @@ def armar_grupos(paginas: List[Dict], nombre_carpeta: str) -> List[Dict]:
     """
     Agrupa con agrupar_log_fotografico_visita (M1: una etiqueta abre el grupo, las siguientes sin
     etiqueta le pertenecen). De agrupar solo se usa la estructura: el id_sugerido y la deducción de
-    pórtico por orden NO se usan. orden_en_log = página que abre el grupo.
+    pórtico por orden NO se usan. orden_en_log = número de la foto que abre el grupo (en el formato
+    de una foto por página, su página).
     """
-    por_pagina = {f"p{p['pagina']:03d}": p for p in paginas}
-    log = [{"archivo": f"p{p['pagina']:03d}", "etiqueta_elemento": p["etiqueta"], "leyenda": ""}
+    por_pagina = {f"p{_orden(p):03d}": p for p in paginas}
+    log = [{"archivo": f"p{_orden(p):03d}", "etiqueta_elemento": p["etiqueta"], "leyenda": ""}
            for p in paginas]
     nivel = nivel_de_carpeta(nombre_carpeta)
     grupos = []
@@ -231,17 +320,37 @@ def armar_grupos(paginas: List[Dict], nombre_carpeta: str) -> List[Dict]:
         etiqueta = fotos[0]["etiqueta"]  # literal; etiqueta_apertura del motor puede venir reescrita
         datos = interpretar_etiqueta(etiqueta)
         grupos.append({
-            "orden_en_log": fotos[0]["pagina"], "etiqueta_original": etiqueta,
+            "orden_en_log": _orden(fotos[0]), "etiqueta_original": etiqueta,
             "nivel": nivel, **datos, "fotos": fotos,
             "reconocido": datos["id_elemento"] != PENDIENTE and datos["ejes"] != PENDIENTE,
         })
     return grupos
 
 
+def _orden(foto: Dict) -> int:
+    """Número de la foto en la visita; en el formato de una foto por página, su página."""
+    return foto.get("orden") or foto["pagina"]
+
+
 def _texto_duda(grupo: Dict) -> str:
-    primera, ultima = grupo["fotos"][0]["pagina"], grupo["fotos"][-1]["pagina"]
-    una = primera == ultima
-    paginas = f"página {primera}" if una else f"páginas {primera} a {ultima}"
+    fotos = grupo["fotos"]
+    if not fotos[0].get("varias_por_pagina"):  # una foto por página: se cita la página
+        primera, ultima = fotos[0]["pagina"], fotos[-1]["pagina"]
+        una = primera == ultima
+        paginas = f"página {primera}" if una else f"páginas {primera} a {ultima}"
+    else:  # varias fotos por página: se cita el número de foto y su página
+        primera, ultima = fotos[0], fotos[-1]
+        una = len(fotos) == 1
+        pags = (f"pág. {primera['pagina']}" if primera["pagina"] == ultima["pagina"]
+                else f"págs. {primera['pagina']} a {ultima['pagina']}")
+        paginas = (f"foto {_orden(primera)} ({pags})" if una else
+                   f"fotos {_orden(primera)} a {_orden(ultima)} ({pags})")
+        if not grupo["etiqueta_original"]:
+            return (f"Las primeras fotos de la visita ({paginas}) no tienen título: ¿a qué elemento "
+                    "pertenecen? No se asignan por adivinanza.")
+        return (f"{'Foto' if una else 'Fotos'} {paginas.split(' ', 1)[1]} con el título literal "
+                f"'{grupo['etiqueta_original']}': ¿abre un elemento nuevo (tipo, ID, ejes), pertenece al "
+                "anterior o es una medida/nota del anterior?")
     if not grupo["etiqueta_original"]:
         return (f"Las primeras fotos de la visita ({paginas}) no tienen etiqueta: ¿a qué elemento "
                 "pertenecen? No se asignan por adivinanza.")
@@ -281,6 +390,28 @@ def _insertar_duda(conn, visita, id_elemento: str, campo: str, texto: str) -> bo
                     campo_afectado, descripcion_pregunta, creado) VALUES (?, ?, ?, ?, ?, ?, ?)""",
                  (visita["proyecto_id"], visita["id"], id_elemento, DUDA, campo, texto, _ahora()))
     return True
+
+
+def _cerrar_duda_pdf(conn, visita, usuario: str) -> List[int]:
+    """El PDF ya se lee: la duda 'no tiene la estructura de una visita' perdió su causa y se cierra (con auditoría)."""
+    ids = [f[0] for f in conn.execute("""SELECT id FROM dudas_y_hallazgos WHERE visita_id = ? AND campo_afectado = ?
+                                          AND categoria = ? AND resuelta = 0""", (visita["id"], CAMPO_PDF_VISITA, DUDA))]
+    for i in ids:
+        conn.execute("UPDATE dudas_y_hallazgos SET resuelta = 1, respuesta_usuario = ?, resuelto_en = ? WHERE id = ?",
+                     (RESPUESTA_PDF_LEIDO, _ahora(), i))
+        conn.execute("""INSERT INTO auditoria (fecha_hora, usuario, modulo, accion, entidad_id, detalle_json)
+                        VALUES (?, ?, ?, ?, ?, ?)""", (_ahora(), usuario, MODULO_AUDITORIA, "CERRAR_DUDA", str(i),
+                                                       _json({"visita_id": visita["id"], "motivo": RESPUESTA_PDF_LEIDO})))
+    return ids
+
+
+def _abrir_duda_pdf(conn, visita, texto: str) -> None:
+    """Duda del PDF ilegible: se crea, o se reabre si el lector la había cerrado solo y el PDF vuelve a fallar."""
+    if _insertar_duda(conn, visita, "", CAMPO_PDF_VISITA, texto):
+        return
+    conn.execute("""UPDATE dudas_y_hallazgos SET resuelta = 0, respuesta_usuario = '', resuelto_en = '',
+                    descripcion_pregunta = ? WHERE visita_id = ? AND campo_afectado = ? AND categoria = ?
+                    AND respuesta_usuario = ?""", (texto, visita["id"], CAMPO_PDF_VISITA, DUDA, RESPUESTA_PDF_LEIDO))
 
 
 def _marcar_con_dudas(conn, visita) -> Optional[str]:
@@ -329,7 +460,7 @@ def cargar_visita(visita_id: str, ruta_pdf: Optional[Path] = None, usuario: Opti
             if respaldar:
                 _respaldar_bd(conn, Path(config.obtener_db_path()))
             conn.execute("BEGIN")
-            _insertar_duda(conn, visita, "", CAMPO_PDF_VISITA, str(e))
+            _abrir_duda_pdf(conn, visita, str(e))
             _marcar_con_dudas(conn, visita)
             conn.execute("""INSERT INTO auditoria (fecha_hora, usuario, modulo, accion, entidad_id, detalle_json)
                             VALUES (?, ?, ?, ?, ?, ?)""", (_ahora(), usuario, MODULO_AUDITORIA, ACCION_RECHAZAR,
@@ -341,7 +472,7 @@ def cargar_visita(visita_id: str, ruta_pdf: Optional[Path] = None, usuario: Opti
         respaldo = _respaldar_bd(conn, Path(config.obtener_db_path())) if respaldar else None
         carpeta_cache = cache_raiz / visita["proyecto_id"] / visita["id"]
         for p in paginas:  # primero la caché (sin tocar la BD); lo ya generado no se rehace
-            destino = carpeta_cache / f"p{p['pagina']:03d}.jpg"
+            destino = carpeta_cache / f"p{_orden(p):03d}.jpg"
             if not destino.exists():
                 _guardar_foto_en_cache(pdf, p["pagina"], p["foto_bbox"], destino)
 
@@ -351,7 +482,8 @@ def cargar_visita(visita_id: str, ruta_pdf: Optional[Path] = None, usuario: Opti
             for g in grupos:
                 fotos_json = _json([{
                     "pagina": f["pagina"], "etiqueta": f["etiqueta"], "nota": f["nota"], "hora": f["hora"],
-                    "cache": f"{visita['proyecto_id']}/{visita['id']}/p{f['pagina']:03d}.jpg",
+                    "cache": f"{visita['proyecto_id']}/{visita['id']}/p{_orden(f):03d}.jpg",
+                    **({"foto": _orden(f)} if f.get("varias_por_pagina") else {}),
                 } for f in g["fotos"]])
                 valores = (g["etiqueta_original"], g["id_elemento"], g["tipo_elemento"], g["nivel"],
                            g["ejes"], fotos_json)
@@ -375,8 +507,10 @@ def cargar_visita(visita_id: str, ruta_pdf: Optional[Path] = None, usuario: Opti
                     if _insertar_duda(conn, visita, g["etiqueta_original"] or "(sin etiqueta)",
                                       f"elemento_visita:p{g['orden_en_log']:03d}", _texto_duda(g)):
                         dudas_nuevas += 1
+            dudas_pdf_cerradas = _cerrar_duda_pdf(conn, visita, usuario)
             estado_nuevo = _marcar_con_dudas(conn, visita)
             detalle = {"pdf": str(pdf), "paginas": len(paginas), "grupos": len(grupos),
+                       "dudas_pdf_cerradas": dudas_pdf_cerradas,
                        "estado_anterior": visita["estado"], "estado_nuevo": estado_nuevo or visita["estado"],
                        "filas_nuevas": nuevas, "filas_actualizadas": actualizadas, "sin_cambios": sin_cambios,
                        "dudas_nuevas": dudas_nuevas, "cache": str(carpeta_cache),
