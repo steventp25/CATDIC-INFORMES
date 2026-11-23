@@ -261,3 +261,15 @@ Con B3f, quedan aprobadas **B3a, B3b, B3c, B3d, B3e, B3f, B3g y B3g-2**. B3h (re
 
 ### Pruebas ejecutadas
 - **Suite completa** sobre una copia exacta de `a22f20e`: 977 pasan, 3 se omiten y 2 fallan. Son las 2 conocidas de Dropbox.
+
+## Evaluación 9 · 23/11/2026 · Planificador (auditoría) · Reauditoría de B4 (`41e7468`, bitácora `83d827d`)
+**Veredicto: APROBADO**
+
+- **Bloqueante de la Evaluación 8, corregido.** Lo comprobé en el navegador, sobre una copia de `83d827d` con la BD sintética de B3c:
+  - la tabla n.º 1 muestra «cumple» con sus 9 nombres neutros: «Celdas completas», «Unidades y rangos», «Formato de barras», «Sin filas repetidas», «H = h1 + h2», «Sin notas de modificación», «Un único nivel impreso», «IDs de losa sin repetir» y «Tipo de losa asignado»;
+  - la tabla n.º 4 (roja) muestra «falla · Unidades y rangos», junto al detalle del servidor (`A / H = '25' no es una dimensión en metros`);
+  - «Falló:» y «Falla:» de la lista siguen con la frase de falla.
+- `claveLegible` ya no aparece en `FRONTEND/`.
+- **Alcance del cambio.** Entre `a22f20e` y `83d827d` solo cambian `FRONTEND/js/confirmar-plano.js` y `PLANES/`.
+  - No volví a correr la suite: ningún archivo de `BACKEND/` cambió desde la corrida sobre `a22f20e` (977 pasan, 3 se omiten y fallan las 2 de Dropbox).
+- **Para B5:** los 4 abiertos de B4.
