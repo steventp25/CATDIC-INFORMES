@@ -32,7 +32,7 @@ Plan madre: `PLANES/etapa-5.md` (decisiones D5–D8, tareas B0–B5). Este archi
 | B3c | **(7.º)** Revisión de planos: confirmar datos del plano (M6) | Ejecutor Sonnet (subagente, en este worktree) + revisión del Líder | esta rama (`9dd4aee`, `71d4bd1`; corrección del Líder `ede37af`; encargo `B3c-brief.md`, informe `B3c.md`) | **APROBADA** (auditoría del Director, 23/11, sobre `25fe9a5`); falta que Steven la vea |
 | B3f | **(8.º)** Órdenes de trabajo (kanban Z16), de solo lectura: no hay ruta para crear ni mover órdenes (Fase D) | Ejecutor Sonnet (subagente, en este worktree) + revisión del Líder | esta rama (`9c7cc93`, `bf8d9b6`; informe `B3f.md` en `af169ab`) | **APROBADA** (auditoría del Director, 23/11, sobre `d7cec65`); falta que Steven la vea |
 | B3h | **(SIN AUTORIZACIÓN: Steven, 20/11, «Conserva el tablero clásico»)** Retiro del clásico: checklist de paridad de B0 §9 completa en el tablero nuevo; se borran `FRONTEND/clasico/` y `test_clasico_entrega_el_tablero_anterior` (esta prueba es de `BACKEND/`: pide excepción al Director) | Líder + Ejecutor | — | pendiente |
-| B4 | Movimiento y pulido (`animate`, `choreograph`, `emil-design-eng`), `prefers-reduced-motion`, más las notas «Para B4» de B3b, B3c y B3f | Ejecutor Sonnet (subagente, en este worktree) + revisión del Líder | — | **en curso** (encargo `B4-brief.md`, 23/11) |
+| B4 | Movimiento y pulido (`animate`, `choreograph`, `emil-design-eng`), `prefers-reduced-motion`, más las notas «Para B4» de B3b, B3c y B3f | Ejecutor Sonnet (subagente, en este worktree) + revisión del Líder | esta rama (`c69a84a`, `e3baf7d`, `5da950a`, `1ea2931`, `6e8d386`; Líder `38c6d56`; encargo `B4-brief.md`, informe `B4.md`) | **hecha y revisada por el Líder**, esperando auditoría del Director |
 | B5 | `break-ui`, teclado, contraste, 1280/1920, paridad con B0, cierre | Líder + Ejecutor | — | pendiente |
 
 Las pestañas **Avance** y **Cierre** de la obra entran en **B3b** con Resumen (Director, 19/11). Sus indicadores muestran «pendiente de verificar» hasta D15, sin números inventados.
@@ -74,6 +74,35 @@ Hueco reservado en la navegación: "Lectura asistida" (Fase C, no es de esta fas
 - **19/11/2026 · Estilo visual:** «Plano sellado» (respuesta textual de Steven, relayada por el Director). Se construye con el estilo B de `FRONTEND/maquetas/v2/` (`plano.html`, `estilo-plano.css`). Hormigón y Tablero quedan como antecedente, sin borrarlos. Telemetría del sorteo de `impeccable` enviada (`--kind pick`: «choice recorded»).
 
 ## Bitácora (lo más nuevo arriba)
+- 23/11/2026 · Líder: **B4 hecha y revisada** (informe `PLANES/etapa-5-reportes/B4.md`). Ejecutor: `c69a84a`, `e3baf7d`, `5da950a`, `1ea2931` y `6e8d386`. El diff toca 8 archivos (+297/−51): `FRONTEND/` y el informe, nada de `BACKEND/`, `clasico/`, `maquetas/` ni `vendor/`.
+  - **Movimiento:**
+    - diálogos con fundido y `scale(0.97 → 1)` de 200 ms con `@starting-style`;
+    - avisos con fundido y `scale(0.98)` de 160 ms;
+    - `scale(0.97)` al presionar (0.985 en filas anchas);
+    - zoom del visor de 180 ms solo con puntero;
+    - color de 150 ms en estados y en el paso vivo del procesador;
+    - señal de la orden de destino.
+  - **No se anima:** teclado, rueda y arrastre del visor (van 1:1), cambios de pantalla y pestaña, filtros y salida de los diálogos. Todo `:hover` queda en `(hover: hover) and (pointer: fine)`.
+  - **Revisión del Líder** (criterios de `emil-design-eng`/`impeccable` leídos, sin ejecutar los scripts de `impeccable`):
+    - solo `transform`, `opacity` y color;
+    - ≤ 300 ms, sin `transition: all` ni `ease-in`.
+  - **Playwright del Líder** (copia de la BD en el 8766, ya apagado):
+    - Nueva obra con movimiento normal: solo `opacity` y `transform` de 200 ms. Con `reduced_motion` no hay animaciones; Escape cierra y abrir y cerrar enseguida no deja el diálogo a medias.
+    - Nota 2: «10 órdenes abiertas: ver órdenes de trabajo».
+    - Nota 3: tablero desplazable con teclado y con pista.
+    - Nota 5: Confirmar plano mide 768 px a 1024×768 y un `scrollIntoView` ya no lo mueve.
+    - Nota 6: a 375 px la barra mide 44 px en una fila, con objetivos ≥ 44 px.
+    - 0 externas, 0 errores de consola, sin desborde.
+  - **Corregido por el Líder** (`38c6d56`): el texto de la comprobación «unidades» ahora dice «fuera de la unidad o del rango esperado», que es lo que comprueba el extractor (metros y rango de f'c).
+  - **Ejecutor:**
+    - Playwright: 280 visitas (14 rutas × 5 anchos × 2 temas × normal/reducido) con 0 fallos, más las 9 notas una a una.
+    - Suite: 975/7/0 en el scratch; sin `CATDIC_DROPBOX_RAIZ`, 977 pasan y solo fallan las 2 de Dropbox.
+  - **Abierto:**
+    - la salida de los diálogos es instantánea (el padre los desmonta);
+    - los avisos insertados empujan lo de debajo (no los botones de arriba);
+    - Escape en Confirmar plano devuelve el foco al `<h1>`, no al botón (comportamiento de B3c);
+    - el motivo de «Ir al recuadro» deshabilitado solo va para lectores y en `title`;
+    - las 6 columnas de órdenes no caben a 1280 (≈150 px cada una).
 - 23/11/2026 · Director: **B3f APROBADA** sobre `d7cec65` (Evaluación 7 copiada en `etapa-5-evaluacion.md`). Suite: 977 pasan, 3 se omiten y solo fallan las 2 de Dropbox. **B3 queda completa** (B3h sigue sin autorizar). «Adelante con B4», sin push.
   - **Para B4:** (1) sin `?estado=`, abrir la primera pestaña que tenga órdenes (hoy abre «Pendiente» vacía); (2) el enlace «Órdenes abiertas» de Inicio solo contiene la cifra: darle un nombre accesible.
   - Líder: encargo `PLANES/etapa-5-reportes/B4-brief.md` (movimiento con propósito + las 9 notas acumuladas de B3b, B3c y B3f) y Ejecutor lanzado.
