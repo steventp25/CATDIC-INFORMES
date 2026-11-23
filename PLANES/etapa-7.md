@@ -93,8 +93,57 @@ carpeta de pruebas. Al volver Steven, solo faltan sus confirmaciones (datos del 
   - [ ] `etapa-7-prueba.md` dice paso a paso qué salió y qué falta, con capturas o rutas de salida en la carpeta de pruebas.
   - [ ] La BD real y Dropbox sin cambios (sha256 antes y después).
 
+### T6 — Cruce por ID + nivel cuando el diseño no trae EJES (equivalencia de niveles)
+- Ejecutor: ejecutor-backend. Pedido por el Director el 23/11, después de la corrida 1 de T5 (`PLANES/etapa-7-prueba.md`, punto 3).
+- Archivos: `BACKEND/database.py` (tabla nueva), `BACKEND/procesador_cola.py` (`_candidatos` y su duda), `BACKEND/main.py` (endpoints), `BACKEND/tests/test_equivalencias_nivel.py` (nuevo), `PLANES/etapa-7-niveles.md` (nuevo).
+- Depende de: —
+- Qué hacer:
+  - Tabla `equivalencias_nivel` por obra: `proyecto_id`, `nivel_visita` (`S-2`) y `rango_impreso` (`E-1 @ E-2`, tal cual está impreso). El usuario la llena; nunca se deduce.
+  - Endpoints `GET/PUT /api/proyectos/{id}/equivalencias-nivel`, con auditoría y respaldo de la BD antes de escribir.
+  - En el cruce: cuando el diseño no trae EJES (los tiene `pendiente de verificar`), se cruza por ID + nivel (decisión D11 de la Fase A, A1 §6.2). El nivel de la visita se traduce con la tabla, y los EJES del informe son los de la visita.
+  - Con la tabla vacía o sin la fila del nivel, se abre una duda clara («falta la equivalencia S-2 → rango impreso»).
+  - Normalización exacta del nivel para comparar: mayúsculas, espacios repetidos colapsados y sin espacios alrededor del guion (`SOTANO S - 2` → `SOTANO S-2`). Nada más.
+  - Buscar en el plano vectorial, solo lectura, una tabla o corte impreso que relacione sótanos con E-n. Si existe, va en `PLANES/etapa-7-niveles.md` como propuesta citada (página y textos), **sin aplicarla**.
+- Criterios de aceptación:
+  - [ ] Pruebas de equivalencia presente, ausente y ambigua (dos candidatos), de diseño con EJES (no cambia nada) y de la normalización.
+  - [ ] Un elemento de diseño con EJES reales sigue exigiendo los mismos EJES (§4.2).
+  - [ ] Suite verde (solo las 2 fallas conocidas de Dropbox).
+- Reglas: Regla de Oro, §4.2, §4.4, error 11.
+
+### T7 — Cabecera del proyecto propuesta desde un STP-MIVED entregado
+- Ejecutor: ejecutor-backend, después de T6 (los dos tocan `database.py` y `main.py`).
+- Archivos: `BACKEND/sync/cabecera_propuesta.py` (nuevo), `BACKEND/main.py`, `BACKEND/tests/test_cabecera_propuesta.py`.
+- Depende de: T6 (por los archivos compartidos).
+- Qué hacer:
+  - Leer, solo lectura, la portada y la cabecera de un STP-MIVED entregado de Terra Living (`INFORMES\2.DATA PROCESADA\`).
+  - Proponer `no_solicitud`, `no_licencia`, `direccion_obra`, `provincia`, `sector` y `residente_obra`. Cada valor cita el archivo y la página.
+  - Lo que el informe no trae queda `pendiente de verificar`.
+  - Se guarda como propuesta pendiente, con una duda para que Steven la confirme. Nada se escribe como confirmado en `proyectos`.
+- Criterios de aceptación:
+  - [ ] Cada valor propuesto lleva su cita.
+  - [ ] Si dos informes dicen cosas distintas, el campo queda en duda y no se elige uno.
+  - [ ] La BD real y Dropbox no cambian.
+- Reglas: Regla de Oro, §3.1 (la dirección de CATDIC no es la de la obra).
+
+### T8 — Recuadros propuestos: DETALLE desde la `zona` de T1 y LOCALIZACIÓN con el visor
+- Ejecutor: ejecutor-backend.
+- Archivos: `BACKEND/plano/recuadros_propuestos.py` (nuevo), `BACKEND/tests/test_recuadros_propuestos.py`. `visor.py` solo si hace falta exponer algo.
+- Depende de: — (los datos de T1 están en las notas del Director, `t1-visita24\`).
+- Coordinación con la Fase A: el importador (`BACKEND/plano/asistido/importar.py`) vive en la rama `claude/etapa5-fase-a-3da668` y **no se toca desde aquí**.
+  - T8 es un paso aparte, en esta rama, que lee las `propuesta.json` ya importadas.
+  - Engancharlo al importador después es una línea en la rama de la Fase A, y queda anotado para su Líder.
+- Qué hacer:
+  - DETALLE: la `zona` de cada elemento de `propuesta.json` se guarda en `recorte_detalle_json` con estado pendiente.
+  - LOCALIZACIÓN: con `visor._proponer_localizacion` sobre la planta de S-2 (p24), también pendiente.
+  - Nunca se escriben como confirmados. Un recuadro que ya estaba confirmado no se pisa.
+- Criterios de aceptación:
+  - [ ] Pruebas de zona presente, ausente e inválida, de recuadro confirmado que no se pisa y de ID ambiguo en la planta (no se propone).
+  - [ ] Suite verde.
+- Reglas: Regla de Oro, M3 y M4 (§4.7), errores 1, 2 y 4.
+
 ## Paralelismo
 - T1, T2 y T3 a la vez (no comparten archivos). T4 espera a T1. T5 al final.
+- T6 y T8 a la vez; T7 después de T6 (comparten `database.py` y `main.py`).
 - La Fase B (B5b) sigue en su sesión; no comparte archivos con esta etapa.
 
 ## Pendientes de verificar / preguntas para Steven (al volver)
