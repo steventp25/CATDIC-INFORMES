@@ -55,10 +55,33 @@ Es una herramienta de trabajo (modo *Operate*). El estilo vive en los detalles; 
 | `Pendiente`, `FaseD`, `Icono` | Los estados honestos y los iconos. |
 
 ## Movimiento
-- Solo hay respuesta al presionar y cambios de color de 150 ms.
-- Nada se anima en acciones de teclado.
-- `prefers-reduced-motion` lo quita todo.
-- El movimiento con propósito llega en B4.
+Principio: el movimiento solo confirma una acción del puntero o explica de dónde viene algo. Nada decora.
+
+Reglas
+- Solo `transform`, `opacity` y color/fondo/borde (estos, hasta 150 ms). Nada de `height`, `width`, `top`, `margin` ni `transition: all`.
+- Curva `--ease-out` de `tokens.css`; nunca `ease-in`. Total ≤ 300 ms.
+- Las entradas parten de `scale(0.97)` + `opacity: 0` con `@starting-style`, dentro de `@media (prefers-reduced-motion: no-preference)`.
+- Todo `:hover` va dentro de `@media (hover: hover) and (pointer: fine)`.
+- Sin movimiento reducido no hay escala ni desplazamiento: queda solo el color. La regla global de `base.css` queda de red de seguridad.
+
+Qué se anima
+| Qué | Cómo | Tiempo |
+|---|---|---|
+| Diálogos (Nueva obra, Subir visita, Hacer informe) | Entrada: opacidad + `scale(0.97→1)`, y el fondo se funde. Siguen centrados. | 200 ms |
+| Confirmar plano (pantalla completa) | Solo fundido, sin escala. | 200 ms |
+| Avisos de resultado (error al procesar, resultado de sincronizar, regeneración, confirmación del editor) | Entrada: opacidad + `scale(0.98)`, origen arriba a la izquierda. Los botones de arriba no se mueven. | 160 ms |
+| Presionar controles compactos (`.btn`, navegación, pestañas) | `scale(0.97)` | 140 ms |
+| Presionar filas anchas (`.fila-a`, `.of`, `.mesa-item`, `.conf-t`) | `scale(0.985)`: a 0.97 una fila de 900 px se correría unos 27 px. | 140 ms |
+| Visor: acercar, alejar, Ajustar, Ir al recuadro, Ir a la ubicación, Ir al detalle | Suaviza `transform`, solo si el clic vino del puntero. | 180 ms |
+| Paso vivo del procesador, estados de paneles y de filas | Cambio de color/fondo/borde. | 150 ms |
+| Orden de destino al llegar desde «depende de» | Fondo y borde de selección, que se quitan solos. | ≈ 450 ms |
+
+Qué no se anima, y por qué
+- Cualquier cosa disparada por teclado: el atajo debe sentirse inmediato (visor con `+`, `-`, flechas, rueda y arrastre incluidos; el arrastre va 1:1).
+- Cambios de pantalla y de pestaña.
+- Filtros de la Mesa de Dudas y de la Bandeja: se filtra con frecuencia y animar estorba.
+- La salida de los diálogos: el componente se desmonta al emitir `cerrar`, así que cierra al instante.
+- Desplazamiento del tablero de Órdenes y su sombra de borde: son indicios, no animaciones.
 
 ## Accesibilidad
 - «Saltar al contenido».
