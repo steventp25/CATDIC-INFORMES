@@ -33,32 +33,36 @@
   function bboxOk(b) { return Array.isArray(b) && b.length === 4 && b.every(function (v) { return typeof v === 'number' && isFinite(v); }); }
   function nombreTabla(t) { return NOMBRES[t] || (t === null || t === undefined || t === '' ? 'pendiente de verificar' : String(t)); }
   function num(v) { return typeof v === 'number' && isFinite(v) ? String(v) : '(pendiente de verificar)'; }
-  /* «Falla:» y las comprobaciones muestran un texto legible, no la clave del servidor. Los textos de las claves conocidas salen de
-     BACKEND/plano/extractor.py (qué comprueba cada una); para las demás solo se cambian los «_» por espacios y se pone la
-     primera en mayúscula, sin inventar su significado. La clave original queda en `title` y en `data-clave` para quien la necesite. */
+  /* Cada comprobación tiene dos textos legibles en vez de la clave del servidor:
+     [0] un nombre neutro para la lista «Comprobaciones» (vale tanto si cumple como si falla);
+     [1] la frase de falla, solo para «Falla:» y «Falló:».
+     Salen de BACKEND/plano/extractor.py (qué comprueba cada una). Para una clave desconocida solo se cambian los «_» por espacios
+     y se pone la primera en mayúscula, sin inventar su significado. La clave original queda en `title` y en `data-clave`. */
   var COMPROBACIONES = {
-    celdas_completas: 'Hay celdas vacías o fuera de la tabla',
-    unidades: 'Hay valores fuera de la unidad o del rango esperado',
-    total_de_barras: 'Hay acero que no tiene el formato de barras esperado',
-    ids_duplicados: 'Hay filas repetidas',
-    espesor_total: 'H no es igual a h1 + h2',
-    rangos_expandidos: 'Hay rangos de niveles que no se pudieron expandir',
-    rangos_sin_choque: "Un mismo nivel (E-n) queda con dos f'c distintos",
-    igual_en_todas_las_hojas: 'La tabla no es igual en todas las hojas',
-    nivel_impreso: 'La hoja no tiene un único nivel impreso',
-    ids_en_planta_sin_duplicados: 'Hay IDs de losa repetidos en la planta',
-    losa_tipo_asignado: 'Hay losas sin tipo asignado',
-    sin_notas_de_modificacion: 'La hoja tiene notas de modificación'
+    celdas_completas: ['Celdas completas', 'Hay celdas vacías o fuera de la tabla'],
+    unidades: ['Unidades y rangos', 'Hay valores fuera de la unidad o del rango esperado'],
+    total_de_barras: ['Formato de barras', 'Hay acero que no tiene el formato de barras esperado'],
+    ids_duplicados: ['Sin filas repetidas', 'Hay filas repetidas'],
+    espesor_total: ['H = h1 + h2', 'H no es igual a h1 + h2'],
+    rangos_expandidos: ['Rangos de niveles expandidos', 'Hay rangos de niveles que no se pudieron expandir'],
+    rangos_sin_choque: ["Un solo f'c por nivel (E-n)", "Un mismo nivel (E-n) queda con dos f'c distintos"],
+    igual_en_todas_las_hojas: ['Igual en todas las hojas', 'La tabla no es igual en todas las hojas'],
+    nivel_impreso: ['Un único nivel impreso', 'La hoja no tiene un único nivel impreso'],
+    ids_en_planta_sin_duplicados: ['IDs de losa sin repetir', 'Hay IDs de losa repetidos en la planta'],
+    losa_tipo_asignado: ['Tipo de losa asignado', 'Hay losas sin tipo asignado'],
+    sin_notas_de_modificacion: ['Sin notas de modificación', 'La hoja tiene notas de modificación']
   };
-  function claveLegible(k) {
+  function textoComprobacion(k, cual) {
     var c = String(k === null || k === undefined ? '' : k);
     if (!c) return 'pendiente de verificar';
-    if (COMPROBACIONES[c]) return COMPROBACIONES[c];
+    if (COMPROBACIONES[c]) return COMPROBACIONES[c][cual];
     var t = c.replace(/_/g, ' ').trim();
     return t ? t.charAt(0).toUpperCase() + t.slice(1) : 'pendiente de verificar';
   }
+  function nombreComprobacion(k) { return textoComprobacion(k, 0); }
+  function fallaLegible(k) { return textoComprobacion(k, 1); }
   function fallasClaves(t) { return (t.comprobaciones || []).filter(function (c) { return !c.ok; }).map(function (c) { return c.comprobacion; }); }
-  function fallas(t) { return fallasClaves(t).map(claveLegible).join('; '); }
+  function fallas(t) { return fallasClaves(t).map(fallaLegible).join('; '); }
 
   C.componentes.ConfirmarPlano = {
     props: { obra: { type: Object, required: true } },
@@ -141,7 +145,7 @@
       nombre: nombreTabla,
       fallas: fallas,
       fallasClaves: fallasClaves,
-      claveLegible: claveLegible,
+      nombreComprobacion: nombreComprobacion,
       bboxOk: bboxOk,
       fh: function (v) { return C.formato.fechaHora(v); },
       txt: function (v) { return C.formato.texto(v); },
@@ -398,7 +402,7 @@
                   <ul class="conf-comp" data-comprobaciones>
                     <li v-for="c in comprobaciones" :key="c.comprobacion" class="conf-comp-f" :class="c.ok ? 'es-ok' : 'es-mal'">
                       <span class="est" :class="c.ok ? 'est-ok' : 'est-mal'"><Icono :nombre="c.ok ? 'check' : 'alerta'"/>{{ c.ok ? 'cumple' : 'falla' }}</span>
-                      <span class="conf-comp-n" :title="c.comprobacion" :data-clave="c.comprobacion">{{ claveLegible(c.comprobacion) }}</span>
+                      <span class="conf-comp-n" :title="c.comprobacion" :data-clave="c.comprobacion">{{ nombreComprobacion(c.comprobacion) }}</span>
                       <span v-if="!c.ok && c.detalle && c.detalle.length" class="conf-comp-d">{{ c.detalle.join('; ') }}</span>
                       <span v-if="c.certificada" class="conf-comp-c" data-certificada>{{ certificadaTexto(c) }}</span>
                     </li>
