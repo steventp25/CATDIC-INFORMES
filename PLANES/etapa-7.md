@@ -164,6 +164,26 @@ carpeta de pruebas. Al volver Steven, solo faltan sus confirmaciones (datos del 
   - [ ] Suite verde.
 - Reglas: Regla de Oro, error 12 (la cuantía nunca se copia).
 
+### T11 — Mapeo de las filas b, e, i y j de COLUMNA (propuesta)
+- Ejecutor: ejecutor-generadores. Pedido por el Director el 24/11 tras la corrida 4 de T5: la ficha ya llena f, g, h, m y n, y se detiene en la fila `e`. También faltan `b`, `i` y `j` (pregunta 6 de `etapa-7-mapeo-stp.md`).
+- Archivos:
+  - `BACKEND/generators/mapeo_stp.json` (sigue con `confirmado: false`);
+  - `BACKEND/procesador_cola.py` (reglas de conversión);
+  - `BACKEND/tests/test_procesar_cola.py`;
+  - `PLANES/etapa-7-mapeo-stp.md`.
+- Depende de **T10 de la Fase A**: lectura con citas, sin confirmar, de `fc`, `barras_cara_x`, `barras_cara_y` y `altura_m` (esta última solo si está impresa) para C1 y C3. **No se empieza hasta el aviso del Director.**
+- Qué hacer:
+  - **b ← `fc`:** solo el número en kg/cm² cuando el texto lo trae así (p. ej. `f'c = 350 kg/cm²` → `350`). Si viene en MPa o psi, o con otra unidad, va a duda con el texto impreso. No se convierte sin la aprobación de Steven.
+  - **i ← `barras_cara_x` y j ← `barras_cara_y`:** con el formato del informe entregado, `6-∅1"` (S-2 Completivo, pág. 5). La conversión es exacta desde el texto que lea T10. Si no cuadra, va a duda.
+  - **e ← `altura_m`:** solo si es un número en metros impreso en el plano. Sin el dato, la fila sigue pidiéndolo con su duda.
+  - En las tres conversiones, el símbolo y la comilla se copian tal como vienen.
+  - La evidencia por fila se compara contra el STP de la visita 24: C1 tiene b 350, e 2.95, i `6-∅1"` y j `14-∅1"`; C3 tiene j `16-∅1"`.
+- Criterios de aceptación:
+  - [ ] Pruebas de los textos reales de T10, de las unidades que no son kg/cm² (van a duda) y del texto que no cuadra.
+  - [ ] La tabla del MD está actualizada con su ejemplo real.
+  - [ ] Suite verde.
+- Reglas: Regla de Oro, error 12. No se convierte ninguna unidad sin la aprobación de Steven.
+
 ## Paralelismo
 - T1, T2 y T3 a la vez (no comparten archivos). T4 espera a T1. T5 al final.
 - T6 y T8 a la vez; T7 después de T6 (comparten `database.py` y `main.py`).

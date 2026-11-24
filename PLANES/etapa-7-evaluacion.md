@@ -90,3 +90,22 @@
 - **Tabla sin crear.** `procesador_cola` consulta `equivalencias_nivel` sin comprobar que existe. En una BD vieja que no pasó por `inicializar_bd()` falla con `no such table`. El servidor la crea al arrancar, así que solo afecta a scripts. Conviene una prueba o una comprobación.
 - **Tabla creada por el módulo.** `propuestas_proyecto` la crea `cabecera_propuesta._asegurar_tabla` y no `database.inicializar_bd`. Es inconsistente con el resto del esquema.
 - **Mapeo de columna.** Sin la derivación de las filas f, g, h, m y n (pregunta 3 del mapeo), ninguna columna llega al PDF. Es decisión de Steven.
+
+## Evaluación 4 · 24/11/2026 · Director (auditoría) · Etapa 7 · T9 (rama `claude/etapa7-campo-informe-02d16d`, `3cc0036..cb859e5`)
+**Veredicto: APROBADO.**
+
+### Lo revisado
+- **Reglas de derivación.** Las tres reglas usan regex exacta sobre el texto entero. El símbolo y la comilla se copian como vienen impresos.
+- **Texto que no cuadra.** Abre la duda `diseno:pNNN:derivacion.<letra>` con el texto impreso, y la fila queda vacía.
+- **Prioridad.** Una fila directa en `filas` manda sobre la derivación.
+- **k y la cuantía.** No se tocan (error 12).
+- **Regla desconocida.** Si el JSON trae una regla que no existe, el mapeo se toma por roto y no se adivina.
+- **f = g y m = n.** Son una propuesta con una duda que no bloquea por ficha. Lo decide Steven (pregunta 7).
+- **Arreglos menores.**
+  - `equivalencias_de` devuelve `[]` si la tabla no existe.
+  - `inicializar_bd` crea la tabla `propuestas_proyecto`.
+
+### Pruebas ejecutadas
+- **Suite completa** sobre una copia exacta de `cb859e5`: **1149 pasan**, 3 se omiten y fallan las 2 conocidas de Dropbox.
+- **Simulación de la corrida 4** (abajo).
+- **BD real sin cambios:** sha256 `eba26967…`.

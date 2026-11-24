@@ -86,3 +86,12 @@
 4. Datos del plano de C1 y C3 (y de los muros) y sus recuadros, en el visor.
 5. Mapeo STP, **sobre todo la pregunta 3** (estribos y diámetros de columna): sin eso no sale el PDF.
 6. Reemplazar Campo por la copia v11.
+
+# Corrida 4: simulación con T9 (`cb859e5`, 24/11/2026)
+Montaje igual que la corrida 3: copia nueva de `…\scratchpad\t5b\copia.db` en `…\scratchpad\t5d\`, con el usuario `prueba-simulada`.
+- **Lo que ya llena:** f, g, h, m y n de C1 y C3 se llenan solos. Se abren las 2 dudas `derivacion_igual`, que no bloquean.
+- **Dónde se detiene ahora:** en la fila **e** (*Altura col. H*). El formato exige además, en columna, **b** (resistencia esperada), **i** y **j** (barras por cara x-x / y-y). Ninguna de las cuatro sale del cuadro de columnas, que es lo que leyó T1. Es la pregunta 6 del mapeo.
+- **De dónde pueden salir estas filas** en el plano (la IA las lee y Steven confirma):
+  - **b:** f'c de las notas generales, o la leyenda «CALIDAD DE MATERIALES» de la planta S2, que da f'c por rango.
+  - **e:** altura de entrepiso, de los cortes. Ojo: es una resta de cotas, no un texto impreso. Steven debe aprobar si se calcula.
+  - **i y j:** conteo de barras por cara en el dibujo de la sección del cuadro de columnas. El informe entregado lleva `6-∅1"` y `14-∅1"` / `16-∅1"`.
