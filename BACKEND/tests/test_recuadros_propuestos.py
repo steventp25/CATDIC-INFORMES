@@ -315,3 +315,105 @@ def test_con_la_tabla_vacia_o_de_otro_nivel_no_propone_y_dice_falta_equivalencia
     r = rp.proponer_desde_propuestas(pid, [ruta], paginas_planta=[1])
     assert "falta equivalencia" in _no(r, "C1", "localizacion")[0]["motivo"]
     assert _columna("u1", "recorte_planta_json") == {}
+
+
+# ---------- EJES de la visita para un ID repetido en la planta ----------
+
+def _planta_con_globos() -> bytes:
+    """Planta S2 con globos únicos de eje B (fila) y 4 (columna) y 'C5' repetido: el cruce B-4 lo resuelve."""
+    doc = pymupdf.open()
+    p = doc.new_page(width=1000, height=800)
+    p.insert_text((940, 770), "05", fontsize=14)
+    p.insert_text((958, 770), "/36", fontsize=14)
+    p.insert_text((60, 770), "PLANTA ESTRUCTURAL DE SOTANO S2", fontsize=15)
+    for x, t in ((300, "B"), (420, "C")):
+        p.draw_circle((x, 700), 9.5, color=(0, 0, 0), width=0.7)
+        p.insert_text((x - 3, 703), t, fontsize=9)
+        p.draw_line((x, 690.5), (x, 634), color=(0, 0, 0), width=0.7)
+    for y, t in ((300, "4"), (420, "5")):
+        p.draw_circle((100, y), 9.5, color=(0, 0, 0), width=0.7)
+        p.insert_text((97, y + 3), t, fontsize=9)
+        p.draw_line((109.5, y), (166, y), color=(0, 0, 0), width=0.7)
+    p.insert_text((500, 200), "C5", fontsize=8)
+    p.insert_text((700, 600), "C5", fontsize=8)
+    d = doc.tobytes()
+    doc.close()
+    return d
+
+
+@pytest.fixture
+def entorno_globos(tmp_path, monkeypatch):
+    (tmp_path / "bd").mkdir()
+    monkeypatch.setenv(config.ENV_DB_PATH, str(tmp_path / "bd" / "prueba.db"))
+    monkeypatch.setenv(config.ENV_DROPBOX_RAIZ, str(tmp_path / "dropbox"))
+    monkeypatch.setenv(config.ENV_DATOS_RAIZ, str(tmp_path / "datos"))
+    monkeypatch.setenv(config.ENV_CACHE_RAIZ, str(tmp_path / "cache"))
+    database.inicializar_bd()
+    visor._indices.clear()
+    with TestClient(main.app) as c:
+        pid = c.post("/api/proyectos", json={"nombre": "Obra Ejes"}).json()["proyecto"]["id"]
+        r = c.post(f"/api/proyectos/{pid}/planos", files={"vectorial": ("vec.pdf", _planta_con_globos(), "application/pdf"),
+                                                           "sellado": ("sel.pdf", _sellado(), "application/pdf")},
+                   data={"certifico": "true"})
+        assert r.status_code == 201, r.text
+        yield pid, tmp_path
+
+
+def _visita_con(pid, vid, numero, id_elemento, nivel, ejes, orden=1):
+    conn = database.get_connection()
+    conn.execute("""INSERT INTO visitas (id, proyecto_id, numero, nombre_carpeta, ruta_carpeta, fecha_visita, clase, estado,
+                    formatos_solicitados, actualizado) VALUES (?, ?, ?, ?, ?, ?, 'Parcial', 'Sin procesar', '[]', 'x')""",
+                 (vid, pid, numero, vid, "r/" + vid, PENDIENTE))
+    conn.execute("""INSERT INTO elementos_visita (uid, visita_id, orden_en_log, etiqueta_original, id_elemento, tipo_elemento,
+                    nivel, ejes, fotos_json) VALUES (?, ?, ?, ?, ?, 'COLUMNA', ?, ?, '[]')""",
+                 (f"ev-{vid}", vid, orden, id_elemento, id_elemento, nivel, ejes))
+    conn.commit()
+    conn.close()
+
+
+def _loc_c5(pid, tmp):
+    _elemento(pid, "u1", "C5")
+    ruta = _propuesta(tmp, pid, [_el("C5", zona=[100, 60, 720, 600])])
+    return rp.proponer_desde_propuestas(pid, [ruta], paginas_planta=[1])
+
+
+def test_id_repetido_con_ejes_unicos_de_la_visita_se_propone(entorno_globos):
+    pid, tmp = entorno_globos
+    _visita_con(pid, "v1", 1, "C5", "S-2", "EJE B-4", orden=3)
+    r = _loc_c5(pid, tmp)
+    assert "localizacion" in [p["recuadro"] for p in r["propuestos"]]
+    loc = _columna("u1", "recorte_planta_json")
+    assert loc["estado"] == PENDIENTE and loc["fuente"]["ejes_de_visita"] == "ejes de la visita v1 p003"
+    assert loc["fuente"]["metodo"] == "cruce_de_ejes"
+    x0, y0, x1, y1 = loc["rect"]
+    assert x0 < 300 < x1 and y0 < 300 < y1                          # cruce del globo B con el globo 4
+    conn = database.get_connection()
+    assert conn.execute("SELECT ejes FROM elementos_diseno WHERE uid = 'u1'").fetchone()[0] == PENDIENTE   # el diseño no cambia
+    conn.close()
+
+
+@pytest.mark.parametrize("visita", [None, ("S-2", PENDIENTE), ("S-2", "—"), ("S-1", "EJE B-4"), ("S-2", "A1")])
+def test_id_repetido_sin_visita_o_sin_ejes_validos_no_se_propone(entorno_globos, visita):
+    pid, tmp = entorno_globos
+    if visita:
+        _visita_con(pid, "v1", 1, "C5", visita[0], visita[1])
+    r = _loc_c5(pid, tmp)
+    assert [p["recuadro"] for p in r["propuestos"]] == ["detalle"]
+    assert "2 veces" in _no(r, "C5", "localizacion")[0]["motivo"]
+    assert _columna("u1", "recorte_planta_json") == {}
+
+
+def test_dos_visitas_con_ejes_distintos_no_se_propone(entorno_globos):
+    pid, tmp = entorno_globos
+    _visita_con(pid, "v1", 1, "C5", "S-2", "EJE B-4")
+    _visita_con(pid, "v2", 2, "C5", "S-2", "EJE C-5")
+    r = _loc_c5(pid, tmp)
+    assert [p["recuadro"] for p in r["propuestos"]] == ["detalle"]
+    assert "distintos" in _no(r, "C5", "localizacion")[0]["motivo"]
+
+
+def test_dos_visitas_con_los_mismos_ejes_cuentan_como_uno(entorno_globos):
+    pid, tmp = entorno_globos
+    _visita_con(pid, "v1", 1, "C5", "S-2", "EJE B-4")
+    _visita_con(pid, "v2", 2, "C5", "S2", "EJE B-4")
+    assert "localizacion" in [p["recuadro"] for p in _loc_c5(pid, tmp)["propuestos"]]

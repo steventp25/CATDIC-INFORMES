@@ -29,6 +29,7 @@ import pymupdf
 import config
 import equivalencias_nivel
 import visor
+from plano import lector_plano
 from database import _respaldar_bd, get_connection
 from obras import _ahora, _auditar, _transaccion, _usuario
 from reglas_ingenieria import PENDIENTE
@@ -110,6 +111,28 @@ def _protegido(actual: Dict) -> Optional[str]:
     if actual.get("rect"):
         return "ya hay un recuadro que no es una propuesta de este paso: no se pisa"
     return None
+
+
+def _ejes_de_visita(conn, proyecto_id: str, id_elemento: str, rotulo_planta: str):
+    """
+    EJES (no pendientes, cruce puntual) de los elementos de visita de la obra con ese ID y el nivel de la planta.
+    Devuelve (ejes | None, cita | None, motivo). Solo sirve si hay exactamente un EJES distinto; si no, no se elige.
+    """
+    m = _RE_NIVEL_EN_ROTULO.search(equivalencias_nivel.normalizar_nivel(rotulo_planta))
+    if not m:
+        return None, None, "no se pudo sacar el nivel del rótulo de la planta"
+    nivel = equivalencias_nivel.clave_nivel_visita(m.group(1))
+    filas = conn.execute("""SELECT ev.visita_id, ev.orden_en_log, ev.nivel, ev.ejes FROM elementos_visita ev
+                            JOIN visitas v ON v.id = ev.visita_id WHERE v.proyecto_id = ? AND ev.id_elemento = ?
+                            ORDER BY ev.visita_id, ev.orden_en_log""", (proyecto_id, id_elemento)).fetchall()
+    validas = [f for f in filas if equivalencias_nivel.clave_nivel_visita(f["nivel"]) == nivel
+               and visor._RE_EJE_PUNTUAL.match(f["ejes"] or "")]
+    distintos = sorted({f["ejes"] for f in validas})
+    if len(distintos) != 1:
+        return None, None, ("no hay un elemento de visita con ese ID, nivel y EJES válidos" if not distintos
+                            else f"la visita trae EJES distintos ({', '.join(distintos)}): no se elige uno")
+    f = validas[0]
+    return distintos[0], f"ejes de la visita {f['visita_id']} p{f['orden_en_log']:03d}", ""
 
 
 def proponer_desde_propuestas(proyecto_id: str, fuentes, paginas_planta: Optional[List[int]] = None,
@@ -221,10 +244,21 @@ def proponer_desde_propuestas(proyecto_id: str, fuentes, paginas_planta: Optiona
                        "el nivel_rango coincide con varias plantas: no se adivina")
                     continue
                 pg, hoja_nn, rotulo, _ = candidatas[0]
-                prop_loc = visor._proponer_localizacion(doc, plano["vectorial_archivo"], indice, {**f, "hoja_plano_origen": hoja_nn})
+                elemento = {**f, "hoja_plano_origen": hoja_nn}   # copia: el diseño no se modifica
+                cita_ejes, motivo_ejes = None, ""
+                veces = sum(1 for i in lector_plano.ids_en_planta(doc, pg) if i["texto"] == f["id_elemento"])
+                if veces != 1 and not visor._RE_EJE_PUNTUAL.match(f["ejes"] or ""):
+                    # ID repetido en la planta y EJES pendientes en el diseño: se usan los EJES de la visita (D11) si son únicos
+                    ejes, cita_ejes, motivo_ejes = _ejes_de_visita(conn, proyecto_id, f["id_elemento"], rotulo)
+                    if ejes:
+                        elemento["ejes"] = ejes
+                prop_loc = visor._proponer_localizacion(doc, plano["vectorial_archivo"], indice, elemento)
                 if not prop_loc.get("rect"):
-                    no(f["id_elemento"], f["nivel_rango"], "localizacion", prop_loc.get("motivo") or "sin propuesta")
+                    extra = f" Ejes de la visita: {motivo_ejes}." if motivo_ejes else ""
+                    no(f["id_elemento"], f["nivel_rango"], "localizacion", (prop_loc.get("motivo") or "sin propuesta") + extra)
                     continue
+                if cita_ejes:
+                    prop_loc["fuente"] = {**prop_loc["fuente"], "ejes_de_visita": cita_ejes, "ejes": elemento["ejes"]}
                 propuestos.append({
                     "uid": f["uid"], "id_elemento": f["id_elemento"], "nivel_rango": f["nivel_rango"], "recuadro": "localizacion",
                     "valor": {"plano_id": plano_id, "pagina": prop_loc["pagina"], "rect": prop_loc["rect"], "estado": PENDIENTE,
