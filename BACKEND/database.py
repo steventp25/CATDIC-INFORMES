@@ -344,6 +344,38 @@ def inicializar_bd():
     migrar_proyectos_cabecera()
     migrar_columnas_t4n()
     migrar_equivalencias_nivel()
+    migrar_zonas_planta()
+
+# ---------- Tabla 'zonas_planta' (Etapa 7 · T12) ----------
+
+ESQUEMA_ZONAS_PLANTA = """
+CREATE TABLE IF NOT EXISTS zonas_planta (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    proyecto_id TEXT NOT NULL REFERENCES proyectos(id) ON DELETE CASCADE,
+    plano_id INTEGER NOT NULL,
+    pagina INTEGER NOT NULL,             -- de 1 en adelante, como recorte_planta_json.pagina
+    rect_json TEXT,                      -- [x0, y0, x1, y1] en puntos del PDF (marco visual de la hoja), o NULL
+    estado TEXT NOT NULL CHECK(estado IN ('vacia', 'pendiente de verificar', 'confirmado')),
+    origen TEXT NOT NULL CHECK(origen IN ('propuesta_ejes', 'manual')),
+    fuente_json TEXT,                    -- rótulos de ejes usados y margen
+    motivo TEXT,
+    actualizado_por TEXT NOT NULL,
+    actualizado TEXT NOT NULL,
+    UNIQUE(plano_id, pagina)
+);
+"""
+
+
+def migrar_zonas_planta() -> bool:
+    """Crea 'zonas_planta' (una zona por hoja del plano, compartida por todos los elementos de esa planta). Idempotente."""
+    conn = get_connection()
+    try:
+        existia = conn.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='zonas_planta'").fetchone()
+        conn.execute(ESQUEMA_ZONAS_PLANTA)
+        conn.commit()
+        return existia is None
+    finally:
+        conn.close()
 
 # ---------- Migración de 'equivalencias_nivel' (Etapa 7 · T6) ----------
 

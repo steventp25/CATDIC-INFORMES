@@ -30,6 +30,7 @@ from database import _respaldar_bd, get_connection, usuario_auditoria
 from equivalencias_nivel import clave_nivel_visita, equivalencias_de, normalizar_nivel
 from generators import fi_mived, stp_mived
 from generators.comun import localizacion as m3_localizacion
+from plano import zona_planta
 from generators.comun import salida
 from reglas_ingenieria import PENDIENTE, auditar_archivo_pdf_generado, obtener_ruta_salida_sin_sobrescribir
 from sync import lector_visita, paquete_visita
@@ -994,8 +995,20 @@ class ProcesoVisita:
                 continue
             ruta = plano["vectorial_ruta"]
             if clave == "localizacion":
+                # T12: LOCALIZACION sale solo de la zona de planta confirmada de esa hoja del plano vigente
                 dpi = m3_localizacion.DPI_PLANTA
-                ficha[clave] = {"pdf": ruta, "pagina": r["pagina"] - 1, "caja": [v * dpi / 72.0 for v in r["rect"]]}
+                zona = _con_conexion(lambda conn: zona_planta.zona_confirmada(conn, plano["id"], r["pagina"]))
+                if zona is None:
+                    faltas.append((f"diseno:{pagina}:zona_planta",
+                                   f"La zona de planta de la hoja {r['pagina']} no está confirmada en el visor."))
+                elif not zona_planta.contiene(zona, list(r["rect"])):
+                    faltas.append((f"diseno:{pagina}:zona_planta_fuera",
+                                   f"El recuadro de LOCALIZACION de {c['id_elemento']} {list(r['rect'])} no cae entero dentro "
+                                   f"de la zona de planta confirmada de la hoja {r['pagina']} {zona}: ajusta la zona o el "
+                                   f"recuadro en el visor ({PENDIENTE})."))
+                else:
+                    ficha[clave] = {"pdf": ruta, "pagina": r["pagina"] - 1, "caja": [v * dpi / 72.0 for v in r["rect"]],
+                                    "zona": [v * dpi / 72.0 for v in zona]}
             else:
                 ficha[clave] = {"pdf": ruta, "pagina": r["pagina"] - 1, "region": list(r["rect"])}
 

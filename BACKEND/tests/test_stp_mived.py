@@ -17,6 +17,7 @@ from generators import stp_mived
 from generators.comun import salida  # noqa: F401  (se importa para que falle claro si falta T6)
 from reglas_ingenieria import PENDIENTE, calcular_cuantia_elemento
 
+ZONA_PX = (0, 0, 1700, 2200)  # SINTÉTICO: la hoja de 612×792 pt a 200 dpi (T12: LOCALIZACION sale de una zona)
 RAIZ_GENERADORES = Path(stp_mived.__file__).resolve().parent
 
 
@@ -71,7 +72,7 @@ class Mundo:
                          "d": {"valor_plano_m": 0.60, "medida_acero_campo_m": 0.52}},
              "barras": [(3, '3/4"'), (3, '3/4"')],
              "fotos": self.fotos[:2],
-             "localizacion": {"pdf": str(self.pdf_plano), "pagina": 0, "caja": (100, 100, 600, 500)},
+             "localizacion": {"pdf": str(self.pdf_plano), "pagina": 0, "caja": (100, 100, 600, 500), "zona": ZONA_PX},
              "detalle": {"pdf": str(self.pdf_plano), "pagina": 0, "region": (0, 0, 300, 200)}}
         f.update(cambios)
         return f
@@ -83,14 +84,14 @@ class Mundo:
                       "n": '2-Ø1/2"'},
              "medidas": {"b": {"valor_plano_m": 0.25, "medida_acero_campo_m": 0.20}},
              "fotos": self.fotos[:3],
-             "localizacion": {"pdf": str(self.pdf_plano), "pagina": 0, "caja": (100, 100, 600, 500)},
+             "localizacion": {"pdf": str(self.pdf_plano), "pagina": 0, "caja": (100, 100, 600, 500), "zona": ZONA_PX},
              "detalle": {"pdf": str(self.pdf_plano), "pagina": 0, "region": (0, 0, 300, 200)}}
         f.update(cambios)
         return f
 
     def _comunes(self):
         return {"fotos": self.fotos[:2],
-                "localizacion": {"pdf": str(self.pdf_plano), "pagina": 0, "caja": (100, 100, 600, 500)},
+                "localizacion": {"pdf": str(self.pdf_plano), "pagina": 0, "caja": (100, 100, 600, 500), "zona": ZONA_PX},
                 "detalle": {"pdf": str(self.pdf_plano), "pagina": 0, "region": (0, 0, 300, 200)}}
 
     def ficha_col(self, **cambios) -> dict:

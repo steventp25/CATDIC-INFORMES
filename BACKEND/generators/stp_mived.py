@@ -542,7 +542,8 @@ def generar_stp_mived(proyecto: Dict, visita, fichas: List[Dict], carpeta_salida
             prep = [m1_fotos.preparar_foto(p) for p in m1_fotos.seleccionar_para_stp(list(ficha["fotos"]))]
             loc = ficha["localizacion"]
             _exigir_en_planos(loc["pdf"], carpeta_planos, "LOCALIZACION")
-            loc_img = m3_localizacion.generar_localizacion(loc["pdf"], loc["pagina"], tuple(loc["caja"]), *CELDA_LOC_PX)
+            loc_img = m3_localizacion.generar_localizacion(loc["pdf"], loc["pagina"], tuple(loc["caja"]), *CELDA_LOC_PX,
+                                                          zona=tuple(loc["zona"]) if loc.get("zona") else None)
             det = ficha["detalle"]
             det_img = m4_detalle.recortar_detalle(det["pdf"], det["pagina"], tuple(det["region"]), carpeta_planos)
             loc_b64 = _b64(_acotar(loc_img, 1000))

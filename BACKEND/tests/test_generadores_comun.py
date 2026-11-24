@@ -137,7 +137,7 @@ def test_seleccion_stp_y_hv_usan_las_reglas_del_motor():
 
 # ---------- M3 · localización ----------
 
-def test_localizacion_es_la_pagina_completa_error_1(tmp_path):
+def test_la_rasterizacion_de_la_hoja_es_entera_y_sin_recorte_la_zona_se_aplica_despues(tmp_path):  # T12: el recorte a la zona está en test_zona_planta.py
     pdf = _plano_pdf(tmp_path / "plano.pdf")
     img = localizacion.rasterizar_pagina_completa(pdf, 0)
     assert img.size == (round(612 * 200 / 72), round(792 * 200 / 72))  # 200 dpi, hoja entera

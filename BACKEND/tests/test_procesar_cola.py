@@ -119,8 +119,17 @@ def entorno(tmp_path, monkeypatch):
     return {"tmp": tmp_path, "obra": obra, "carpeta_visita": carpeta_visita, "vectorial": vectorial}
 
 
+def _zona(estado="confirmado", rect=(0, 0, 792, 612), pagina=1):
+    """Zona de planta de la hoja (T12), SINTÉTICA: por omisión la hoja entera del vectorial de prueba."""
+    with _bd() as conn:
+        conn.execute("""INSERT OR REPLACE INTO zonas_planta (proyecto_id, plano_id, pagina, rect_json, estado, origen,
+                        fuente_json, motivo, actualizado_por, actualizado)
+                        VALUES (?, 1, ?, ?, ?, 'manual', '{}', NULL, 'prueba', 'x')""",
+                     (PID, pagina, json.dumps(list(rect)), estado))
+
+
 def _diseno(uid="ed-0001", id_elemento="L5", nivel="SOTANO S4", ejes="—", confirmado=True, recuadros=True,
-            tipo="LOSA MACIZA", campos=None):
+            tipo="LOSA MACIZA", campos=None, zona=True):
     campos = CAMPOS_DISENO if campos is None else campos
     estado = {k: ("confirmado" if confirmado else "pendiente_de_verificar")
               for k in ["id_elemento", "tipo_elemento", "nivel_rango", "ejes"] + [f"datos_diseno.{c}" for c in campos]}
@@ -134,6 +143,8 @@ def _diseno(uid="ed-0001", id_elemento="L5", nivel="SOTANO S4", ejes="—", conf
                      (uid, PID, id_elemento, tipo, nivel, ejes, json.dumps(campos), json.dumps(estado),
                       json.dumps(loc), json.dumps(det),
                       json.dumps({"tabla": "p1:acero_en_losa", "bbox_id": [[10, 10, 20, 20]]})))
+    if recuadros and zona:
+        _zona()
 
 
 def _elemento_visita(entorno, orden=1, etiqueta="L5 —", id_elemento="L5", ejes="—", nivel="S-4", medidas=None):
@@ -272,6 +283,32 @@ def test_recuadros_sin_confirmar_son_duda(entorno, monkeypatch):
     _procesar()
     campos = {d["campo_afectado"] for d in _abiertas()}
     assert {"diseno:p001:localizacion", "diseno:p001:detalle"} <= campos
+
+
+def test_t12_sin_zona_de_planta_confirmada_no_hay_ficha_y_se_abre_la_falta(entorno, monkeypatch):
+    monkeypatch.setattr(pc, "MAPEO_DISENO_A_STP", MAPEO_SINT)
+    _elemento_visita(entorno, 1)
+    _diseno(zona=False)
+    _, eventos = _procesar()
+    assert any(d["campo_afectado"] == "diseno:p001:zona_planta" and "hoja 1 no está confirmada en el visor" in
+               d["descripcion_pregunta"] for d in _abiertas())
+    assert not any(e["tipo"] in ("elemento_listo", "pdf_generado") for e in eventos)
+    # una zona solo propuesta (pendiente de verificar) tampoco vale
+    _zona(estado="pendiente de verificar")
+    _procesar()
+    assert any(d["campo_afectado"] == "diseno:p001:zona_planta" for d in _abiertas())
+
+
+def test_t12_recuadro_fuera_de_la_zona_confirmada_abre_zona_planta_fuera(entorno, monkeypatch):
+    monkeypatch.setattr(pc, "MAPEO_DISENO_A_STP", MAPEO_SINT)
+    _elemento_visita(entorno, 1)
+    _diseno(zona=False)
+    _zona(rect=(0, 0, 200, 200))   # el recuadro confirmado es [100, 100, 300, 250]: sale por la derecha y por abajo
+    _, eventos = _procesar()
+    campos = {d["campo_afectado"]: d["descripcion_pregunta"] for d in _abiertas()}
+    assert "diseno:p001:zona_planta_fuera" in campos and PENDIENTE in campos["diseno:p001:zona_planta_fuera"]
+    assert "diseno:p001:zona_planta" not in campos
+    assert not any(e["tipo"] == "elemento_listo" for e in eventos)
 
 
 def test_la_etiqueta_nunca_se_usa_como_id(entorno):
