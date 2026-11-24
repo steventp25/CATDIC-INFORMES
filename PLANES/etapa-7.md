@@ -141,6 +141,29 @@ carpeta de pruebas. Al volver Steven, solo faltan sus confirmaciones (datos del 
   - [ ] Suite verde.
 - Reglas: Regla de Oro, M3 y M4 (§4.7), errores 1, 2 y 4.
 
+### T9 — Derivación de las filas f, g, h, m y n de COLUMNA (propuesta)
+- Ejecutor: ejecutor-generadores. Pedido por el Director el 24/11 tras la corrida 3 de T5: C1 y C3 quedan «listo», pero el STP no sale porque falta la fila `f`.
+- Archivos:
+  - `BACKEND/generators/mapeo_stp.json`, que sigue con `confirmado: false`;
+  - `BACKEND/procesador_cola.py` (aplicar la derivación);
+  - `BACKEND/tests/test_procesar_cola.py`;
+  - `PLANES/etapa-7-mapeo-stp.md`.
+- Incluye dos arreglos menores pedidos en la evaluación 3:
+  - `equivalencias_nivel` en una BD sin `inicializar_bd()` no rompe el procesador;
+  - la tabla `propuestas_proyecto` se crea en `database.inicializar_bd`.
+- Depende de: T4 y T7.
+- Qué hacer:
+  - Derivaciones, solo con una regex exacta sobre los textos reales del plano (`9 EST. ∅3/8" @0.10`, `10 EST. ∅3/8"@0.10`, `36∅1"`) y copiando las partes tal como están impresas:
+    - de `estribos` salen `h` (número + `EST.` + diámetro) y el espaciamiento para `f` y `g`;
+    - de `acero_longitudinal` salen el diámetro para `m` y `n`.
+  - Un texto que no cuadra abre una duda con el texto impreso.
+  - El plano trae un solo espaciamiento y un solo diámetro. Que `f = g` y `m = n` lo decide Steven: va como nota en el MD y como duda que no bloquea en cada ficha. No se copia en silencio.
+- Criterios de aceptación:
+  - [ ] Pruebas de los textos reales, de texto que no cuadra y de la duda de `f = g`.
+  - [ ] Pruebas de los dos arreglos menores.
+  - [ ] Suite verde.
+- Reglas: Regla de Oro, error 12 (la cuantía nunca se copia).
+
 ## Paralelismo
 - T1, T2 y T3 a la vez (no comparten archivos). T4 espera a T1. T5 al final.
 - T6 y T8 a la vez; T7 después de T6 (comparten `database.py` y `main.py`).
