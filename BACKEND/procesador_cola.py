@@ -114,9 +114,54 @@ def _barras_diametro_unico(texto) -> Optional[str]:
     return f"{m.group(2)}{m.group(3)}{m.group(4)}" if m and int(m.group(1)) > 0 else None
 
 
+# ---------- T11 (PROPUESTA): filas b, e, i, j de COLUMNA. Sin conversión de unidades: lo que no cuadra va a duda ----------
+_RE_ENTERO_POSITIVO = re.compile(r"^[1-9]\d*$")
+_RE_FC_SOLO_NUMERO = re.compile(r"^\s*([1-9]\d*)\s*$")
+_RE_FC_CON_UNIDAD = re.compile(r"^\s*(?:f\s*['’´]?\s*c\s*=\s*)?([1-9]\d*)\s*kg\s*/\s*cm\s*[2²]\s*$", re.IGNORECASE)
+_RE_METROS = re.compile(r"^\s*(\d+(?:[.,]\d+)?)\s*m?\s*$", re.IGNORECASE)
+
+
+def _fc_kgcm2(texto) -> Optional[str]:
+    """'350', '350 Kg/cm2', "f'c = 350 kg/cm²" -> '350' (fila b). MPa, psi, decimales, rangos y texto -> None."""
+    if not isinstance(texto, str):
+        return None
+    m = _RE_FC_SOLO_NUMERO.match(texto) or _RE_FC_CON_UNIDAD.match(texto)
+    return str(int(m.group(1))) if m else None
+
+
+def _metros_impresos(texto) -> Optional[str]:
+    """'2.95', '2,95', '2.95 m' -> '2.95' (fila e); >0 y <=30. cm, cotas, restas y texto -> None."""
+    m = _RE_METROS.match(texto) if isinstance(texto, str) else None
+    if not m:
+        return None
+    valor = m.group(1).replace(",", ".")
+    return valor if 0 < float(valor) <= 30 else None
+
+
+def _barras_por_cara(texto, apoyo=None) -> Optional[str]:
+    """'6' con acero '36∅1"' -> '6-∅1"' (filas i y j). Si la otra cara también está, 2*(x+y)-4 debe ser el total del acero."""
+    apoyo = apoyo or {}
+    if not isinstance(texto, str) or not _RE_ENTERO_POSITIVO.match(texto.strip()):
+        return None
+    acero = _RE_BARRAS_UNICO.match(apoyo["acero"]) if isinstance(apoyo.get("acero"), str) else None
+    if not acero or int(acero.group(1)) <= 0:
+        return None
+    par = apoyo.get("par")
+    if not _vacio(par):
+        if not isinstance(par, str) or not _RE_ENTERO_POSITIVO.match(par.strip()):
+            return None
+        if 2 * (int(texto.strip()) + int(par.strip())) - 4 != int(acero.group(1)):
+            return None  # las esquinas cuentan en las dos caras: el total no cuadra, no se adivina
+    return f"{int(texto.strip())}-{acero.group(2)}{acero.group(3)}{acero.group(4)}"
+
+
 REGLAS_DERIVACION = {"estribos_cantidad_diametro": _estribos_cantidad_diametro,
                      "estribos_espaciamiento_unico": _estribos_espaciamiento_unico,
-                     "barras_diametro_unico": _barras_diametro_unico}
+                     "barras_diametro_unico": _barras_diametro_unico,
+                     "fc_kgcm2": _fc_kgcm2,
+                     "metros_impresos": _metros_impresos,
+                     "barras_por_cara": _barras_por_cara}
+REGLAS_CON_APOYO = {"barras_por_cara"}  # reciben además los campos de apoyo {nombre: texto impreso}
 # Pares que salen del MISMO valor único del plano: que sean iguales lo decide Steven (duda que no bloquea por ficha).
 PARES_IGUALES = (("f", "g", "espaciamiento"), ("m", "n", "diámetro"))
 
@@ -138,10 +183,14 @@ def cargar_mapeo_stp(ruta: Optional[Path] = None) -> Tuple[Dict[str, Dict], bool
                 raise ValueError(fila)
             if not isinstance(derivaciones, dict) or not all(
                     isinstance(d, dict) and isinstance(d.get("campo"), str) and d.get("regla") in REGLAS_DERIVACION
+                    and (d.get("apoyo") is None or (isinstance(d["apoyo"], dict) and all(
+                        isinstance(k, str) and isinstance(v, str) for k, v in d["apoyo"].items())))
+                    and (d["regla"] not in REGLAS_CON_APOYO or isinstance(d.get("apoyo"), dict))
                     for d in derivaciones.values()):  # regla desconocida = mapeo roto (nunca se adivina)
                 raise ValueError(fila)
             mapeo[str(fila)] = {"filas": dict(filas), "medidas": dict(medidas), "barras": barras,
-                                "derivaciones": {str(l): {"campo": d["campo"], "regla": d["regla"]}
+                                "derivaciones": {str(l): {"campo": d["campo"], "regla": d["regla"],
+                                                          **({"apoyo": dict(d["apoyo"])} if d.get("apoyo") else {})}
                                                  for l, d in derivaciones.items()}}
         return mapeo, crudo.get("confirmado") is True
     except (OSError, ValueError, KeyError, TypeError, AttributeError):
@@ -897,12 +946,16 @@ class ProcesoVisita:
                     impreso = datos.get(d["campo"])
                     if _vacio(impreso):
                         continue  # el generador pide la fila que falte con su duda
-                    valor = REGLAS_DERIVACION[d["regla"]](impreso)
+                    textos_apoyo = {k: datos.get(v) for k, v in (d.get("apoyo") or {}).items()}
+                    valor = (REGLAS_DERIVACION[d["regla"]](impreso, textos_apoyo) if d["regla"] in REGLAS_CON_APOYO
+                             else REGLAS_DERIVACION[d["regla"]](impreso))
                     if valor is None:
+                        cruce = "".join(f" Se comprobó contra '{(d['apoyo'])[k]}' = '{t}'." for k, t in textos_apoyo.items())
                         faltas.append((f"diseno:{pagina}:derivacion.{letra}",
                                        f"La fila {letra} de {c['id_elemento']} se deriva de '{d['campo']}' pero el texto impreso "
                                        f"'{impreso}' no cuadra con la regla '{d['regla']}' (un solo grupo, sin +GAN. ni texto "
-                                       f"extra): no se adivina ({PENDIENTE}). Indica el valor de la fila {letra}."))
+                                       f"extra; sin conversión de unidades).{cruce} No se adivina ({PENDIENTE}). "
+                                       f"Indica el valor de la fila {letra}."))
                     else:
                         ficha["plano"][letra] = derivadas[letra] = valor
                 igualadas = [f"{a} = {b} ({nombre} {derivadas[a]})" for a, b, nombre in PARES_IGUALES

@@ -625,7 +625,13 @@ def test_t4_el_json_entregado_es_propuesta_sin_confirmar():
         "f": {"campo": "estribos", "regla": "estribos_espaciamiento_unico"},
         "g": {"campo": "estribos", "regla": "estribos_espaciamiento_unico"},
         "m": {"campo": "acero_longitudinal", "regla": "barras_diametro_unico"},
-        "n": {"campo": "acero_longitudinal", "regla": "barras_diametro_unico"}}
+        "n": {"campo": "acero_longitudinal", "regla": "barras_diametro_unico"},
+        "b": {"campo": "fc", "regla": "fc_kgcm2"},  # T11
+        "e": {"campo": "altura_m", "regla": "metros_impresos"},
+        "i": {"campo": "barras_cara_x", "regla": "barras_por_cara",
+              "apoyo": {"par": "barras_cara_y", "acero": "acero_longitudinal"}},
+        "j": {"campo": "barras_cara_y", "regla": "barras_por_cara",
+              "apoyo": {"par": "barras_cara_x", "acero": "acero_longitudinal"}}}
     assert mapeo["muro"]["medidas"] == {"b": "espesor"}
     assert mapeo["muro"]["filas"] == {"c": "longitud", "h": "alma.ASV", "i": "alma.ASV", "j": "alma.ASH", "k": "alma.ASH"}
     assert "viga" not in mapeo and "losa" not in mapeo  # fuera de alcance: siguen con la duda de mapeo
@@ -904,6 +910,158 @@ def test_t9_campo_vacio_no_abre_duda_de_derivacion(entorno, monkeypatch):
     _procesar()
     assert capturado["fichas"][0]["plano"] == {"m": 'Ø1"', "n": 'Ø1"'}  # lo pendiente no se rellena
     assert not [d for d in _abiertas() if "derivacion." in d["campo_afectado"]]
+
+
+# ---------- T11 (Etapa 7): filas b, e, i, j de COLUMNA (propuesta) ----------
+
+@pytest.mark.parametrize("texto", ["350", " 350 ", "350 Kg/cm2", "350 kg/cm²", "350kg/cm2", "f'c = 350 kg/cm²",
+                                   "F'C=350 KG/CM2", "f’c = 350 kg / cm2"])
+def test_t11_fc_en_kgcm2_da_el_entero(texto):
+    assert pc._fc_kgcm2(texto) == "350"
+
+
+@pytest.mark.parametrize("texto", ["35 MPa", "350 MPa", "5000 psi", "350 N/mm2", "5 ksi", "350.5", "350,5 kg/cm2", "300-350",
+                                   "280 350", "350 kg/cm3", "f'c = 350", "fc alto", "0350", "0", "", None, 350, PENDIENTE])
+def test_t11_fc_en_otra_unidad_o_texto_da_none(texto):
+    assert pc._fc_kgcm2(texto) is None
+
+
+@pytest.mark.parametrize("texto,esperado", [("2.95", "2.95"), ("2,95", "2.95"), ("2.95 m", "2.95"), ("2.95m", "2.95"),
+                                            ("3", "3"), ("2.950", "2.950"), ("30", "30")])
+def test_t11_altura_en_metros(texto, esperado):
+    assert pc._metros_impresos(texto) == esperado
+
+
+@pytest.mark.parametrize("texto", ["295 cm", "2.95 cm", "2.95 mm", "NPT +3.00 - NPT +0.05", "3.00-0.05", "2.95 y 3.10", "0",
+                                   "0.0", "31", "-2.95", "alta", "", None, 2.95, PENDIENTE])
+def test_t11_altura_que_no_es_metros_da_none(texto):
+    assert pc._metros_impresos(texto) is None
+
+
+def test_t11_barras_por_cara_con_los_datos_reales_de_t10():
+    c1 = {"par": "14", "acero": '36∅1"'}
+    c3 = {"par": "16", "acero": '40∅1"'}
+    assert pc._barras_por_cara("6", c1) == '6-∅1"' and pc._barras_por_cara("14", {**c1, "par": "6"}) == '14-∅1"'
+    assert pc._barras_por_cara("6", c3) == '6-∅1"' and pc._barras_por_cara("16", {**c3, "par": "6"}) == '16-∅1"'
+    assert pc._barras_por_cara("6", {"par": "14", "acero": '36Ø3/4"'}) == '6-Ø3/4"'  # símbolo y comilla tal como vienen
+
+
+@pytest.mark.parametrize("x,y,acero", [("6", "15", '36∅1"'), ("6", "14", '40∅1"'), ("6", "14", '4∅1" 22∅3/4"'),
+                                       ("6", "14", '36∅1" + 4∅3/4"'), ("6", "14", "36∅1"), ("6", "14", PENDIENTE),
+                                       ("6.5", "14", '36∅1"'), ("seis", "14", '36∅1"'), ("0", "14", '36∅1"'),
+                                       ("06", "14", '36∅1"'), ("6 barras", "14", '36∅1"'), ("-6", "14", '36∅1"'),
+                                       ("6", "catorce", '36∅1"'), ("", "14", '36∅1"'), (None, "14", '36∅1"')])
+def test_t11_barras_por_cara_que_no_cuadran_dan_none(x, y, acero):
+    assert pc._barras_por_cara(x, {"par": y, "acero": acero}) is None
+
+
+def test_t11_barras_por_cara_con_la_otra_cara_pendiente_no_comprueba_pero_exige_acero():
+    assert pc._barras_por_cara("6", {"par": PENDIENTE, "acero": '36∅1"'}) == '6-∅1"'
+    assert pc._barras_por_cara("6", {"par": None, "acero": '36∅1"'}) == '6-∅1"'
+    assert pc._barras_por_cara("6", {"par": "14", "acero": PENDIENTE}) is None
+    assert pc._barras_por_cara("6", {"par": None, "acero": None}) is None
+
+
+def test_t11_el_json_con_apoyo_mal_formado_o_ausente_es_mapeo_roto(tmp_path):
+    def cargar(der):
+        ruta = tmp_path / "m.json"
+        ruta.write_text(json.dumps({"confirmado": True, "filas_stp": {"col": {"derivaciones": der}}}), encoding="utf-8")
+        return pc.cargar_mapeo_stp(ruta)
+    assert cargar({"i": {"campo": "x", "regla": "barras_por_cara"}}) == ({}, False)  # esta regla exige apoyo
+    assert cargar({"i": {"campo": "x", "regla": "barras_por_cara", "apoyo": {"par": 5}}}) == ({}, False)
+    ok = cargar({"i": {"campo": "x", "regla": "barras_por_cara", "apoyo": {"par": "y", "acero": "z"}}})[0]
+    assert ok["col"]["derivaciones"]["i"]["apoyo"] == {"par": "y", "acero": "z"}
+
+
+_C1_REAL = {"b_m": "0.60", "h_m": "1.50", "fc": PENDIENTE, "altura_m": PENDIENTE, "barras_cara_x": "6", "barras_cara_y": "14",
+            "acero_longitudinal": '36∅1"', "estribos": '9 EST. ∅3/8" @0.10'}
+_C3_REAL = {"b_m": "0.60", "h_m": "1.50", "fc": PENDIENTE, "altura_m": PENDIENTE, "barras_cara_x": "6", "barras_cara_y": "16",
+            "acero_longitudinal": '40∅1"', "estribos": '10 EST. ∅3/8"@0.10'}
+
+
+def _una_columna(entorno, monkeypatch, campos, mapeo_filas=None):
+    mapeo = _mapeo_real(monkeypatch)
+    if mapeo_filas:
+        mapeo["col"] = {**mapeo["col"], "filas": mapeo_filas}
+    capturado = _capturar_fichas(monkeypatch)
+    _elemento_visita(entorno, 1, "C1 D4", "C1", "EJE D-4")
+    _diseno(id_elemento="C1", ejes="EJE D-4", tipo="COLUMNA", campos=campos)  # SINTÉTICO (textos copiados de T10)
+    _procesar()
+    return capturado
+
+
+def test_t11_c1_y_c3_reales_llenan_i_j_y_dejan_b_y_e_vacias(entorno, monkeypatch):
+    _mapeo_real(monkeypatch)
+    capturado = _capturar_fichas(monkeypatch)
+    _elemento_visita(entorno, 1, "C1 D4", "C1", "EJE D-4")
+    _elemento_visita(entorno, 2, "C3 B4", "C3", "EJE B-4")
+    _diseno(uid="ed-0001", id_elemento="C1", ejes="EJE D-4", tipo="COLUMNA", campos=_C1_REAL)  # SINTÉTICO
+    _diseno(uid="ed-0002", id_elemento="C3", ejes="EJE B-4", tipo="COLUMNA", campos=_C3_REAL)
+    _procesar()
+    c1, c3 = capturado["fichas"]
+    assert c1["plano"]["i"] == '6-∅1"' and c1["plano"]["j"] == '14-∅1"'
+    assert c3["plano"]["i"] == '6-∅1"' and c3["plano"]["j"] == '16-∅1"'
+    for f in (c1, c3):  # lo pendiente jamás llega al STP
+        assert "b" not in f["plano"] and "e" not in f["plano"]
+        assert PENDIENTE not in json.dumps(f["plano"], ensure_ascii=False)
+    assert not [d for d in _abiertas() if "derivacion." in d["campo_afectado"]]
+
+
+@pytest.mark.parametrize("fc", ["350", "350 Kg/cm2", "f'c = 350 kg/cm²"])
+def test_t11_fc_valido_llena_b(entorno, monkeypatch, fc):
+    capturado = _una_columna(entorno, monkeypatch, {**_C1_REAL, "fc": fc})
+    assert capturado["fichas"][0]["plano"]["b"] == "350"
+
+
+def test_t11_altura_2_coma_95_llena_e(entorno, monkeypatch):
+    capturado = _una_columna(entorno, monkeypatch, {**_C1_REAL, "altura_m": "2,95"})
+    assert capturado["fichas"][0]["plano"]["e"] == "2.95"
+
+
+@pytest.mark.parametrize("campo,texto,letra", [("fc", "35 MPa", "b"), ("fc", "5000 psi", "b"), ("fc", "alto", "b"),
+                                               ("altura_m", "295 cm", "e"), ("altura_m", "NPT +3.00", "e"),
+                                               ("barras_cara_x", "seis", "i"), ("barras_cara_x", "6.5", "i")])
+def test_t11_unidad_o_texto_que_no_cuadra_abre_duda_con_el_texto(entorno, monkeypatch, campo, texto, letra):
+    capturado = _una_columna(entorno, monkeypatch, {**_C1_REAL, campo: texto})
+    assert "fichas" not in capturado  # la ficha espera: nada adivinado ni convertido
+    por_campo = {d["campo_afectado"]: d["descripcion_pregunta"] for d in _abiertas()}
+    assert texto in por_campo[f"diseno:p001:derivacion.{letra}"]
+
+
+def test_t11_total_que_no_cuadra_deja_i_y_j_vacias_con_duda_y_textos_literales(entorno, monkeypatch):
+    capturado = _una_columna(entorno, monkeypatch, {**_C1_REAL, "barras_cara_y": "15"})
+    assert "fichas" not in capturado
+    por_campo = {d["campo_afectado"]: d["descripcion_pregunta"] for d in _abiertas()}
+    for letra in "ij":
+        texto = por_campo[f"diseno:p001:derivacion.{letra}"]
+        assert "'6'" in texto and "'15'" in texto and '36∅1"' in texto and "barras_cara_x" in texto
+
+
+@pytest.mark.parametrize("campo,letra", [("fc", "b"), ("altura_m", "e"), ("barras_cara_x", "i"), ("barras_cara_y", "j"),
+                                         ("estribos", "h")])
+def test_t11_pendiente_nunca_llega_al_stp(entorno, monkeypatch, campo, letra):
+    capturado = _una_columna(entorno, monkeypatch, {**_C1_REAL, campo: PENDIENTE})
+    plano = capturado["fichas"][0]["plano"]
+    assert letra not in plano
+    assert PENDIENTE not in json.dumps(plano, ensure_ascii=False)
+
+
+@pytest.mark.parametrize("valor", ["", None, "   "])
+def test_t11_campo_vacio_o_ausente_no_llena_la_fila(entorno, monkeypatch, valor):
+    campos = {k: v for k, v in _C1_REAL.items() if k not in ("barras_cara_y", "altura_m")}
+    campos["fc"] = valor
+    capturado = _una_columna(entorno, monkeypatch, campos)
+    plano = capturado["fichas"][0]["plano"]
+    assert "b" not in plano and "e" not in plano and "j" not in plano
+    assert plano["i"] == '6-∅1"'  # con la otra cara ausente no hay cruce; la cara leída se copia exacta
+
+
+def test_t11_una_fila_mapeada_directo_manda_sobre_b_e_i_j(entorno, monkeypatch):
+    campos = {**_C1_REAL, "fc": "350", "altura_m": "2.95", "otro_b": "280", "otro_i": '8-∅3/4"'}
+    capturado = _una_columna(entorno, monkeypatch, campos, mapeo_filas={"b": "otro_b", "i": "otro_i"})
+    plano = capturado["fichas"][0]["plano"]
+    assert plano["b"] == "280" and plano["i"] == '8-∅3/4"'
+    assert plano["e"] == "2.95" and plano["j"] == '14-∅1"'
 
 
 # ---------- T9: arreglos menores ----------

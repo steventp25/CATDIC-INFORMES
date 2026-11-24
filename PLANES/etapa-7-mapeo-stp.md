@@ -20,15 +20,15 @@ Ejemplos: C1 EJE D-4 (S2C pág. 5) y C3 EJE B-4 (S2C pág. 9). Campos del plano:
 | Fila | Rótulo | Campo de `datos_diseno_json` | Ejemplo C1 / C3 (informe) | Estado |
 |---|---|---|---|---|
 | a | Tipo de Pórtico | — | vacío / vacío | sin mapear (no se pide) |
-| b | Resist. esperada | — (f'c está en notas generales, no en el cuadro) | 350 / 350 | sin mapear |
+| b | Resist. esperada | `fc` | 350 / 350 (T10: `fc` = pendiente de verificar en C1 y C3) | **derivación propuesta (T11)**: `fc_kgcm2`; `350`, `350 Kg/cm2`, `f'c = 350 kg/cm²` → `350`; MPa, psi, N/mm2, decimales, rangos, texto → duda. Con el dato de T10 (pendiente) la fila queda vacía; ver pregunta 9a |
 | c | Dim LX | `b_m` | 0.60 / 0.60 (plano: 0.60 / 0.60) | **mapeada** (medida) |
 | d | Dim LY | `h_m` | 1.50 / 1.20 (plano: 1.50 / 1.50) | **mapeada** (medida); ver pregunta 1 |
-| e | Altura col. H | — (no sale del cuadro) | 2.95 / 2.95 | sin mapear |
+| e | Altura col. H | `altura_m` | 2.95 / 2.95 (T10: `altura_m` = pendiente de verificar en C1 y C3) | **derivación propuesta (T11)**: `metros_impresos`; `2.95`, `2,95`, `2.95 m` → `2.95` (>0 y ≤30; sin redondear); `295 cm`, cotas NPT, restas, texto → duda. Con T10 (pendiente) queda vacía; ver pregunta 9c |
 | f | Espac. estribos nodos | de `estribos` | ∅3/8"@0.10 | **derivación propuesta (T9)**: `estribos_espaciamiento_unico`; `10 EST. Ø3/8"@0.10` → `Ø3/8"@0.10` |
 | g | Espac. estribos paño central | de `estribos` | ∅3/8"@0.10 | **derivación propuesta (T9)**: misma regla que f (f = g, ver abajo) |
 | h | Diám. Est. | de `estribos` | 9 EST. ∅3/8" / 10 EST. ∅3/8" | **derivación propuesta (T9)**: `estribos_cantidad_diametro`; `9 EST. Ø3/8" @0.10` → `9 EST. Ø3/8"` |
-| i | Eje x-x | — (conteo por cara del dibujo) | 6-∅1" | sin mapear |
-| j | Eje y-y | — | 14-∅1" / 16-∅1" | sin mapear |
+| i | Eje x-x | `barras_cara_x` + diámetro de `acero_longitudinal` | 6-∅1" / 6-∅1" (T10: `"6"`, `36∅1"` / `"6"`, `40∅1"`) | **derivación propuesta (T11)**: `barras_por_cara`; `"6"` + `36∅1"` → `6-∅1"`; el campo debe ser un entero de solo dígitos; ver pregunta 9b |
+| j | Eje y-y | `barras_cara_y` + diámetro de `acero_longitudinal` | 14-∅1" / 16-∅1" (T10: `"14"` / `"16"`) | **derivación propuesta (T11)**: `barras_por_cara`; `"14"` + `36∅1"` → `14-∅1"`; `"16"` + `40∅1"` → `16-∅1"` |
 | k | Total barras | de `acero_longitudinal` | 36 / 40 | derivación propuesta; el generador la comprueba contra la suma de `barras`, no se copia |
 | m | Diám. barras nudos | de `acero_longitudinal` | ∅1" | **derivación propuesta (T9)**: `barras_diametro_unico`; `36Ø1"` → `Ø1"` |
 | n | Diám. barras internas | de `acero_longitudinal` | ∅1" | **derivación propuesta (T9)**: misma regla que m (m = n, ver abajo) |
@@ -39,6 +39,13 @@ Ejemplos: C1 EJE D-4 (S2C pág. 5) y C3 EJE B-4 (S2C pág. 9). Campos del plano:
 Conversión de `barras` (en el programa, `convertir_barras`): solo si el texto ENTERO es `<n>∅<diámetro>"` (acepta `∅ Ø ø` y las
 comillas `" ″ ” “`); `36∅1"` → `[[36, '1"']]`. Cualquier otra cosa (varios grupos, texto extra, `pendiente de verificar`) no se
 convierte y abre una duda `diseno:pNNN:barras` con el texto impreso. Los tramos de la copia T1 cuadran (`36∅1"`, `28∅1"`, `18∅1"`, `14∅1"`, `40∅1"`).
+
+Comprobación de i y j (T11): si las dos caras están, `2·(i+j) − 4` debe ser igual al total de `acero_longitudinal` (las esquinas cuentan
+en las dos caras): C1 2·(6+14)−4 = 36, C3 2·(6+16)−4 = 40. Si no cuadra (p. ej. y = `15` con `36∅1"`), no se llena ninguna de las dos y
+se abren las dudas `diseno:pNNN:derivacion.i` y `.j` con los textos literales (cara x, cara y y acero). Si solo una cara trae dato (la otra
+vacía o pendiente) no hay cruce posible: la cara presente se copia exacta y la otra queda vacía. El diámetro sale con la misma regex de
+`barras_diametro_unico` (un solo grupo `<n>∅<diámetro>"`; símbolo y comilla tal como vienen). Sin unidades que convertir: ninguna regla de T11
+convierte unidades. Un campo vacío, `None` o `pendiente de verificar` nunca se copia al STP (la fila queda sin llenar, igual que f, g, h, m, n).
 
 ## Muro (`fila_stp: muro`; sirve a MURO H.A. y a MURO DE CONTENCION)
 
@@ -96,6 +103,13 @@ Fuera de alcance de T4: sin entrada en el JSON, sigue la duda `diseno:pNNN:mapeo
    El total de barras (k) no se copia: lo comprueba el generador contra la suma de `barras`.
 4. **Barras de columna:** ¿se aprueba la conversión exacta `36∅1"` → [[36, '1"']] y que cualquier otro texto vaya a duda?
 5. **Longitud de muro (c):** ¿solo cuando el plano da un único valor (como MH3)? En muros en L (MH2) el informe suma las dos alas (`3.80 + 3.85`).
-6. **Filas sin campo** (b, e, i, j, o de columna; a, d, e de muro): ¿de dónde salen (notas generales, otra hoja, la visita)?
+6. **Filas sin campo** (o de columna; a, d, e de muro): ¿de dónde salen (notas generales, otra hoja, la visita)?
 7. **f = g y m = n cuando el plano trae un solo valor:** el cuadro de columnas da un solo espaciamiento de estribos y un solo diámetro de barras; ¿se aprueba llenar con ese valor las dos filas (nodos y paño central; nudos e internas)? Hoy va como propuesta con una duda que no bloquea por ficha.
 8. **Confirmar el mapeo** (poner `"confirmado": true`) para que el STP deje de salir como BORRADOR y pueda ir a su carpeta definitiva.
+9. **Filas b, e, i, j de columna (T11, propuesta ya implementada):**
+   a. **f'c sin unidad:** el campo `fc` se define en kg/cm². ¿Se acepta que un `fc` escrito solo como `350` se tome como kg/cm²? (La duda que cite
+      «350 Kg/cm2» lo confirma.) Si viene en MPa, psi u otra unidad va a duda: no se convierte nada sin su aprobación.
+   b. **Convención de caras:** ¿x-x es la cara paralela al lado b (LX, `b_m`) y y-y la paralela al lado h (LY, `h_m`), con las barras de
+      esquina contadas en las dos caras (por eso `2·(x+y) − 4` = total de barras)?
+   c. **Altura H de la columna:** hoy solo se copia si el plano la imprime en metros (`altura_m`). ¿Se puede calcular a partir de las cotas NPT
+      de los niveles? Hoy no se calcula y la fila queda vacía con su duda.

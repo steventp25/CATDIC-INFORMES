@@ -1,14 +1,20 @@
 {
   "confirmado": false,
   "version": 1,
-  "nota": "PROPUESTA pendiente de Steven (Etapa 7, T4). Solo correspondencias directas con evidencia de los STP entregados (visita 24). Mientras confirmado sea false, el STP se genera solo como BORRADOR en la carpeta de pruebas. Detalle y preguntas en PLANES/etapa-7-mapeo-stp.md. col: barras se convierte con conversion exacta (36∅1\" -> [[36, 1\"]]); k y cuantia los calcula/comprueba el generador, no se copian. derivaciones (T9, PROPUESTA): h, f, g salen de estribos y m, n de acero_longitudinal con una regex exacta sobre el texto entero impreso en el plano (simbolo y comilla tal como vienen); lo que no cuadra abre la duda diseno:pNNN:derivacion.<letra>; una fila de filas manda sobre la derivacion; f=g y m=n (el plano trae un solo valor) los decide Steven y cada ficha lleva una duda que no bloquea. muro: la misma entrada sirve a MURO H.A. y MURO DE CONTENCION (los dos usan fila_stp muro); el plano no distingue cara, h=i (ASV) y j=k (ASH) son una propuesta que Steven debe confirmar. Los bordes (borde_k.*) no tienen fila en el STP-MIVED. Viga y losa: sin entrada a proposito (siguen con la duda de mapeo).",
+  "nota": "PROPUESTA pendiente de Steven (Etapa 7, T4). Solo correspondencias directas con evidencia de los STP entregados (visita 24). Mientras confirmado sea false, el STP se genera solo como BORRADOR en la carpeta de pruebas. Detalle y preguntas en PLANES/etapa-7-mapeo-stp.md. col: barras se convierte con conversion exacta (36∅1\" -> [[36, 1\"]]); k y cuantia los calcula/comprueba el generador, no se copian. derivaciones (T9, PROPUESTA): h, f, g salen de estribos y m, n de acero_longitudinal con una regex exacta sobre el texto entero impreso en el plano (simbolo y comilla tal como vienen); lo que no cuadra abre la duda diseno:pNNN:derivacion.<letra>; una fila de filas manda sobre la derivacion; f=g y m=n (el plano trae un solo valor) los decide Steven y cada ficha lleva una duda que no bloquea. muro: la misma entrada sirve a MURO H.A. y MURO DE CONTENCION (los dos usan fila_stp muro); el plano no distingue cara, h=i (ASV) y j=k (ASH) son una propuesta que Steven debe confirmar. Los bordes (borde_k.*) no tienen fila en el STP-MIVED. T11 (PROPUESTA): b <- fc (entero en kg/cm2; el campo fc sin unidad se acepta como kg/cm2 por supuesto, Steven lo confirma; MPa, psi u otra unidad van a duda, no se convierte nada); e <- altura_m (numero en metros, >0 y <=30; cm o cotas van a duda); i <- barras_cara_x y j <- barras_cara_y (entero de solo digitos + diametro de acero_longitudinal, salida N-diametro; si las dos caras estan, 2*(x+y)-4 debe ser el total de acero_longitudinal, si no cuadra no se llena ninguna y hay duda). Un campo vacio o pendiente de verificar nunca se copia al STP. Viga y losa: sin entrada a proposito (siguen con la duda de mapeo).",
   "filas_stp": {
     "col": {"filas": {}, "medidas": {"c": "b_m", "d": "h_m"}, "barras": "acero_longitudinal",
             "derivaciones": {"h": {"campo": "estribos", "regla": "estribos_cantidad_diametro"},
                              "f": {"campo": "estribos", "regla": "estribos_espaciamiento_unico"},
                              "g": {"campo": "estribos", "regla": "estribos_espaciamiento_unico"},
                              "m": {"campo": "acero_longitudinal", "regla": "barras_diametro_unico"},
-                             "n": {"campo": "acero_longitudinal", "regla": "barras_diametro_unico"}}},
+                             "n": {"campo": "acero_longitudinal", "regla": "barras_diametro_unico"},
+                             "b": {"campo": "fc", "regla": "fc_kgcm2"},
+                             "e": {"campo": "altura_m", "regla": "metros_impresos"},
+                             "i": {"campo": "barras_cara_x", "regla": "barras_por_cara",
+                                   "apoyo": {"par": "barras_cara_y", "acero": "acero_longitudinal"}},
+                             "j": {"campo": "barras_cara_y", "regla": "barras_por_cara",
+                                   "apoyo": {"par": "barras_cara_x", "acero": "acero_longitudinal"}}}},
     "muro": {"filas": {"c": "longitud", "h": "alma.ASV", "i": "alma.ASV", "j": "alma.ASH", "k": "alma.ASH"},
              "medidas": {"b": "espesor"}, "barras": null}
   }
