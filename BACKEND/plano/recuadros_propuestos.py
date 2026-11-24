@@ -27,6 +27,7 @@ from typing import Dict, Iterable, List, Optional, Union
 import pymupdf
 
 import config
+import equivalencias_nivel
 import visor
 from database import _respaldar_bd, get_connection
 from obras import _ahora, _auditar, _transaccion, _usuario
@@ -37,6 +38,7 @@ ORIGEN_ZONA = "propuesta_ia_zona"
 ORIGEN_PLANTA = "propuesta_programa_planta"
 COLUMNAS = {"detalle": "recorte_detalle_json", "localizacion": "recorte_planta_json"}
 _RE_PLANTA = re.compile(r"^PLANTA ESTRUCTURAL DE\s+(.+)$", re.IGNORECASE)
+_RE_NIVEL_EN_ROTULO = re.compile(r"(?:^|\s)(S-?\d+)$")   # 'SOTANO S2' -> S2
 
 
 def _norm(texto) -> str:
@@ -117,11 +119,13 @@ def proponer_desde_propuestas(proyecto_id: str, fuentes, paginas_planta: Optiona
     Propone (nunca confirma) los recuadros de los elementos de diseño importados desde las propuesta.json.
     - `fuentes`: carpeta del lote (pNN/propuesta.json) o lista de rutas a propuesta.json.
     - `paginas_planta`: páginas (desde 1) del vectorial que son plantas; su rótulo impreso decide el nivel.
-    - `equivalencias`: {rótulo de la planta: [nivel_rango, ...]} dado por Steven, para rangos que no coinciden en texto.
+    - `equivalencias`: {rótulo de la planta: [nivel_rango, ...]} dado por Steven. Si es None se leen de la tabla
+      `equivalencias_nivel` de la obra (T6); pasar {} las desactiva.
     - `escribir=False`: en seco; devuelve lo que se escribiría sin tocar la BD.
     Devuelve {"propuestos": [...], "no_propuestos": [{id, nivel_rango, recuadro, motivo}], "respaldo": ruta | None}.
     """
     usuario = usuario or _usuario()
+    desde_tabla = equivalencias is None   # sin equivalencias dadas, se leen de la tabla equivalencias_nivel (T6)
     equivalencias = {_norm(k): {_norm(r) for r in v} for k, v in (equivalencias or {}).items()}
     propuestos: List[Dict] = []
     no_propuestos: List[Dict] = []
@@ -197,6 +201,12 @@ def proponer_desde_propuestas(proyecto_id: str, fuentes, paginas_planta: Optiona
                             no(f["id_elemento"], f["nivel_rango"], "localizacion", motivo or f"la página {pg} no está en el índice")
                         continue
                     plantas.append((pg, h["hoja"], titulo, _norm(titulo)))
+                    if desde_tabla:   # rótulo -> nivel de la visita ('SOTANO S2' -> 'S-2') -> rangos de la tabla
+                        m = _RE_NIVEL_EN_ROTULO.search(equivalencias_nivel.normalizar_nivel(titulo))
+                        if m:
+                            nivel = equivalencias_nivel.clave_nivel_visita(m.group(1))
+                            equivalencias[_norm(titulo)] = {_norm(r) for r in
+                                                            equivalencias_nivel.equivalencias_de(conn, proyecto_id, nivel)}
             for f in elementos_hallados:
                 if not plantas:
                     no(f["id_elemento"], f["nivel_rango"], "localizacion", "no se indicó la planta del nivel (paginas_planta)")
@@ -206,7 +216,7 @@ def proponer_desde_propuestas(proyecto_id: str, fuentes, paginas_planta: Optiona
                 if len(candidatas) != 1:
                     rotulos = ", ".join(p[2] for p in plantas)
                     no(f["id_elemento"], f["nivel_rango"], "localizacion",
-                       f"el nivel_rango no coincide con el rótulo de la planta ({rotulos}) y no hay equivalencia dada por Steven: "
+                       f"falta equivalencia: el nivel_rango no coincide con el rótulo de la planta ({rotulos}) y no hay equivalencia dada por Steven: "
                        "no se sabe qué rango corresponde a esa planta" if not candidatas else
                        "el nivel_rango coincide con varias plantas: no se adivina")
                     continue

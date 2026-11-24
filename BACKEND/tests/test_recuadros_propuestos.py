@@ -289,3 +289,29 @@ def test_en_seco_no_escribe_ni_respalda_ni_audita(entorno):
     assert conn.execute("SELECT COUNT(*) FROM auditoria WHERE accion = 'PROPONER_RECUADRO'").fetchone()[0] == 0
     conn.close()
     assert list((tmp / "bd").glob("*backup*")) == []
+
+
+# ---------- Tabla equivalencias_nivel (T6) ----------
+
+def test_con_la_tabla_llena_propone_la_localizacion(entorno):
+    import equivalencias_nivel
+    pid, tmp = entorno
+    _elemento(pid, "u1", "C1", nivel="E-3 @ E-8")
+    equivalencias_nivel.guardar_equivalencias(pid, [{"nivel_visita": "S-2", "rangos_impresos": ["E-3 @ E-8", "E-1 @ E-2"]}])
+    ruta = _propuesta(tmp, pid, [_el("C1", nivel="E-3 @ E-8", zona=[100, 60, 720, 600])])
+    r = rp.proponer_desde_propuestas(pid, [ruta], paginas_planta=[1])
+    assert sorted(p["recuadro"] for p in r["propuestos"]) == ["detalle", "localizacion"]
+    assert _columna("u1", "recorte_planta_json")["estado"] == PENDIENTE
+
+
+def test_con_la_tabla_vacia_o_de_otro_nivel_no_propone_y_dice_falta_equivalencia(entorno):
+    import equivalencias_nivel
+    pid, tmp = entorno
+    _elemento(pid, "u1", "C1", nivel="E-3 @ E-8")
+    ruta = _propuesta(tmp, pid, [_el("C1", nivel="E-3 @ E-8", zona=[100, 60, 720, 600])])
+    r = rp.proponer_desde_propuestas(pid, [ruta], paginas_planta=[1])
+    assert "falta equivalencia" in _no(r, "C1", "localizacion")[0]["motivo"]
+    equivalencias_nivel.guardar_equivalencias(pid, [{"nivel_visita": "S-1", "rangos_impresos": ["E-3 @ E-8"]}])
+    r = rp.proponer_desde_propuestas(pid, [ruta], paginas_planta=[1])
+    assert "falta equivalencia" in _no(r, "C1", "localizacion")[0]["motivo"]
+    assert _columna("u1", "recorte_planta_json") == {}
