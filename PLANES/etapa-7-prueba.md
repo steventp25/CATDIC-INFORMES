@@ -110,3 +110,28 @@ Montaje igual que la corrida 3: copia nueva de `…\scratchpad\t5b\copia.db` en 
 ## Para que salga el PDF de C1 y C3
 - Código: H1 (k ← total de `acero_longitudinal`, `36∅1"` → 36) y H2 (una duda que liste todas las filas que faltan, en orden fijo).
 - Steven: confirmar el f'c (350, pregunta 9a) y decidir la altura H (pregunta 9c). Además, lo de siempre: las dudas de obra, la equivalencia S-2, la cabecera, los datos y recuadros del plano y el mapeo.
+
+# Corrida 6: con T11b (`2987705`, 24/11/2026, Director) — PRIMER PDF de punta a punta
+**Montaje:** el de la corrida 5, con el código en `…\scratchpad\aud-e7e\codigo` y las carpetas `t5h` a `t5k`.
+
+**Sin tocar:**
+- BD real `eba26967…`;
+- copia de T10 `5948159c…`;
+- Dropbox, que solo se leyó.
+
+1. **Sin confirmar (t5h):** igual que antes, quedan 6 dudas de Steven o del técnico.
+2. **Confirmaciones simuladas (t5i):** k sale 36 y 40. Queda **una sola duda por columna**, que lista a la vez `plano.b` y `plano.e` (H2 resuelto).
+3. **Con f'c = 350 (t5j):** la única falta es `plano.e`, la altura.
+4. **Prueba de humo con una altura de PRUEBA de 3.00 (t5k).** Ese valor **no es del plano**: solo sirve para ver si el código llega al PDF.
+   - **Sale el STP borrador:** `…\scratchpad\t5k\salida\Terra Living - STP - VERTICALES S-2 Completivo - 06-11-2026 - CON DUDAS.pdf`, 6 páginas y 1.85 MB.
+   - Lleva la portada con «BORRADOR — mapeo sin confirmar», la hoja de inspección con la cabecera propuesta y, por cada columna, la hoja comparativa (DETALLE del cuadro de columnas y foto de obra) y la fotográfica (LOCALIZACIÓN en planta y 4 fotos).
+   - Las filas coinciden con el formato del STP entregado: `∅3/8"@0.10`, `9 EST. ∅3/8"`, `6-∅1"`, `14-∅1"`, 36 y `∅1"`.
+   - OBRA = plano (vacío = conforme), y el solape «o» se toma de la visita.
+   - Sale «CON DUDAS» por las 2 dudas `derivacion_igual`, que no bloquean.
+
+**Observaciones para Steven (no bloquean):**
+- **Cuantía:** el programa da 0.0204 (C1) y 0.0227 (C3), con el área de ∅1" = 5.10 cm² (ASTM #8). El informe entregado de C1 dice 0.0203, que corresponde a unos 5.07 cm². Steven debe decir qué área usa.
+- **Altura:** el STP entregado de la visita 24 pone 2.95 en la fila e. El plano no la imprime, así que es la pregunta 9c.
+- **C3 Dim LY:** el plano da 1.50 y el informe entregado 1.20 (pregunta 1 del mapeo).
+- **Cuantía en obra (2.p):** queda vacía cuando no hay barras medidas en obra.
+- **LOCALIZACIÓN:** es la hoja entera con su cajetín. El recuadro rojo se ve, pero es pequeño (comprobarlo en el visor).
