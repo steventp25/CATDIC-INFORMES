@@ -10,6 +10,16 @@ Rama `claude/etapa7-campo-informe-02d16d`. Commits locales, sin push ni PR (los 
 | T2 Campo v11 | hecho (fuera de git) | `G:\My Drive\VISITA A OBRA CATDIC (v11 prueba)\` |
 | T4 mapeo STP | hecho | `430bcf5`. `mapeo_stp.json` con `confirmado: false`. Columna: c←`b_m`, d←`h_m` y barras←`acero_longitudinal` con conversión exacta. Muro: b←`espesor`, c←`longitud`, h/i←`alma.ASV`, j/k←`alma.ASH`. Sin confirmar, el STP solo sale como BORRADOR en `CATDIC_SALIDA_PRUEBAS`. Suite comprobada por el Líder: 1028 pasan, 3 omitidas y solo las 2 fallas conocidas |
 
+| T6 a T9 | hecho | Equivalencias de nivel, cabecera propuesta, recuadros propuestos y derivaciones f, g, h, m y n (`e810cc7`, `b1b0f82`, `2f973b5`, `cb859e5` y anteriores) |
+| T11 / T11b / T11c | hecho, aprobadas por el Director (Evaluación 8) | `d6a953d` (b, e, i, j), `2987705` (k y una sola duda de generación por elemento), `7d5914a` (la duda de OBRA se actualiza). Suite: 1262 pasan, 3 omitidas y solo las 2 fallas conocidas de Dropbox |
+
+**En espera (24/11/2026):** no queda código pendiente para C1 y C3. Con una altura de prueba, la corrida 6 del Director ya da el primer STP borrador. Lo que falta depende de Steven:
+- las preguntas 9a–9f de `PLANES/etapa-7-mapeo-stp.md`;
+- la equivalencia S-2 (`PLANES/etapa-7-niveles.md`);
+- la cabecera;
+- las dudas de obra;
+- las confirmaciones en el visor.
+
 ## T2: copia de Campo v11 (no está en git)
 - La carpeta original `G:\My Drive\VISITA A OBRA CATDIC\` no se tocó (app.js sha256 `f9a67c28…`, sw.js `d2c6874e…`).
 - sha256 de la copia v11: app.js `c34cbf9c6313221be37328105dffd1d8ebddbbf5a49a1bb16539806181e039a4`,
