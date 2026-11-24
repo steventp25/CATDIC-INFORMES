@@ -200,6 +200,54 @@ carpeta de pruebas. Al volver Steven, solo faltan sus confirmaciones (datos del 
 - **Arreglo:** `duda(..., actualizar=True)` (la de T11b), con las celdas en orden fijo. Si la lista cambia, el texto se actualiza con auditoría `ACTUALIZAR_DUDA`; si no cambia, no se audita nada.
 - Prueba: `test_t11c_la_duda_de_obra_se_actualiza_al_completar_una_celda`.
 
+### T12 — LOCALIZACIÓN = solo la planta (sin cajetín) con el elemento destacado
+- Decisión de Steven del 24/11, comunicada por el Director: el recuadro rojo está bien; lo que falla es que hoy sale la hoja entera, con el cajetín, los detalles y las notas.
+- Ejecutores: **ejecutor-backend + ejecutor-generadores (T12a)** y **ejecutor-frontend (T12b)**, a la vez con el contrato de abajo. No comparten archivos: T12b solo toca `FRONTEND/index.html`.
+
+**Contrato**
+- **Tabla `zonas_planta`** (migración no destructiva en `database.py`, creada también en `inicializar_bd`):
+  - `id`, `proyecto_id`, `plano_id INTEGER NOT NULL`, `pagina INTEGER NOT NULL` (de 1 en adelante, como `recorte_planta_json.pagina`);
+  - `rect_json` en puntos del PDF, `[x0, y0, x1, y1]`, o NULL;
+  - `estado`: `vacia`, `pendiente de verificar` o `confirmado`;
+  - `origen`: `propuesta_ejes` o `manual`;
+  - `fuente_json` (rótulos usados y margen), `motivo`, `actualizado_por`, `actualizado`;
+  - `UNIQUE(plano_id, pagina)`: una zona por hoja, que comparten todos los elementos de esa planta.
+- **Propuesta automática** (`BACKEND/plano/zona_planta.py`):
+  - Toma la envolvente de los rótulos de ejes de la hoja en el vectorial, más un margen fijo documentado.
+  - Un rótulo de eje es un texto que es solo una letra (`A`, `A'`) o solo un número (`1`, `2'`), que se repite alineado (los globos de los dos extremos de la retícula).
+  - Hacen falta al menos 2 letras y 2 números. Si no, la zona queda `vacia`, con su motivo y su duda.
+  - La propuesta siempre queda «pendiente de verificar» y nunca pisa una zona confirmada.
+  - La duda es de proyecto: `plano:<plano_id>:p<pagina>:zona_planta`.
+- **Regla anti-zoom (error 1):**
+  - Una zona que no contiene todos los rótulos de ejes detectados en la hoja es un zoom parcial: al guardar se rechaza con un mensaje claro.
+  - Si la hoja no tiene ejes detectables, se acepta la zona manual y se audita.
+- **API** (router del visor):
+  - `GET /api/proyectos/{pid}/visor/hojas/{pagina}/zona-planta` devuelve `{estado, rect, origen, fuente, motivo, ejes_rect}`. `ejes_rect` es la envolvente detectada, o null.
+  - `POST …/zona-planta/propuesta` propone; `PUT …/zona-planta` con `{rect}` confirma (origen `manual` si cambió el rect). Todo queda auditado con el usuario del proceso.
+  - `POST /api/proyectos/{pid}/visor/vista-previa` acepta además `zona` (pt), opcional.
+- **Generador** (`generators/comun/localizacion.py`): `generar_localizacion(..., zona=<px>)`.
+  - Recorta la planta a la zona y traslada la caja.
+  - El grosor se recalcula sobre el tamaño ya recortado (error 4).
+  - Una caja que no cae entera dentro de la zona da ValueError «pendiente de verificar»: nunca se recorta el recuadro.
+  - Sin zona no hay vuelta a la hoja entera; el error lo maneja quien lo llama.
+- **Procesador:**
+  - Sin zona confirmada en el plano vigente, abre la falta `diseno:pNNN:zona_planta` y la ficha no se genera.
+  - Si la caja queda fuera de la zona, abre `diseno:pNNN:zona_planta_fuera`.
+- **Visor (T12b):**
+  - Una tarjeta «Zona de planta (hoja N)» con los mismos estados que los recuadros: vacía, propuesta (naranja «propuesto · confirma o ajusta») o confirmada.
+  - Botones «Proponer zona» y «Confirmar y guardar». Al dibujar con el tipo «zona» marcado, el borrador queda como zona.
+  - La zona se dibuja sobre la hoja con otro color que el de los recuadros.
+  - La vista previa de LOCALIZACIÓN usa la zona.
+  - Se mantiene el tablero clásico.
+
+**Línea propuesta para CLAUDE.md §4.7 M3** (para el PR; el CLAUDE.md no se toca en esta etapa):
+> **M3 (Localización):** planta estructural **entera del nivel, recortada a su dibujo** (sin cajetín, tablas, notas ni otros dibujos de la hoja); nunca la hoja completa con el cajetín y nunca un zoom a una parte de la planta. La zona de planta se confirma una vez por hoja. Recuadro(s) rojo(s) `RGB(220,0,0)` con grosor compensado sobre la imagen ya recortada.
+
+- Criterios de aceptación:
+  - [ ] Pruebas con un PDF sintético: propuesta por ejes, menos de 2 ejes da vacía con duda, regla anti-zoom, recorte con caja trasladada y grosor recalculado, caja fuera de la zona da duda y sin zona no hay ficha.
+  - [ ] Prueba en seco sobre una copia de la BD de la corrida 6 (hoja 24, S-2): imagen de LOCALIZACIÓN de C1 enviada al Director.
+  - [ ] Suite verde; la BD real y Dropbox, sin tocar (Dropbox solo se lee).
+
 ## Paralelismo
 - T1, T2 y T3 a la vez (no comparten archivos). T4 espera a T1. T5 al final.
 - T6 y T8 a la vez; T7 después de T6 (comparten `database.py` y `main.py`).
