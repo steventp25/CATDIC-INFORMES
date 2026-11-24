@@ -155,7 +155,14 @@ def _barras_por_cara(texto, apoyo=None) -> Optional[str]:
     return f"{int(texto.strip())}-{acero.group(2)}{acero.group(3)}{acero.group(4)}"
 
 
+def _barras_total_unico(texto) -> Optional[str]:
+    """'36∅1"' -> '36' (fila k, Total barras); solo con UN grupo cantidad+diámetro. Varios grupos, +GAN., 0 o texto -> None."""
+    m = _RE_BARRAS_UNICO.match(texto) if isinstance(texto, str) else None
+    return str(int(m.group(1))) if m and int(m.group(1)) > 0 else None
+
+
 REGLAS_DERIVACION = {"estribos_cantidad_diametro": _estribos_cantidad_diametro,
+                     "barras_total_unico": _barras_total_unico,
                      "estribos_espaciamiento_unico": _estribos_espaciamiento_unico,
                      "barras_diametro_unico": _barras_diametro_unico,
                      "fc_kgcm2": _fc_kgcm2,
@@ -508,13 +515,22 @@ class ProcesoVisita:
         return conn.execute("""SELECT * FROM dudas_y_hallazgos WHERE visita_id = ? AND categoria = ? AND resuelta = 0
                                ORDER BY id""", (self.visita_id, DUDA)).fetchall()
 
-    def duda(self, campo: str, id_elemento: str, texto: str, refs: Optional[Dict] = None) -> int:
-        """Abre una DUDA_BLOQUEANTE si no hay una ABIERTA del mismo campo; emite el evento `duda` en los dos casos."""
+    def duda(self, campo: str, id_elemento: str, texto: str, refs: Optional[Dict] = None, actualizar: bool = False) -> int:
+        """
+        Abre una DUDA_BLOQUEANTE si no hay una ABIERTA del mismo campo; emite el evento `duda` en los dos casos.
+        actualizar=True: si la abierta tiene otro texto, lo reemplaza (auditado como ACTUALIZAR_DUDA) en vez de dejar el viejo.
+        """
         def abrir(conn):
             v = self._visita(conn)
-            fila = conn.execute("""SELECT id FROM dudas_y_hallazgos WHERE visita_id = ? AND campo_afectado = ?
-                                   AND categoria = ? AND resuelta = 0""", (self.visita_id, campo, DUDA)).fetchone()
+            fila = conn.execute("""SELECT id, descripcion_pregunta FROM dudas_y_hallazgos WHERE visita_id = ?
+                                   AND campo_afectado = ? AND categoria = ? AND resuelta = 0""",
+                                (self.visita_id, campo, DUDA)).fetchone()
             if fila:
+                if actualizar and fila["descripcion_pregunta"] != texto:
+                    conn.execute("UPDATE dudas_y_hallazgos SET descripcion_pregunta = ? WHERE id = ?", (texto, fila["id"]))
+                    _auditar(conn, "ACTUALIZAR_DUDA", str(fila["id"]),
+                             {"visita_id": self.visita_id, "campo": campo, "pregunta_anterior": fila["descripcion_pregunta"],
+                              "pregunta": texto, "trabajo": self.trabajo_id}, self.usuario)
                 return fila["id"], False
             cur = conn.execute("""INSERT INTO dudas_y_hallazgos (proyecto_id, visita_id, id_elemento, categoria,
                                   campo_afectado, descripcion_pregunta, creado) VALUES (?, ?, ?, ?, ?, ?, ?)""",
@@ -1112,6 +1128,7 @@ class ProcesoVisita:
                                             marca_borrador=None if MAPEO_CONFIRMADO else MARCA_BORRADOR)
             resultado["discrepancias"] = list(r.get("discrepancias") or [])
             obra: Dict[int, List[str]] = {}
+            faltantes: Dict[int, List[Tuple[str, str]]] = {}
             for d in r["dudas"]:
                 orden = por_orden.get(d.get("id_elemento"))
                 pag = f"p{orden:03d}" if orden else None
@@ -1119,9 +1136,16 @@ class ProcesoVisita:
                     self.duda(f"excluido:{pag}", d["id_elemento"], d["descripcion_pregunta"])
                 elif d.get("bloquea") is False and pag:
                     obra.setdefault(orden, []).append(d["campo_afectado"])
+                elif pag:
+                    faltantes.setdefault(orden, []).append((d["campo_afectado"], d["descripcion_pregunta"]))
                 else:
-                    self.duda(f"generacion:{pag}" if pag else "generacion:STP-MIVED", d.get("id_elemento") or "(visita)",
-                              d["descripcion_pregunta"])
+                    self.duda("generacion:STP-MIVED", d.get("id_elemento") or "(visita)", d["descripcion_pregunta"])
+            for orden, lista in faltantes.items():  # UNA duda por elemento con TODO lo que falta, en orden fijo (campo_afectado)
+                titulo = next(t for t, o in por_orden.items() if o == orden)
+                lista = sorted(set(lista))
+                detalle = "; ".join(f"({i}) {campo}: {pregunta}" for i, (campo, pregunta) in enumerate(lista, 1))
+                self.duda(f"generacion:p{orden:03d}", titulo, f"{titulo}: faltan {len(lista)} dato(s) para generar el STP-MIVED. "
+                                                              f"{detalle}", actualizar=True)
             for orden, campos in obra.items():  # UNA duda de OBRA por elemento (la Mesa no se satura)
                 titulo = next(t for t, o in por_orden.items() if o == orden)
                 self.duda(f"obra:p{orden:03d}", titulo, f"{titulo}: faltan datos de OBRA de la visita ({', '.join(campos)}); "

@@ -563,3 +563,11 @@ def test_t3_conforme_por_omision_no_inventa_si_el_plano_no_trae_el_valor(mundo, 
     ficha["conforme_por_omision"] = ["m"]
     r = _generar(mundo, entorno, [ficha])
     assert _celdas_a_la_derecha(r["ruta"], 2, "2.m. Adic Bot:", 320) == []  # nada que copiar: sigue vacía
+
+
+def test_t11b_las_dudas_de_filas_faltantes_salen_en_orden_alfabetico_fijo():
+    _, dudas, _ = stp_mived._filas_de_ficha({"titulo": "C1", "plano": {}, "medidas": {}}, "COLUMNA", "col", None)
+    campos = [d["campo_afectado"] for d in dudas]
+    planos = [c for c in campos if c.startswith("plano.")]
+    assert planos == sorted(planos) and len(planos) == len(set(planos)) and "plano.k" in planos
+    assert campos[len(planos):] == ["medidas.c", "medidas.d"]

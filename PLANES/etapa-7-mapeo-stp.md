@@ -29,7 +29,7 @@ Ejemplos: C1 EJE D-4 (S2C pág. 5) y C3 EJE B-4 (S2C pág. 9). Campos del plano:
 | h | Diám. Est. | de `estribos` | 9 EST. ∅3/8" / 10 EST. ∅3/8" | **derivación propuesta (T9)**: `estribos_cantidad_diametro`; `9 EST. Ø3/8" @0.10` → `9 EST. Ø3/8"` |
 | i | Eje x-x | `barras_cara_x` + diámetro de `acero_longitudinal` | 6-∅1" / 6-∅1" (T10: `"6"`, `36∅1"` / `"6"`, `40∅1"`) | **derivación propuesta (T11)**: `barras_por_cara`; `"6"` + `36∅1"` → `6-∅1"`; el campo debe ser un entero de solo dígitos; ver pregunta 9b |
 | j | Eje y-y | `barras_cara_y` + diámetro de `acero_longitudinal` | 14-∅1" / 16-∅1" (T10: `"14"` / `"16"`) | **derivación propuesta (T11)**: `barras_por_cara`; `"14"` + `36∅1"` → `14-∅1"`; `"16"` + `40∅1"` → `16-∅1"` |
-| k | Total barras | de `acero_longitudinal` | 36 / 40 | derivación propuesta; el generador la comprueba contra la suma de `barras`, no se copia |
+| k | Total barras | total del ÚNICO grupo de `acero_longitudinal` | 36 / 40 (C1 `36∅1"` → `36`; C3 `40∅1"` → `40`) | **derivación propuesta (T11b)**: `barras_total_unico`, misma regex exacta que m y n; varios grupos, `+GAN.`, 0 o texto van a la duda `derivacion.k` (nada se suma). El generador sigue comparando k con la suma de `barras` y, si no coinciden, abre su duda `plano.k`; ver pregunta 9d |
 | m | Diám. barras nudos | de `acero_longitudinal` | ∅1" | **derivación propuesta (T9)**: `barras_diametro_unico`; `36Ø1"` → `Ø1"` |
 | n | Diám. barras internas | de `acero_longitudinal` | ∅1" | **derivación propuesta (T9)**: misma regla que m (m = n, ver abajo) |
 | o | Solape | — | ZONA CENTRAL / 1.08 | sin mapear |
@@ -113,3 +113,4 @@ Fuera de alcance de T4: sin entrada en el JSON, sigue la duda `diseno:pNNN:mapeo
       esquina contadas en las dos caras (por eso `2·(x+y) − 4` = total de barras)?
    c. **Altura H de la columna:** hoy solo se copia si el plano la imprime en metros (`altura_m`). ¿Se puede calcular a partir de las cotas NPT
       de los niveles? Hoy no se calcula y la fila queda vacía con su duda.
+   d. **Fila k (Total barras, T11b):** ¿se aprueba que k sea el total que dice el rótulo del plano (`36∅1"` → 36, `40∅1"` → 40) cuando hay un solo grupo de barras? Con varios grupos no se suma: va a duda.

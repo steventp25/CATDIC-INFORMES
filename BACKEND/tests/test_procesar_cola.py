@@ -9,6 +9,7 @@ import base64
 import functools
 import io
 import json
+import os
 import sqlite3
 from pathlib import Path
 
@@ -626,6 +627,7 @@ def test_t4_el_json_entregado_es_propuesta_sin_confirmar():
         "g": {"campo": "estribos", "regla": "estribos_espaciamiento_unico"},
         "m": {"campo": "acero_longitudinal", "regla": "barras_diametro_unico"},
         "n": {"campo": "acero_longitudinal", "regla": "barras_diametro_unico"},
+        "k": {"campo": "acero_longitudinal", "regla": "barras_total_unico"},  # T11b
         "b": {"campo": "fc", "regla": "fc_kgcm2"},  # T11
         "e": {"campo": "altura_m", "regla": "metros_impresos"},
         "i": {"campo": "barras_cara_x", "regla": "barras_por_cara",
@@ -714,7 +716,8 @@ def test_t4_columna_con_b_m_y_h_m_llena_las_medidas_c_y_d(entorno, monkeypatch):
                                 "d": {"valor_plano_m": 1.50, "medida_acero_campo_m": None}}
     assert ficha["barras"] == [(36, '1"')]  # conversión exacta de 36∅1"
     # T9: f, g, h, m, n derivados (propuesta); k y la cuantía las calcula/comprueba el generador, no se copian
-    assert ficha["plano"] == {"h": '9 EST. ∅3/8"', "f": '∅3/8"@0.10', "g": '∅3/8"@0.10', "m": '∅1"', "n": '∅1"'}
+    assert ficha["plano"] == {"h": '9 EST. ∅3/8"', "f": '∅3/8"@0.10', "g": '∅3/8"@0.10', "m": '∅1"', "n": '∅1"',
+                              "k": "36"}  # T11b: k = total del único grupo
     assert capturado["marca"] == pc.MARCA_BORRADOR
     assert not any(d["campo_afectado"] == "diseno:p001:mapeo" for d in _abiertas())
 
@@ -826,10 +829,10 @@ def test_t9_c1_y_c3_llenan_f_g_h_m_n_y_la_cuantia_no_se_copia(entorno, monkeypat
                     "cuantia": "9.99"})
     _procesar()
     c1, c3 = capturado["fichas"]
-    assert c1["plano"] == {"h": '9 EST. Ø3/8"', "f": 'Ø3/8"@0.10', "g": 'Ø3/8"@0.10', "m": 'Ø1"', "n": 'Ø1"'}
-    assert c3["plano"] == {"h": '10 EST. Ø3/8"', "f": 'Ø3/8"@0.10', "g": 'Ø3/8"@0.10', "m": 'Ø1"', "n": 'Ø1"'}
-    for f in (c1, c3):  # error 12: la cuantía (p) y el total de barras (k) no salen de la derivación ni se copian
-        assert "p" not in f["plano"] and "k" not in f["plano"] and "9.99" not in json.dumps(f)
+    assert c1["plano"] == {"h": '9 EST. Ø3/8"', "f": 'Ø3/8"@0.10', "g": 'Ø3/8"@0.10', "m": 'Ø1"', "n": 'Ø1"', "k": "36"}
+    assert c3["plano"] == {"h": '10 EST. Ø3/8"', "f": 'Ø3/8"@0.10', "g": 'Ø3/8"@0.10', "m": 'Ø1"', "n": 'Ø1"', "k": "40"}
+    for f in (c1, c3):  # error 12: la cuantía (p) no sale de la derivación ni se copia; k (T11b) es el total del rótulo
+        assert "p" not in f["plano"] and "9.99" not in json.dumps(f)
     assert c1["barras"] == [(36, '1"')] and c3["barras"] == [(40, '1"')]
     assert not [d for d in _abiertas() if "derivacion." in d["campo_afectado"]]
 
@@ -908,7 +911,7 @@ def test_t9_campo_vacio_no_abre_duda_de_derivacion(entorno, monkeypatch):
     _diseno(id_elemento="C1", ejes="EJE D-4", tipo="COLUMNA",  # SINTÉTICO
             campos={"b_m": "0.60", "h_m": "1.50", "acero_longitudinal": '36Ø1"', "estribos": PENDIENTE})
     _procesar()
-    assert capturado["fichas"][0]["plano"] == {"m": 'Ø1"', "n": 'Ø1"'}  # lo pendiente no se rellena
+    assert capturado["fichas"][0]["plano"] == {"m": 'Ø1"', "n": 'Ø1"', "k": "36"}  # lo pendiente no se rellena
     assert not [d for d in _abiertas() if "derivacion." in d["campo_afectado"]]
 
 
@@ -1092,3 +1095,112 @@ def test_t9_inicializar_bd_crea_propuestas_proyecto(entorno):
     with _bd() as conn:
         cols = {r[1] for r in conn.execute("PRAGMA table_info(propuestas_proyecto)")}
     assert {"proyecto_id", "campo", "valor", "situacion", "fuente_json", "estado", "creado"} <= cols
+
+
+# ---------- T11b (Etapa 7): fila k de COLUMNA y una sola duda con todas las filas que faltan ----------
+
+@pytest.mark.parametrize("texto,esperado", [('36∅1"', "36"), ('40∅1"', "40"), ('36Ø1"', "36"), (' 8 ∅3/4" ', "8")])
+def test_t11b_k_es_el_total_del_unico_grupo(texto, esperado):
+    assert pc._barras_total_unico(texto) == esperado
+
+
+@pytest.mark.parametrize("texto", ['36∅1" + 4∅3/4"', '36∅1"+GAN.', '0∅1"', "treinta y seis", PENDIENTE, "", None, 36, "36"])
+def test_t11b_k_que_no_cuadra_da_none(texto):
+    assert pc._barras_total_unico(texto) is None
+
+
+def test_t11b_c1_y_c3_llenan_k_36_y_40(entorno, monkeypatch):
+    _mapeo_real(monkeypatch)
+    capturado = _capturar_fichas(monkeypatch)
+    _elemento_visita(entorno, 1, "C1 D4", "C1", "EJE D-4")
+    _elemento_visita(entorno, 2, "C3 B4", "C3", "EJE B-4")
+    _diseno(uid="ed-0001", id_elemento="C1", ejes="EJE D-4", tipo="COLUMNA", campos=_C1_REAL)  # SINTÉTICO
+    _diseno(uid="ed-0002", id_elemento="C3", ejes="EJE B-4", tipo="COLUMNA", campos=_C3_REAL)
+    _procesar()
+    c1, c3 = capturado["fichas"]
+    assert c1["plano"]["k"] == "36" and c3["plano"]["k"] == "40"
+
+
+@pytest.mark.parametrize("acero", ['36∅1" + 4∅3/4"', '36∅1"+GAN.', '0∅1"', "texto", PENDIENTE])
+def test_t11b_k_que_no_cuadra_no_se_llena(entorno, monkeypatch, acero):
+    capturado = _una_columna(entorno, monkeypatch, {**_C1_REAL, "acero_longitudinal": acero})
+    assert "fichas" not in capturado or "k" not in capturado["fichas"][0]["plano"]
+    if "fichas" not in capturado and acero != PENDIENTE:  # pendiente = vacío: sin derivación, falla por 'barras'
+        assert "diseno:p001:derivacion.k" in {d["campo_afectado"] for d in _abiertas()}
+
+
+def _sin_k_ni_b_ni_e(monkeypatch):
+    """Mapeo real sin la derivación de k: el generador real ve b, e y k vacías (SINTÉTICO)."""
+    mapeo = _mapeo_real(monkeypatch)
+    der = dict(mapeo["col"]["derivaciones"])
+    der.pop("k")
+    mapeo["col"] = {**mapeo["col"], "derivaciones": der}
+
+
+def _dudas_de_generacion():
+    return [d for d in _abiertas() if d["campo_afectado"] == "generacion:p001"]
+
+
+def test_t11b_una_sola_duda_lista_b_e_k_en_orden_fijo(entorno, monkeypatch):
+    _sin_k_ni_b_ni_e(monkeypatch)
+    _elemento_visita(entorno, 1, "C1 D4", "C1", "EJE D-4")
+    _diseno(id_elemento="C1", ejes="EJE D-4", tipo="COLUMNA", campos=_C1_REAL)  # SINTÉTICO
+    _procesar()
+    ds = _dudas_de_generacion()
+    assert len(ds) == 1
+    texto = ds[0]["descripcion_pregunta"]
+    assert texto.index("plano.b") < texto.index("plano.e") < texto.index("plano.k")
+    assert "faltan 3 dato(s)" in texto and "(1) plano.b" in texto
+    _procesar()  # segunda corrida: la misma duda, el mismo texto
+    ds = _dudas_de_generacion()
+    assert len(ds) == 1 and ds[0]["descripcion_pregunta"] == texto
+
+
+def test_t11b_el_orden_de_las_obligatorias_no_depende_de_pythonhashseed():
+    import subprocess
+    import sys
+    raiz = Path(pc.__file__).parent
+    codigo = ("from generators import stp_mived as s; "
+              "r, dudas, _ = s._filas_de_ficha({'titulo': 'C1', 'plano': {}, 'medidas': {}}, 'COLUMNA', 'col', None); "
+              "print([d['campo_afectado'] for d in dudas])")
+    salidas = {subprocess.run([sys.executable, "-c", codigo], capture_output=True, text=True, cwd=str(raiz),
+                              env={**os.environ, "PYTHONHASHSEED": semilla}, check=True).stdout for semilla in ("1", "2", "3", "4")}
+    assert len(salidas) == 1 and "plano.b" in next(iter(salidas))
+
+
+def test_t11b_al_completar_e_la_misma_duda_se_actualiza_y_se_audita(entorno, monkeypatch):
+    _sin_k_ni_b_ni_e(monkeypatch)
+    _elemento_visita(entorno, 1, "C1 D4", "C1", "EJE D-4")
+    _diseno(id_elemento="C1", ejes="EJE D-4", tipo="COLUMNA", campos=_C1_REAL)  # SINTÉTICO
+    _procesar()
+    antes = _dudas_de_generacion()[0]
+    with _bd() as conn:
+        fila = conn.execute("SELECT uid, datos_diseno_json FROM elementos_diseno").fetchone()
+        datos = {**json.loads(fila["datos_diseno_json"]), "altura_m": "2.95"}
+        conn.execute("UPDATE elementos_diseno SET datos_diseno_json = ? WHERE uid = ?", (json.dumps(datos), fila["uid"]))
+    _procesar()
+    despues = _dudas_de_generacion()
+    assert len(despues) == 1 and despues[0]["id"] == antes["id"]
+    assert "plano.e" not in despues[0]["descripcion_pregunta"] and "faltan 2 dato(s)" in despues[0]["descripcion_pregunta"]
+    assert "plano.b" in despues[0]["descripcion_pregunta"] and "plano.k" in despues[0]["descripcion_pregunta"]
+    with _bd() as conn:
+        aud = conn.execute("SELECT usuario, detalle_json FROM auditoria WHERE accion = 'ACTUALIZAR_DUDA' AND entidad_id = ?",
+                           (str(antes["id"]),)).fetchall()
+    assert len(aud) == 1 and aud[0]["usuario"] == "prueba"
+    assert "plano.e" in json.loads(aud[0]["detalle_json"])["pregunta_anterior"]
+
+
+def test_t11b_sin_faltantes_la_duda_agrupada_se_cierra(entorno, monkeypatch):
+    _sin_k_ni_b_ni_e(monkeypatch)
+    _elemento_visita(entorno, 1, "C1 D4", "C1", "EJE D-4")
+    _diseno(id_elemento="C1", ejes="EJE D-4", tipo="COLUMNA", campos=_C1_REAL)  # SINTÉTICO
+    _procesar()
+    assert _dudas_de_generacion()
+    _mapeo_real(monkeypatch)  # vuelve la derivación de k; b y e se completan en el plano
+    with _bd() as conn:
+        fila = conn.execute("SELECT uid, datos_diseno_json FROM elementos_diseno").fetchone()
+        datos = {**json.loads(fila["datos_diseno_json"]), "altura_m": "2.95", "fc": "350"}
+        conn.execute("UPDATE elementos_diseno SET datos_diseno_json = ? WHERE uid = ?", (json.dumps(datos), fila["uid"]))
+    _capturar_fichas(monkeypatch)
+    _procesar()
+    assert not _dudas_de_generacion()

@@ -160,12 +160,12 @@ def _filas_de_ficha(ficha: Dict, tipo_txt: str, kind: str, tolerancia) -> Tuple[
                       "bloquea": bloquea})
 
     # Valores del plano (Capa 1): lo obligatorio no puede faltar
-    for letra in OBLIGATORIAS[kind]:
+    for letra in sorted(OBLIGATORIAS[kind]):  # orden fijo: el set no tiene orden y la lista de dudas debe ser estable
         if letra in DIMENSIONALES[kind] and letra in medidas:
             continue  # la fila sale de la medida del plano
         if _vacio(plano_in.get(letra)):
             duda(f"plano.{letra}", f"Falta en el plano el valor de la fila '{letra}' de {tipo_txt}: {PENDIENTE}.")
-    for letra in DIMENSIONALES[kind]:
+    for letra in sorted(DIMENSIONALES[kind]):
         if letra not in medidas and (kind in CON_CUANTIA or letra in OBLIGATORIAS[kind]):
             duda(f"medidas.{letra}", f"Falta la dimensión '{letra}' del plano de {tipo_txt}: {PENDIENTE}.")
     if any(d["bloquea"] for d in dudas):
