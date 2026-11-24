@@ -13,6 +13,14 @@ Rama `claude/etapa7-campo-informe-02d16d`. Commits locales, sin push ni PR (los 
 | T6 a T9 | hecho | Equivalencias de nivel, cabecera propuesta, recuadros propuestos y derivaciones f, g, h, m y n (`e810cc7`, `b1b0f82`, `2f973b5`, `cb859e5` y anteriores) |
 | T11 / T11b / T11c | hecho, aprobadas por el Director (Evaluación 8) | `d6a953d` (b, e, i, j), `2987705` (k y una sola duda de generación por elemento), `7d5914a` (la duda de OBRA se actualiza). Suite: 1262 pasan, 3 omitidas y solo las 2 fallas conocidas de Dropbox |
 
+| T12 (zona de planta para LOCALIZACIÓN) | hecha, aprobada por el Director (Evaluación 9) | `8165cd5` (plan y contrato), `6eee060` (código). Suite: 1286 pasan, 3 omitidas y solo las 2 fallas conocidas de Dropbox. Imágenes de la prueba en seco en la carpeta de notas del Director, `t12-localizacion\` |
+
+**Observaciones de T12 que no bloquean** (Director, Evaluación 9):
+- El recuadro de LOCALIZACIÓN de C1 que propuso T8 queda corrido: la columna cae en su esquina de arriba a la izquierda. Steven lo ajusta en el visor.
+- `proponer_zona` escribe en la BD sin hacer antes un respaldo. Hay que hacerlo antes de usarlo sobre la BD real.
+- Falta probar el visor (la tarjeta «Zona de planta») contra el servidor real; solo se comprobó con respuestas simuladas.
+- La zona de la hoja 24 solo se confirmó en la copia de prueba, como simulación. Steven confirma la zona de cada hoja de planta.
+
 **En espera (24/11/2026):** no queda código pendiente para C1 y C3. Con una altura de prueba, la corrida 6 del Director ya da el primer STP borrador. Lo que falta depende de Steven:
 - las preguntas 9a–9f de `PLANES/etapa-7-mapeo-stp.md`;
 - la equivalencia S-2 (`PLANES/etapa-7-niveles.md`);
