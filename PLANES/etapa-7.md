@@ -98,7 +98,7 @@ carpeta de pruebas. Al volver Steven, solo faltan sus confirmaciones (datos del 
 - Archivos: `BACKEND/database.py` (tabla nueva), `BACKEND/procesador_cola.py` (`_candidatos` y su duda), `BACKEND/main.py` (endpoints), `BACKEND/tests/test_equivalencias_nivel.py` (nuevo), `PLANES/etapa-7-niveles.md` (nuevo).
 - Depende de: —
 - Qué hacer:
-  - Tabla `equivalencias_nivel` por obra: `proyecto_id`, `nivel_visita` (`S-2`) y `rango_impreso` (`E-1 @ E-2`, tal cual está impreso). El usuario la llena; nunca se deduce.
+  - Tabla `equivalencias_nivel` por obra: `proyecto_id`, `nivel_visita` (`S-2`) y `rango_impreso` (`E-1 @ E-2`, tal cual está impreso). El usuario la llena; nunca se deduce. Un nivel admite varios rangos, decisión del Líder del 23/11 por la corrida 1 de T5.
   - Endpoints `GET/PUT /api/proyectos/{id}/equivalencias-nivel`, con auditoría y respaldo de la BD antes de escribir.
   - En el cruce: cuando el diseño no trae EJES (los tiene `pendiente de verificar`), se cruza por ID + nivel (decisión D11 de la Fase A, A1 §6.2). El nivel de la visita se traduce con la tabla, y los EJES del informe son los de la visita.
   - Con la tabla vacía o sin la fila del nivel, se abre una duda clara («falta la equivalencia S-2 → rango impreso»).

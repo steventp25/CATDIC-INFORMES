@@ -304,8 +304,8 @@ def inicializar_bd():
     """)
 
     # 13. EQUIVALENCIA DE NIVELES (Etapa 7 · T6): nivel de la visita (S-2) -> rango impreso del plano (E-1 @ E-2).
-    #     Solo la escribe el usuario. Un nivel de visita tiene una sola equivalencia por obra; un rango impreso sí
-    #     puede servir a varios niveles.
+    #     Solo la escribe el usuario. Un nivel de visita admite varios rangos impresos por obra (uno por familia de
+    #     elemento y tramo) y un rango impreso puede servir a varios niveles.
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS equivalencias_nivel (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -314,7 +314,7 @@ def inicializar_bd():
         rango_impreso TEXT NOT NULL,         -- 'E-1 @ E-2', tal cual está impreso en el plano
         actualizado_por TEXT NOT NULL,
         actualizado TEXT NOT NULL,
-        UNIQUE(proyecto_id, nivel_visita)
+        UNIQUE(proyecto_id, nivel_visita, rango_impreso)
     );
     """)
 
@@ -327,6 +327,46 @@ def inicializar_bd():
     migrar_elementos_diseno()
     migrar_proyectos_cabecera()
     migrar_columnas_t4n()
+    migrar_equivalencias_nivel()
+
+# ---------- Migración de 'equivalencias_nivel' (Etapa 7 · T6) ----------
+
+def migrar_equivalencias_nivel() -> bool:
+    """
+    La primera versión de la tabla tenía UNIQUE(proyecto_id, nivel_visita) (un rango por nivel). Si existe así, se
+    reconstruye con UNIQUE(proyecto_id, nivel_visita, rango_impreso) conservando todas las filas. Idempotente.
+    """
+    conn = get_connection()
+    try:
+        fila = conn.execute("SELECT sql FROM sqlite_master WHERE type='table' AND name='equivalencias_nivel'").fetchone()
+        if fila is None or "UNIQUE(proyecto_id, nivel_visita, rango_impreso)" in " ".join(fila[0].split()):
+            return False
+        conn.isolation_level = None
+        conn.execute("BEGIN")
+        try:
+            conn.execute("ALTER TABLE equivalencias_nivel RENAME TO equivalencias_nivel_vieja")
+            conn.execute("""
+            CREATE TABLE equivalencias_nivel (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                proyecto_id TEXT NOT NULL REFERENCES proyectos(id) ON DELETE CASCADE,
+                nivel_visita TEXT NOT NULL,
+                rango_impreso TEXT NOT NULL,
+                actualizado_por TEXT NOT NULL,
+                actualizado TEXT NOT NULL,
+                UNIQUE(proyecto_id, nivel_visita, rango_impreso)
+            )""")
+            conn.execute("""INSERT INTO equivalencias_nivel (id, proyecto_id, nivel_visita, rango_impreso, actualizado_por,
+                            actualizado) SELECT id, proyecto_id, nivel_visita, rango_impreso, actualizado_por, actualizado
+                            FROM equivalencias_nivel_vieja""")
+            conn.execute("DROP TABLE equivalencias_nivel_vieja")
+            conn.execute("COMMIT")
+        except Exception:
+            if conn.in_transaction:
+                conn.execute("ROLLBACK")
+            raise
+        return True
+    finally:
+        conn.close()
 
 # ---------- Migración de 'visitas' (Etapa 1 · T2) ----------
 

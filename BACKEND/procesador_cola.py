@@ -27,7 +27,7 @@ from typing import Dict, List, Optional, Tuple
 import config
 import pymupdf
 from database import _respaldar_bd, get_connection, usuario_auditoria
-from equivalencias_nivel import clave_nivel_visita, equivalencia_de, normalizar_nivel
+from equivalencias_nivel import clave_nivel_visita, equivalencias_de, normalizar_nivel
 from generators import fi_mived, stp_mived
 from generators.comun import localizacion as m3_localizacion
 from generators.comun import salida
@@ -731,7 +731,8 @@ class ProcesoVisita:
         Elementos de diseño que cruzan con el elemento de la visita (§4.2). El nivel se compara normalizado
         (`normalizar_nivel`). Un candidato con EJES reales exige los mismos EJES. Uno con EJES "pendiente de
         verificar" (el cuadro de columnas no da ejes, D11) se acepta por ID + nivel; además de la escritura literal
-        del nivel, solo ahí vale la equivalencia que el usuario definió (S-2 -> rango impreso). Nunca se deduce.
+        del nivel, solo ahí valen las equivalencias que el usuario definió (S-2 -> varios rangos impresos). Si dos tramos
+        del mismo ID caen en el conjunto, quedan dos candidatos y va la duda; nunca se elige uno. Nunca se deduce.
         """
         proyecto_id = self.contexto["proyecto"]["id"]
         niveles = {normalizar_nivel(n) for n in niveles_de_diseno(ev["nivel"])}
@@ -743,10 +744,9 @@ class ProcesoVisita:
             else:
                 filas = conn.execute("SELECT * FROM elementos_diseno WHERE proyecto_id = ? AND UPPER(id_elemento) = ?",
                                      (proyecto_id, ident["id"].upper())).fetchall()
-            traducido = equivalencia_de(conn, proyecto_id, ev["nivel"])
-            traducido = normalizar_nivel(traducido) if traducido else None
+            traducidos = {normalizar_nivel(r) for r in equivalencias_de(conn, proyecto_id, ev["nivel"])}
             filas = [f for f in filas if normalizar_nivel(f["nivel_rango"]) in niveles
-                     or (f["ejes"] == PENDIENTE and traducido is not None and normalizar_nivel(f["nivel_rango"]) == traducido)]
+                     or (f["ejes"] == PENDIENTE and normalizar_nivel(f["nivel_rango"]) in traducidos)]
             if ident.get("uid"):
                 return filas
             if ident.get("ejes") is None:  # solo el ID: _elemento exige que el único candidato sea de ejes '—'
@@ -766,19 +766,20 @@ class ProcesoVisita:
         def leer(conn):
             filas = conn.execute("SELECT nivel_rango FROM elementos_diseno WHERE proyecto_id = ? AND "
                                  "UPPER(id_elemento) = ? AND ejes = ?", (proyecto_id, ident["id"].upper(), PENDIENTE)).fetchall()
-            return [f["nivel_rango"] for f in filas], equivalencia_de(conn, proyecto_id, ev["nivel"])
+            return [f["nivel_rango"] for f in filas], equivalencias_de(conn, proyecto_id, ev["nivel"])
         rangos, equivalencia = _con_conexion(leer)
         if not rangos:
             return None
         clave = clave_nivel_visita(ev["nivel"])
         donde = f"PUT /api/proyectos/{proyecto_id}/equivalencias-nivel"
         lista = ", ".join(sorted(set(rangos)))
-        if equivalencia is None:
+        if not equivalencia:
             return (f"Elemento '{ev['etiqueta_original']}': el plano trae {ident['id']} sin ejes (solo por rango de nivel: "
                     f"{lista}) y no se puede cruzar con el nivel {clave} de la visita: falta la equivalencia {clave} → "
-                    f"rango impreso de la obra. Defínela en {donde} (no se adivina).")
-        return (f"Elemento '{ev['etiqueta_original']}': la equivalencia definida {clave} → '{equivalencia}' no corresponde a "
-                f"ningún rango de {ident['id']} en el plano ({lista}). Corrígela en {donde}.")
+                    f"rangos impresos de la obra. Defínela en {donde} (no se adivina).")
+        return (f"Elemento '{ev['etiqueta_original']}': las equivalencias definidas {clave} → "
+                f"{', '.join(repr(r) for r in equivalencia)} no corresponden a ningún rango de {ident['id']} en el plano "
+                f"({lista}). Corrígelas en {donde}.")
 
     def _ficha(self, ev, c) -> Tuple[Optional[Dict], List[Tuple[str, str]]]:
         """Arma la ficha del generador (Capa 1 + Capa 2; la Capa 3 la calcula el generador). Devuelve (ficha, faltas)."""

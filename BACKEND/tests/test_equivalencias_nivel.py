@@ -113,7 +113,7 @@ def test_sin_equivalencia_abre_la_duda_y_nunca_adivina(entorno):
     assert not _listos(eventos)
     d = _dudas(eventos, "cruce:p001:equivalencia")
     assert len(d) == 1
-    assert "falta la equivalencia S-2" in d[0]["pregunta"] and "rango impreso" in d[0]["pregunta"]
+    assert "falta la equivalencia S-2" in d[0]["pregunta"] and "rangos impresos" in d[0]["pregunta"]
     assert RANGO in d[0]["pregunta"] and f"/api/proyectos/{PID}/equivalencias-nivel" in d[0]["pregunta"]
     assert [x["campo_afectado"] for x in _abiertas()] == ["cruce:p001:equivalencia"]
 
@@ -133,7 +133,7 @@ def test_equivalencia_que_no_cae_en_ningun_rango_del_id_es_duda(entorno):
     _, eventos = _procesar()
     d = _dudas(eventos, "cruce:p001:equivalencia")
     assert not _listos(eventos) and len(d) == 1
-    assert "no corresponde a ningún rango de C1" in d[0]["pregunta"] and "E-1 @ E-2" in d[0]["pregunta"]
+    assert "no corresponden a ningún rango de C1" in d[0]["pregunta"] and "E-1 @ E-2" in d[0]["pregunta"]
 
 
 def test_dos_candidatos_es_duda_y_no_se_elige_uno(entorno):
@@ -209,6 +209,61 @@ def test_visita_sin_ejes_y_diseno_sin_ejes_pide_el_cruce(entorno):
     assert _dudas(eventos, "cruce:p001:ejes")
 
 
+# ---------- Varios rangos por nivel (decisión del Líder, 23/11) ----------
+
+def test_un_nivel_con_varios_rangos_cruza_una_familia_por_rango(entorno, monkeypatch):
+    monkeypatch.setattr(pc, "MAPEO_DISENO_A_STP", {**MAPEO_COL, "muro": {"filas": {"a": "fc_kgcm2"}, "medidas": {}}})
+    _diseno("ed-0001", "C1", "FUNDACIONES @ E-3", PENDIENTE, tipo="COLUMNA RECTANGULAR")
+    _diseno("ed-0002", "C1", "E-3 @ E-8", PENDIENTE, tipo="COLUMNA RECTANGULAR")  # otro tramo: fuera del conjunto
+    _diseno("ed-0003", "MH2", "FUNDACIONES @ E-1", PENDIENTE, tipo="MURO H.A.")
+    _diseno("ed-0004", "MH3", "FUNDACIONES @ E-2", PENDIENTE, tipo="MURO H.A.")
+    for r in ("FUNDACIONES @ E-3", "FUNDACIONES @ E-1", "FUNDACIONES @ E-2"):
+        _equivalencia("S-2", r)
+    _visita_columna(entorno, "C1 D4", "C1", "EJE D-4", orden=1)
+    _visita_columna(entorno, "MH2 D4", "MH2", "EJE D-4", orden=2)
+    _visita_columna(entorno, "MH3 D4", "MH3", "EJE D-4", orden=3)
+    _, eventos = _procesar()
+    assert sorted(e["titulo"] for e in _listos(eventos)) == ["COLUMNA RECTANGULAR-C1-EJE D-4", "MURO H.A.-MH2-EJE D-4",
+                                                              "MURO H.A.-MH3-EJE D-4"]
+
+
+def test_dos_tramos_del_mismo_id_dentro_del_conjunto_es_duda(entorno):
+    _columna("ed-0001", nivel="FUNDACIONES @ E-3")
+    _columna("ed-0002", nivel="E-3 @ E-8")
+    _equivalencia("S-2", "FUNDACIONES @ E-3")
+    _equivalencia("S-2", "E-3 @ E-8")
+    _visita_columna(entorno)
+    _, eventos = _procesar()
+    d = _dudas(eventos, "cruce:p001")
+    assert not _listos(eventos) and len(d) == 1 and "2 elementos de diseño" in d[0]["pregunta"]
+
+
+def test_conjunto_sin_ningun_tramo_del_id_es_duda_de_equivalencia(entorno):
+    _columna("ed-0001", nivel="E-8 @ E-12")
+    _equivalencia("S-2", "FUNDACIONES @ E-3")
+    _equivalencia("S-2", "E-3 @ E-8")
+    _visita_columna(entorno)
+    _, eventos = _procesar()
+    d = _dudas(eventos, "cruce:p001:equivalencia")
+    assert not _listos(eventos) and len(d) == 1
+    assert "FUNDACIONES @ E-3" in d[0]["pregunta"] and "E-3 @ E-8" in d[0]["pregunta"]
+
+
+def test_migracion_de_la_tabla_de_un_solo_rango_conserva_las_filas(entorno):
+    with _bd() as conn:
+        conn.execute("DROP TABLE equivalencias_nivel")
+        conn.execute("""CREATE TABLE equivalencias_nivel (id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        proyecto_id TEXT NOT NULL REFERENCES proyectos(id) ON DELETE CASCADE, nivel_visita TEXT NOT NULL,
+                        rango_impreso TEXT NOT NULL, actualizado_por TEXT NOT NULL, actualizado TEXT NOT NULL,
+                        UNIQUE(proyecto_id, nivel_visita))""")
+    _equivalencia()
+    assert database.migrar_equivalencias_nivel() is True
+    assert database.migrar_equivalencias_nivel() is False  # idempotente
+    _equivalencia("S-2", "E-1 @ E-2")  # ahora admite un segundo rango para el mismo nivel
+    with _bd() as conn:
+        assert [r[0] for r in conn.execute("SELECT rango_impreso FROM equivalencias_nivel ORDER BY id")] == [RANGO, "E-1 @ E-2"]
+
+
 # ---------- Endpoints, respaldo y auditoría ----------
 
 @pytest.fixture
@@ -226,6 +281,10 @@ def _respaldos(entorno):
     return list((entorno["tmp"] / "bd").glob("*.backup-*.db"))
 
 
+def _item(nivel, *rangos):
+    return {"nivel_visita": nivel, "rangos_impresos": list(rangos)}
+
+
 def test_get_vacio_lista_ayudas_sin_aplicar_nada(cliente):
     c, entorno = cliente
     _columna()
@@ -235,63 +294,54 @@ def test_get_vacio_lista_ayudas_sin_aplicar_nada(cliente):
     assert r.json() == {"proyecto_id": PID, "equivalencias": [], "rangos_en_diseno": [RANGO], "niveles_en_visitas": ["S-2"]}
 
 
-def test_put_guarda_respalda_y_audita(cliente):
+def test_put_guarda_la_lista_por_nivel_respalda_y_audita(cliente):
     c, entorno = cliente
     _columna()
     antes = len(_respaldos(entorno))
     r = c.put(f"/api/proyectos/{PID}/equivalencias-nivel",
-              json={"items": [{"nivel_visita": "s2", "rango_impreso": "E-3  @  E-8"}, {"nivel_visita": "S-3", "rango_impreso": RANGO}]})
+              json={"items": [_item("s2", "E-3  @  E-8", "FUNDACIONES @ E-3", "e-3 @ e-8"), _item("S-3", RANGO)]})
     assert r.status_code == 200, r.text
     cuerpo = r.json()
-    assert cuerpo["guardadas"] == 2 and cuerpo["avisos"] == []
+    assert cuerpo["guardadas"] == 2 and cuerpo["avisos"] == [  # el repetido se ignora; el que no está en el diseño avisa
+        "El rango 'FUNDACIONES @ E-3' del nivel S-2 no coincide con ningún rango impreso del diseño de la obra."]
     assert len(_respaldos(entorno)) == antes + 1
     filas = c.get(f"/api/proyectos/{PID}/equivalencias-nivel").json()["equivalencias"]
-    assert [(f["nivel_visita"], f["rango_impreso"], f["actualizado_por"]) for f in filas] == [
-        ("S-2", RANGO, "steven"), ("S-3", RANGO, "steven")]  # un rango sirve a varios niveles; clave normalizada
+    assert [(f["nivel_visita"], f["rangos_impresos"], f["actualizado_por"]) for f in filas] == [
+        ("S-2", [RANGO, "FUNDACIONES @ E-3"], "steven"), ("S-3", [RANGO], "steven")]
     a = _auditoria()
     assert len(a) == 1 and a[0]["accion"] == eq.ACCION_GUARDAR and a[0]["entidad_id"] == PID
     detalle = json.loads(a[0]["detalle_json"])
-    assert detalle["cambios"][0] == {"nivel_visita": "S-2", "anterior": None, "nuevo": RANGO}
+    assert detalle["cambios"][0] == {"nivel_visita": "S-2", "anterior": [], "nuevo": [RANGO, "FUNDACIONES @ E-3"]}
     assert detalle["respaldo"].endswith(".db")
 
 
-def test_put_cambia_y_borra_con_valor_anterior_en_la_auditoria(cliente):
+def test_put_reemplaza_la_lista_del_nivel_y_lista_vacia_lo_borra(cliente):
     c, _ = cliente
     url = f"/api/proyectos/{PID}/equivalencias-nivel"
-    c.put(url, json={"items": [{"nivel_visita": "S-2", "rango_impreso": RANGO}]})
-    c.put(url, json={"items": [{"nivel_visita": "S-2", "rango_impreso": "E-1 @ E-2"}]})
-    assert [f["rango_impreso"] for f in c.get(url).json()["equivalencias"]] == ["E-1 @ E-2"]  # una sola por nivel
-    c.put(url, json={"items": [{"nivel_visita": "S-2", "rango_impreso": ""}]})
+    c.put(url, json={"items": [_item("S-2", RANGO, "E-1 @ E-2")]})
+    c.put(url, json={"items": [_item("S-2", "E-1 @ E-2")]})
+    assert [f["rangos_impresos"] for f in c.get(url).json()["equivalencias"]] == [["E-1 @ E-2"]]
+    c.put(url, json={"items": [_item("S-2")]})
     assert c.get(url).json()["equivalencias"] == []
     cambios = [json.loads(a["detalle_json"])["cambios"][0] for a in _auditoria()]
-    assert cambios == [{"nivel_visita": "S-2", "anterior": None, "nuevo": RANGO},
-                       {"nivel_visita": "S-2", "anterior": RANGO, "nuevo": "E-1 @ E-2"},
-                       {"nivel_visita": "S-2", "anterior": "E-1 @ E-2", "nuevo": None}]
-
-
-def test_put_avisa_si_el_rango_no_esta_en_el_diseno_pero_no_lo_cambia(cliente):
-    c, _ = cliente
-    _columna()
-    r = c.put(f"/api/proyectos/{PID}/equivalencias-nivel", json={"items": [{"nivel_visita": "S-2", "rango_impreso": "E-9 @ E-10"}]})
-    assert r.status_code == 200
-    assert len(r.json()["avisos"]) == 1 and "E-9 @ E-10" in r.json()["avisos"][0]
-    assert c.get(f"/api/proyectos/{PID}/equivalencias-nivel").json()["equivalencias"][0]["rango_impreso"] == "E-9 @ E-10"
+    assert cambios == [{"nivel_visita": "S-2", "anterior": [], "nuevo": [RANGO, "E-1 @ E-2"]},
+                       {"nivel_visita": "S-2", "anterior": [RANGO, "E-1 @ E-2"], "nuevo": ["E-1 @ E-2"]},
+                       {"nivel_visita": "S-2", "anterior": ["E-1 @ E-2"], "nuevo": []}]
 
 
 def test_put_rechaza_nivel_repetido_vacio_y_proyecto_inexistente_sin_escribir(cliente):
     c, entorno = cliente
     url = f"/api/proyectos/{PID}/equivalencias-nivel"
-    repetido = {"items": [{"nivel_visita": "S-2", "rango_impreso": RANGO}, {"nivel_visita": "s2", "rango_impreso": "E-1 @ E-2"}]}
-    assert c.put(url, json=repetido).status_code == 400
-    assert c.put(url, json={"items": [{"nivel_visita": "  ", "rango_impreso": RANGO}]}).status_code == 400
+    assert c.put(url, json={"items": [_item("S-2", RANGO), _item("s2", "E-1 @ E-2")]}).status_code == 400
+    assert c.put(url, json={"items": [_item("  ", RANGO)]}).status_code == 400
     assert c.put(url, json={"items": []}).status_code == 400
-    assert c.put("/api/proyectos/no-existe/equivalencias-nivel",
-                 json={"items": [{"nivel_visita": "S-2", "rango_impreso": RANGO}]}).status_code == 404
+    assert c.put("/api/proyectos/no-existe/equivalencias-nivel", json={"items": [_item("S-2", RANGO)]}).status_code == 404
     assert c.get("/api/proyectos/no-existe/equivalencias-nivel").status_code == 404
     assert c.get(url).json()["equivalencias"] == [] and _auditoria() == [] and _respaldos(entorno) == []
 
 
-def test_la_tabla_es_unica_por_obra_y_nivel(entorno):
+def test_la_tabla_es_unica_por_obra_nivel_y_rango(entorno):
     _equivalencia()
+    _equivalencia(rango="E-1 @ E-2")  # otro rango del mismo nivel: permitido
     with pytest.raises(Exception):
-        _equivalencia(rango="E-1 @ E-2")
+        _equivalencia()

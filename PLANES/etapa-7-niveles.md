@@ -40,19 +40,17 @@ Las plantas (pp. 7-13 y 20-33) traen una leyenda «CALIDAD DE MATERIALES · CONC
 ### 4. Plantas por sótano
 Los títulos impresos son `PLANTA ESTRUCTURAL DE SOTANO S6` (p. 20), `S5` (p. 21), `S4` (p. 22), `S3` (p. 23), `S2` (p. 24), `S1` (p. 25), `PLANTA ESTRUCTURAL PRIMER NIVEL` (p. 26), y después `NIVEL 2`, `NIVEL 3`, `NIVEL 4@8`, `NIVEL 9@17`, `NIVEL 18`. Estos títulos usan «NIVEL n», no «E-n».
 
-## Propuesta (hipótesis; Steven decide)
-Si `E-1` es el nivel de calle (p. 8) y los sótanos están por debajo, un rango que empieza en `FUNDACIONES` abarca todos los sótanos hasta su `E-n` final. Entonces, para S-2:
+## Propuesta (hipótesis; Steven decide, sigue sin cargarse en la tabla)
+Si `E-1` es el nivel de calle (p. 8) y los sótanos están por debajo, un rango que empieza en `FUNDACIONES` abarca todos los sótanos hasta su `E-n` final. Un nivel de la visita admite **varios** rangos impresos por obra (decisión del Líder del 23/11 por la corrida 1 de T5), porque cada familia de elemento tiene sus propios rangos. Para S-2, el conjunto propuesto es:
 
-| Nivel de la visita | Rango impreso propuesto | Cubre |
+| Nivel de la visita | Rangos impresos propuestos | Cubren |
 |---|---|---|
-| S-2 | `FUNDACIONES @ E-3` | C1 y C3 (visita 24) |
+| S-2 | `FUNDACIONES @ E-3` | columnas C1 y C3 (visita 24) |
+| S-2 | `FUNDACIONES @ E-1` | muro H.A. MH2 |
+| S-2 | `FUNDACIONES @ E-2` | muro H.A. MH3 |
 
-**Qué no está probado:** que `FUNDACIONES @ E-3` incluya S-2 es una inferencia de la lectura del corte de la p. 8; el plano no lo dice con esas palabras. Si Steven conoce otra relación (por ejemplo, otra numeración de E-n entre sótanos y torre), la que él escriba manda.
+**Qué no está probado:** que esos tres rangos incluyan S-2 es una inferencia de la lectura del corte de la p. 8; el plano no lo dice con esas palabras. Si Steven conoce otra relación (por ejemplo, otra numeración de E-n entre sótanos y torre), la que él escriba manda.
 
-## Limitación del diseño de la tabla (hay que decidirla)
-La tabla pedida guarda **un solo rango por nivel de visita**. Pero cada familia de elemento tiene sus propios rangos: en S-2, las columnas C1/C3 caen en `FUNDACIONES @ E-3`, MH2 en `FUNDACIONES @ E-1` y MH3 en `FUNDACIONES @ E-2`. Con una sola fila `S-2 → FUNDACIONES @ E-3`, MH2 y MH3 nunca cruzan por la tabla y el procesador abre la duda «la equivalencia definida no corresponde a ningún rango de MH2». Opciones para una tarea posterior (no se hicieron aquí porque el plan fija «una sola equivalencia por obra»):
-1. Equivalencia por familia (columna / muro) además de por nivel.
-2. Equivalencia por ID de elemento.
-3. Permitir varios rangos por nivel, aceptando el que coincida con el ID.
+**Cómo se usa el conjunto:** un elemento de diseño con EJES pendientes cruza si su rango está en el conjunto del nivel de la visita. Si dos tramos del mismo ID caen en el conjunto, el procesador abre la duda de siempre y no elige uno. Si el conjunto no existe o ningún tramo del ID cae en él, abre la duda `cruce:pNNN:equivalencia`.
 
-Mientras tanto, el muro de contención (`SOTANO S - 2`) cruza sin tabla, por la normalización exacta.
+El muro de contención (`SOTANO S - 2`) cruza sin tabla, por la normalización exacta.
