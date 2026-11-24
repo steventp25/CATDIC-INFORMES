@@ -562,7 +562,7 @@
                         </div>
                         <p class="text-xs text-gray-400" :data-detalle-recuadro="t.tipo">{{ detalleRecuadro(t.tipo) }}</p>
                         <div class="flex flex-wrap gap-2">
-                            <button @click="usarPropuesta(t.tipo)" :disabled="!visor.propuestas || !visor.propuestas[t.tipo] || !visor.propuestas[t.tipo].rect" :data-usar="t.tipo" class="bg-[#29292e] hover:bg-[#323238] disabled:opacity-40 text-white text-xs px-2 py-1 rounded">Usar propuesta</button>
+                            <button @click="usarPropuesta(t.tipo)" :disabled="!propuestaDe(t.tipo)" :data-usar="t.tipo" class="bg-[#29292e] hover:bg-[#323238] disabled:opacity-40 text-white text-xs px-2 py-1 rounded">Usar propuesta</button>
                             <button @click="guardarRecuadro(t.tipo)" :disabled="!visor.uid || !visor.borrador[t.tipo]" :data-guardar-recuadro="t.tipo" class="bg-yellow-500 hover:bg-yellow-400 disabled:opacity-40 text-black text-xs font-bold px-2 py-1 rounded">Confirmar y guardar</button>
                             <button @click="vistaPrevia(t.tipo)" :disabled="!rectActual(t.tipo)" :data-previa="t.tipo" class="bg-[#29292e] hover:bg-[#323238] disabled:opacity-40 text-white text-xs px-2 py-1 rounded">Vista previa</button>
                         </div>
@@ -1143,7 +1143,18 @@
                 const guardadoDe = (tipo) => {
                     const e = elementoVisor.value;
                     const g = e ? (tipo === 'localizacion' ? e.recorte_planta : e.recorte_detalle) : null;
-                    return g && g.rect ? g : null;
+                    return g && g.rect && g.estado === 'confirmado' ? g : null;   // solo lo confirmado cuenta como guardado
+                };
+                // Recuadro PROPUESTO ya guardado por el backend (estado distinto de 'confirmado'): se muestra, pero nadie lo confirmó
+                const propuestoGuardado = (tipo) => {
+                    const e = elementoVisor.value;
+                    const g = e ? (tipo === 'localizacion' ? e.recorte_planta : e.recorte_detalle) : null;
+                    return g && g.rect && g.estado !== 'confirmado' ? g : null;
+                };
+                const textoFuente = (f) => f ? `${f.metodo || ''}${f.rotulo ? ' «' + f.rotulo + '»' : ''}${f.rotulo_planta ? ' «' + f.rotulo_planta + '»' : ''}${f.archivo ? ' · ' + f.archivo : ''}` : '';
+                const propuestaDe = (tipo) => {
+                    const p = visor.value.propuestas && visor.value.propuestas[tipo];
+                    return p && p.rect ? p : propuestoGuardado(tipo);
                 };
                 const cambiarElemento = () => {
                     const v = visor.value;
@@ -1152,7 +1163,8 @@
                         const g = guardadoDe(t);
                         if (g) v.borrador[t] = null;
                     }
-                    const g = guardadoDe(v.tipo) || guardadoDe('localizacion') || guardadoDe('detalle');
+                    const g = guardadoDe(v.tipo) || guardadoDe('localizacion') || guardadoDe('detalle')
+                        || propuestoGuardado(v.tipo) || propuestoGuardado('localizacion') || propuestoGuardado('detalle');
                     if (g && g.pagina !== v.pagina) { v.pagina = g.pagina; cargarHoja(); }
                 };
                 const proponerVisor = async () => {
@@ -1167,20 +1179,21 @@
                     } catch (e) { v.error = e.message; } finally { v.ocupado = false; }
                 };
                 const usarPropuesta = async (tipo) => {
-                    const v = visor.value, p = v.propuestas && v.propuestas[tipo];
+                    const v = visor.value, p = propuestaDe(tipo);
                     if (!p || !p.rect) return;
                     v.borrador[tipo] = { pagina: p.pagina, rect: p.rect.slice(), origen: 'confirmado' };
                     v.tipo = tipo;
                     if (p.pagina !== v.pagina) { v.pagina = p.pagina; await cargarHoja(); }
                 };
                 const rectActual = (tipo) => {
-                    const v = visor.value, b = v.borrador[tipo], g = guardadoDe(tipo);
+                    const v = visor.value, b = v.borrador[tipo], g = guardadoDe(tipo) || propuestoGuardado(tipo);
                     return b ? { pagina: b.pagina, rect: b.rect } : (g ? { pagina: g.pagina, rect: g.rect } : null);
                 };
                 const estadoRecuadro = (tipo) => {
                     const v = visor.value;
                     if (v.borrador[tipo]) return { texto: 'sin guardar', clase: 'bg-blue-950 text-blue-300 border-blue-700' };
                     if (guardadoDe(tipo)) return { texto: 'confirmado', clase: 'bg-green-950 text-green-300 border-green-700' };
+                    if (propuestoGuardado(tipo)) return { texto: 'propuesto · confirma o ajusta', clase: 'bg-orange-950 text-orange-300 border-orange-600' };
                     const p = v.propuestas && v.propuestas[tipo];
                     if (p) return { texto: p.rect ? 'propuesto · pendiente de verificar' : 'pendiente de verificar', clase: 'bg-orange-950 text-orange-300 border-orange-600' };
                     return { texto: 'pendiente de verificar', clase: 'bg-orange-950 text-orange-300 border-orange-600' };
@@ -1190,6 +1203,8 @@
                     const fmt = (x) => `p${x.pagina} · [${x.rect.map(n => Math.round(n)).join(', ')}] pt`;
                     if (b) return `${fmt(b)} (${b.origen})`;
                     if (g) return `${fmt(g)} · ${g.origen} por ${g.confirmado_por}`;
+                    const ps = propuestoGuardado(tipo);
+                    if (ps) return `Propuesto — confirma o ajusta · ${fmt(ps)} · fuente: ${textoFuente(ps.fuente) || ps.origen || 'sin fuente'}`;
                     if (p) return p.rect ? `${fmt(p)} · fuente: ${p.fuente.metodo}${p.fuente.rotulo ? ' «' + p.fuente.rotulo + '»' : ''}` : p.motivo;
                     return 'Sin recuadro: elige un elemento y pulsa «Proponer recuadros», o dibújalo.';
                 };
@@ -1230,6 +1245,10 @@
                         const sigla = t === 'localizacion' ? 'LOC' : 'DET';
                         if (g && g.pagina === v.pagina) out.push({ clave: `guardado-${t}`, rect: g.rect, etiqueta: `${sigla} confirmado`, borde: '2px solid #22c55e', fondo: 'rgba(34,197,94,0.08)', etiquetaFondo: '#22c55e' });
                         if (p && p.rect && p.pagina === v.pagina) out.push({ clave: `propuesta-${t}`, rect: p.rect, etiqueta: `${sigla} propuesto (pendiente)`, borde: '2px dashed #eab308', fondo: 'rgba(234,179,8,0.08)', etiquetaFondo: '#eab308' });
+                        else if (!g) {
+                            const ps = propuestoGuardado(t);
+                            if (ps && ps.pagina === v.pagina) out.push({ clave: `propuesto-${t}`, rect: ps.rect, etiqueta: `${sigla} Propuesto — confirma o ajusta${ps.fuente && ps.fuente.metodo ? ' (' + ps.fuente.metodo + ')' : ''}`, borde: '2px dashed #f97316', fondo: 'rgba(249,115,22,0.10)', etiquetaFondo: '#f97316' });
+                        }
                         if (b && b.pagina === v.pagina) out.push({ clave: `borrador-${t}`, rect: b.rect, etiqueta: `${sigla} sin guardar`, borde: '2px solid #3b82f6', fondo: 'rgba(59,130,246,0.12)', etiquetaFondo: '#60a5fa' });
                     }
                     return out;
@@ -1449,7 +1468,7 @@
                     planosVigentes, avisoObra, modalObra, modalDatos, gruposDatos,
                     abrirNuevaObra, abrirCambiarPlano, cerrarModalObra, enviarObra, abrirDatosObra, guardarDatos,
                     visor, lienzoVisor, tiposRecuadro, elementoVisor, cajasVisibles, ptAPx, abrirVisor, cargarHoja, zoomVisor, ajustarVisor,
-                    cambiarElemento, proponerVisor, usarPropuesta, rectActual, estadoRecuadro, detalleRecuadro, guardarRecuadro,
+                    cambiarElemento, proponerVisor, usarPropuesta, propuestaDe, rectActual, estadoRecuadro, detalleRecuadro, guardarRecuadro,
                     vistaPrevia, empezarDibujo, seguirDibujo, terminarDibujo,
                     confirmar, nombreTabla, esDudaPlano, dudasObra, abrirMesaObra, abrirConfirmar, cerrarConfirmar, abrirTabla,
                     cajaResaltada, confirmarTabla, certificarNotas, extraerPlano,
