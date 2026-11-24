@@ -1190,6 +1190,35 @@ def test_t11b_al_completar_e_la_misma_duda_se_actualiza_y_se_audita(entorno, mon
     assert "plano.e" in json.loads(aud[0]["detalle_json"])["pregunta_anterior"]
 
 
+def test_t11c_la_duda_de_obra_se_actualiza_al_completar_una_celda(entorno, monkeypatch):
+    monkeypatch.setattr(pc, "MAPEO_DISENO_A_STP", MAPEO_SINT)
+    faltan = [["obra.g", "obra.e", "obra.f"]]  # desordenadas a propósito: la duda las lista en orden fijo
+
+    def falso(proyecto, visita, fichas, **k):
+        dudas = [{"id_elemento": fichas[0]["titulo"], "campo_afectado": c, "descripcion_pregunta": f"falta {c} (SINTÉTICO)",
+                  "bloquea": False} for c in faltan[0]]
+        return {"ok": False, "ruta": None, "errores": [], "dudas": dudas, "discrepancias": [], "excluidos": []}
+    monkeypatch.setattr(pc.stp_mived, "generar_stp_mived", falso)
+    _elemento_visita(entorno, 1)
+    _diseno()
+    _procesar()
+    antes = next(d for d in _abiertas() if d["campo_afectado"] == "obra:p001")
+    assert "(obra.e, obra.f, obra.g)" in antes["descripcion_pregunta"]
+    _procesar()  # la misma lista: no cambia el texto ni se audita nada
+    with _bd() as conn:
+        assert not conn.execute("SELECT 1 FROM auditoria WHERE accion = 'ACTUALIZAR_DUDA'").fetchall()
+    faltan[0] = ["obra.g", "obra.f"]  # el técnico completó la celda e
+    _procesar()
+    despues = [d for d in _abiertas() if d["campo_afectado"] == "obra:p001"]
+    assert len(despues) == 1 and despues[0]["id"] == antes["id"]
+    assert "(obra.f, obra.g)" in despues[0]["descripcion_pregunta"] and "obra.e" not in despues[0]["descripcion_pregunta"]
+    with _bd() as conn:
+        aud = conn.execute("SELECT usuario, detalle_json FROM auditoria WHERE accion = 'ACTUALIZAR_DUDA' AND entidad_id = ?",
+                           (str(antes["id"]),)).fetchall()
+    assert len(aud) == 1 and aud[0]["usuario"] == "prueba"
+    assert "obra.e" in json.loads(aud[0]["detalle_json"])["pregunta_anterior"]
+
+
 def test_t11b_sin_faltantes_la_duda_agrupada_se_cierra(entorno, monkeypatch):
     _sin_k_ni_b_ni_e(monkeypatch)
     _elemento_visita(entorno, 1, "C1 D4", "C1", "EJE D-4")

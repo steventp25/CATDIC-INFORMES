@@ -194,6 +194,12 @@ carpeta de pruebas. Al volver Steven, solo faltan sus confirmaciones (datos del 
   - [ ] C1 y C3 llenan k (36 y 40) con los textos reales de T10.
   - [ ] Suite verde y prueba en seco sobre una copia de la BD de T10.
 
+### T11c — La duda de OBRA se actualiza cuando cambia la lista
+- La hizo el Líder (cambio de una línea). Pedido por el Director el 24/11 tras revisar T11b.
+- **Problema:** `obra:pNNN` conservaba el texto de su primera corrida, así que seguía nombrando celdas que el técnico ya había completado.
+- **Arreglo:** `duda(..., actualizar=True)` (la de T11b), con las celdas en orden fijo. Si la lista cambia, el texto se actualiza con auditoría `ACTUALIZAR_DUDA`; si no cambia, no se audita nada.
+- Prueba: `test_t11c_la_duda_de_obra_se_actualiza_al_completar_una_celda`.
+
 ## Paralelismo
 - T1, T2 y T3 a la vez (no comparten archivos). T4 espera a T1. T5 al final.
 - T6 y T8 a la vez; T7 después de T6 (comparten `database.py` y `main.py`).

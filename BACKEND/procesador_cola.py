@@ -1146,10 +1146,12 @@ class ProcesoVisita:
                 detalle = "; ".join(f"({i}) {campo}: {pregunta}" for i, (campo, pregunta) in enumerate(lista, 1))
                 self.duda(f"generacion:p{orden:03d}", titulo, f"{titulo}: faltan {len(lista)} dato(s) para generar el STP-MIVED. "
                                                               f"{detalle}", actualizar=True)
-            for orden, campos in obra.items():  # UNA duda de OBRA por elemento (la Mesa no se satura)
+            for orden, campos in obra.items():  # UNA duda de OBRA por elemento (la Mesa no se satura), en orden fijo
                 titulo = next(t for t, o in por_orden.items() if o == orden)
-                self.duda(f"obra:p{orden:03d}", titulo, f"{titulo}: faltan datos de OBRA de la visita ({', '.join(campos)}); "
-                                                        f"las celdas quedan vacías en el STP ({PENDIENTE}).")
+                # T11c: si ya estaba abierta con otra lista (se completó una celda), el texto se actualiza y se audita
+                self.duda(f"obra:p{orden:03d}", titulo, f"{titulo}: faltan datos de OBRA de la visita "
+                                                        f"({', '.join(sorted(set(campos)))}); "
+                                                        f"las celdas quedan vacías en el STP ({PENDIENTE}).", actualizar=True)
             for e in r["errores"]:
                 self.duda("generacion:STP-MIVED", "(visita)", f"STP-MIVED: {e}")
             for f in fichas:  # las dudas de OBRA / excluido / generación que el STP ya no da, se cierran

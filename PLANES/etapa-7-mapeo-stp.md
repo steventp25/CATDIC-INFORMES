@@ -114,3 +114,5 @@ Fuera de alcance de T4: sin entrada en el JSON, sigue la duda `diseno:pNNN:mapeo
    c. **Altura H de la columna:** hoy solo se copia si el plano la imprime en metros (`altura_m`). ¿Se puede calcular a partir de las cotas NPT
       de los niveles? Hoy no se calcula y la fila queda vacía con su duda.
    d. **Fila k (Total barras, T11b):** ¿se aprueba que k sea el total que dice el rótulo del plano (`36∅1"` → 36, `40∅1"` → 40) cuando hay un solo grupo de barras? Con varios grupos no se suma: va a duda.
+   e. **Área de la barra para la cuantía (corrida 6):** el programa calcula para C1 una cuantía de 0.0204 con ∅1" = 5.10 cm². El STP entregado dice 0.0203, que corresponde a unos 5.07 cm² por barra. ¿Qué área por diámetro usa Steven? `reglas_ingenieria` no se cambia hasta tener su respuesta.
+   f. **Cuantía en obra (fila 2.p):** queda vacía cuando no hay barras medidas en obra. ¿Debe copiar la del plano cuando el elemento es conforme, como el resto de las filas vacías?
