@@ -184,6 +184,16 @@ carpeta de pruebas. Al volver Steven, solo faltan sus confirmaciones (datos del 
   - [ ] Suite verde.
 - Reglas: Regla de Oro, error 12. No se convierte ninguna unidad sin la aprobación de Steven.
 
+### T11b — Fila k de COLUMNA y todas las filas faltantes en una sola duda
+- Ejecutor: ejecutor-generadores. Pedido por el Director el 24/11 tras la corrida 5 de T5 (`PLANES/etapa-7-prueba.md`, hallazgos H1 y H2).
+- Archivos: `BACKEND/generators/mapeo_stp.json` (sigue `confirmado: false`), `BACKEND/procesador_cola.py`, `BACKEND/tests/test_procesar_cola.py`, `PLANES/etapa-7-mapeo-stp.md`.
+- **H1:** k ← total de un único grupo de `acero_longitudinal` (`36∅1"` → `36`), con la misma regex exacta `_RE_BARRAS_UNICO`. Si no cuadra, abre la duda `derivacion.k`. Se anota en la nota del JSON y en las preguntas para Steven.
+- **H2:** las filas que faltan del plano salen en **una sola duda por elemento**, que las lista todas en orden alfabético fijo (como la duda de OBRA). Hoy queda solo la primera y, como `OBLIGATORIAS` es un `set`, la letra cambia entre corridas.
+- Criterios de aceptación:
+  - [ ] Una columna sin b, e ni k muestra las tres, en el mismo orden, en dos corridas.
+  - [ ] C1 y C3 llenan k (36 y 40) con los textos reales de T10.
+  - [ ] Suite verde y prueba en seco sobre una copia de la BD de T10.
+
 ## Paralelismo
 - T1, T2 y T3 a la vez (no comparten archivos). T4 espera a T1. T5 al final.
 - T6 y T8 a la vez; T7 después de T6 (comparten `database.py` y `main.py`).

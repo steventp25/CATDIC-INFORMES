@@ -95,3 +95,18 @@ Montaje igual que la corrida 3: copia nueva de `…\scratchpad\t5b\copia.db` en 
   - **b:** f'c de las notas generales, o la leyenda «CALIDAD DE MATERIALES» de la planta S2, que da f'c por rango.
   - **e:** altura de entrepiso, de los cortes. Ojo: es una resta de cotas, no un texto impreso. Steven debe aprobar si se calcula.
   - **i y j:** conteo de barras por cara en el dibujo de la sección del cuadro de columnas. El informe entregado lleva `6-∅1"` y `14-∅1"` / `16-∅1"`.
+
+# Corrida 5: con T10 y T11 (`d6a953d`, 24/11/2026, Director)
+**Montaje:** copia del código en `…\scratchpad\aud-e7d\codigo`; BD = copia de la BD de T10 (`catdic_copia_t10.db`), con el mismo paquete v2, la hipótesis S-2, los recuadros y la cabecera de la corrida 2 (`…\scratchpad\t5e\`). BD real (`eba26967…`) y copia de T10 (`5948159c…`) sin cambios; Dropbox solo se leyó.
+
+1. **Sin confirmar nada (t5e):** igual que la corrida 2. 6 dudas, todas de Steven o del técnico.
+2. **Simulación de confirmaciones (t5f, usuario `prueba-simulada`):** i y j de C1 y C3 se llenan (`6-∅1"` / `14-∅1"` y `16-∅1"`). Se detiene en la fila **e** (altura, pendiente en el plano). Solo quedan las 2 dudas `derivacion_igual`, que no bloquean.
+3. **Variante con f'c = 350 en la copia (t5g, simula la respuesta de Steven a la duda de T10):** b se llena; ahora se detiene en la fila **k** (*Total barras*).
+
+## Hallazgos nuevos
+- **H1 · la fila k de columna no tiene fuente.** `PLANES/etapa-7-mapeo-stp.md` la da como «derivación propuesta de `acero_longitudinal`», pero ni T9 ni T11 la programaron: ninguna derivación ni `filas` llena k. El generador la exige (`OBLIGATORIAS["col"]`) y la compara con la suma de `barras`. Sin k no sale ninguna columna, aunque Steven confirme todo.
+- **H2 · solo se ve una fila faltante por elemento, y no siempre la misma.** `stp_mived` abre una duda por cada letra que falta, pero el procesador las guarda todas con el mismo campo `generacion:pNNN`, y `duda()` no abre otra si ya hay una abierta: queda solo la primera. Como `OBLIGATORIAS` es un `set`, el orden cambia de una corrida a otra (aquí salió e, y luego k). Steven tendría que resolver una fila, reprocesar y descubrir la siguiente.
+
+## Para que salga el PDF de C1 y C3
+- Código: H1 (k ← total de `acero_longitudinal`, `36∅1"` → 36) y H2 (una duda que liste todas las filas que faltan, en orden fijo).
+- Steven: confirmar el f'c (350, pregunta 9a) y decidir la altura H (pregunta 9c). Además, lo de siempre: las dudas de obra, la equivalencia S-2, la cabecera, los datos y recuadros del plano y el mapeo.

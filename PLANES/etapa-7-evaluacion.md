@@ -109,3 +109,26 @@
 - **Suite completa** sobre una copia exacta de `cb859e5`: **1149 pasan**, 3 se omiten y fallan las 2 conocidas de Dropbox.
 - **Simulación de la corrida 4** (abajo).
 - **BD real sin cambios:** sha256 `eba26967…`.
+
+## Evaluación 5 · 24/11/2026 · Director (auditoría) · Etapa 7 · T10 (rama `claude/etapa5-fase-a-3da668`, `afd1f9d`)
+**Veredicto: APROBADO.** El commit solo trae el informe (`PLANES/etapa-5-reportes/T10-visita24.md`) y una línea del plan de la Fase A; la lectura vive en la copia de la BD.
+
+- **Revisado en la copia** `…\local_d03e8098-…\t10-visita24\bd\catdic_copia_t10.db`, en solo lectura:
+  - C1 y C3 `FUNDACIONES @ E-3`: `barras_cara_x/y` = 6/14 y 6/16; `fc` y `altura_m` = «pendiente de verificar». Los cuatro campos están `pendiente_de_verificar` en `estado_campos_json`. Nada confirmado.
+  - Los tramos `E-3 @ E-8` no se tocaron.
+  - 8 dudas nuevas: 4 de revisión visual (con la zona del recorte), 2 de f'c (propone 350 Kg/cm² con las dos citas, p2 y p24, sin cargarlo por ser de otra hoja) y 2 de altura (no se restan cotas sin Steven).
+- **Comprobación cruzada:** 2·(i+j)−4 = 36 y 40, igual a los rótulos `36∅1"` y `40∅1"`. Coincide con el STP entregado (`6-∅1"`, `14-∅1"` / `16-∅1"`).
+- **BD real:** sha256 `eba26967…`, sin cambios. Dropbox solo se leyó.
+- **Consecuencia para la prueba:** con T11, i y j se llenan; b y e siguen pendientes hasta que Steven confirme el f'c (350) y decida la altura. El PDF de C1 y C3 depende de esas dos respuestas.
+
+## Evaluación 6 · 24/11/2026 · Director (auditoría) · Etapa 7 · T11 (rama `claude/etapa7-campo-informe-02d16d`, `5a73f2d..d6a953d`)
+**Veredicto: APROBADO.** El mapeo sigue con `confirmado: false`.
+
+- **Reglas.**
+  - b sale de `fc`: un entero, sin unidad o en kg/cm². Las otras unidades y los decimales van a duda, y no se convierte nada. Aceptar el valor sin unidad es un supuesto: es la pregunta 9a.
+  - e sale de `altura_m`: metros, mayor que 0 y hasta 30. Ni cm ni cotas.
+  - i y j: un entero más el diámetro de `acero_longitudinal`. Con las dos caras se exige 2·(x+y)−4 igual al total; si no cuadra, no se llena ninguna.
+  - Un valor «pendiente de verificar» cuenta como vacío (`_vacio`) y nunca llega al STP.
+- **Pruebas.** Suite sobre una copia exacta de `d6a953d`: **1237 pasan**, 3 se omiten y fallan las 2 conocidas de Dropbox.
+- **Corrida 5** (ver `etapa-7-prueba.md`): i y j salen bien con los datos reales de T10. Hallazgos **H1** (nadie llena la fila k de columna) y **H2** (solo se registra una fila faltante por elemento, en orden variable). Se pidió **T11b** al Líder.
+- **BD real** (`eba26967…`) y **copia de T10**: sin cambios.
