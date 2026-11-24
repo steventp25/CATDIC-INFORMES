@@ -602,8 +602,8 @@ def test_t4_carga_del_json_valido_roto_y_ausente(tmp_path):
     ok = tmp_path / "ok.json"
     ok.write_text(json.dumps({"confirmado": True, "filas_stp": {"col": {"medidas": {"c": "b_m"}}, "muro": {}}}),
                   encoding="utf-8")
-    assert pc.cargar_mapeo_stp(ok) == ({"col": {"filas": {}, "medidas": {"c": "b_m"}, "barras": None},
-                                        "muro": {"filas": {}, "medidas": {}, "barras": None}}, True)
+    assert pc.cargar_mapeo_stp(ok) == ({"col": {"filas": {}, "medidas": {"c": "b_m"}, "barras": None, "derivaciones": {}},
+                                        "muro": {"filas": {}, "medidas": {}, "barras": None, "derivaciones": {}}}, True)
     sin_confirmar = tmp_path / "sc.json"
     sin_confirmar.write_text(json.dumps({"confirmado": "true", "filas_stp": {}}), encoding="utf-8")
     assert pc.cargar_mapeo_stp(sin_confirmar) == ({}, False)  # solo True exacto confirma
@@ -618,7 +618,14 @@ def test_t4_carga_del_json_valido_roto_y_ausente(tmp_path):
 def test_t4_el_json_entregado_es_propuesta_sin_confirmar():
     mapeo, confirmado = pc.cargar_mapeo_stp()
     assert confirmado is False
-    assert mapeo["col"] == {"filas": {}, "medidas": {"c": "b_m", "d": "h_m"}, "barras": "acero_longitudinal"}
+    assert mapeo["col"]["filas"] == {} and mapeo["col"]["medidas"] == {"c": "b_m", "d": "h_m"}
+    assert mapeo["col"]["barras"] == "acero_longitudinal"
+    assert mapeo["col"]["derivaciones"] == {  # T9: propuesta, confirmado sigue en false
+        "h": {"campo": "estribos", "regla": "estribos_cantidad_diametro"},
+        "f": {"campo": "estribos", "regla": "estribos_espaciamiento_unico"},
+        "g": {"campo": "estribos", "regla": "estribos_espaciamiento_unico"},
+        "m": {"campo": "acero_longitudinal", "regla": "barras_diametro_unico"},
+        "n": {"campo": "acero_longitudinal", "regla": "barras_diametro_unico"}}
     assert mapeo["muro"]["medidas"] == {"b": "espesor"}
     assert mapeo["muro"]["filas"] == {"c": "longitud", "h": "alma.ASV", "i": "alma.ASV", "j": "alma.ASH", "k": "alma.ASH"}
     assert "viga" not in mapeo and "losa" not in mapeo  # fuera de alcance: siguen con la duda de mapeo
@@ -700,7 +707,8 @@ def test_t4_columna_con_b_m_y_h_m_llena_las_medidas_c_y_d(entorno, monkeypatch):
     assert ficha["medidas"] == {"c": {"valor_plano_m": 0.60, "medida_acero_campo_m": None},
                                 "d": {"valor_plano_m": 1.50, "medida_acero_campo_m": None}}
     assert ficha["barras"] == [(36, '1"')]  # conversión exacta de 36∅1"
-    assert ficha["plano"] == {}  # f, g, h, k, m, n: sin mapear (k y la cuantía las calcula/comprueba el generador)
+    # T9: f, g, h, m, n derivados (propuesta); k y la cuantía las calcula/comprueba el generador, no se copian
+    assert ficha["plano"] == {"h": '9 EST. ∅3/8"', "f": '∅3/8"@0.10', "g": '∅3/8"@0.10', "m": '∅1"', "n": '∅1"'}
     assert capturado["marca"] == pc.MARCA_BORRADOR
     assert not any(d["campo_afectado"] == "diseno:p001:mapeo" for d in _abiertas())
 
@@ -755,3 +763,174 @@ def test_t4_la_viga_sigue_con_la_duda_de_mapeo(entorno, monkeypatch):
     _diseno(id_elemento="V1", ejes="EJE B, ENTRE 1-2", tipo="VIGA", campos={"b_m": "0.30"})  # SINTÉTICO
     _procesar()
     assert "diseno:p001:mapeo" in {d["campo_afectado"] for d in _abiertas()}
+
+
+# ---------- T9 (Etapa 7): derivación de f, g, h, m, n de COLUMNA (propuesta) ----------
+
+def _mapeo_real(monkeypatch, confirmado=False):
+    mapeo, _ = pc.cargar_mapeo_stp()
+    monkeypatch.setattr(pc, "MAPEO_DISENO_A_STP", mapeo)
+    monkeypatch.setattr(pc, "MAPEO_CONFIRMADO", confirmado)
+    return mapeo
+
+
+def test_t9_los_textos_reales_del_plano_se_derivan_exactos():
+    # Evidencia: STP entregado de la visita 24 (p. 5, C1) y datos de T1 (C1, C3). El plano imprime Ø (U+00D8).
+    assert pc._estribos_cantidad_diametro('9 EST. Ø3/8" @0.10') == '9 EST. Ø3/8"'
+    assert pc._estribos_espaciamiento_unico('9 EST. Ø3/8" @0.10') == 'Ø3/8"@0.10'
+    assert pc._estribos_cantidad_diametro('10 EST. Ø3/8"@0.10') == '10 EST. Ø3/8"'
+    assert pc._estribos_espaciamiento_unico('10 EST. Ø3/8"@0.10') == 'Ø3/8"@0.10'
+    assert pc._barras_diametro_unico('36Ø1"') == 'Ø1"'
+    # el símbolo y la comilla se copian como vienen impresos
+    assert pc._estribos_cantidad_diametro('9 EST. ∅3/8″ @0,10') == '9 EST. ∅3/8″'
+    assert pc._estribos_espaciamiento_unico('9 EST. ø3/8” @0,10') == 'ø3/8”@0,10'
+    assert pc._barras_diametro_unico('28ø3/4″') == 'ø3/4″'
+
+
+@pytest.mark.parametrize("texto", ['4 EST.+GAN. Ø3/8" @0.10', '9 EST. Ø3/8" @0.10 Y 5 EST. Ø3/8" @0.15', '9 EST. Ø3/8"',
+                                   '9 EST. Ø3/8" @0.10 NODOS', '0 EST. Ø3/8" @0.10', 'EST. Ø3/8" @0.10', '', None, 9,
+                                   PENDIENTE, '9 EST. Ø3/8" @ 10', '9 EST Ø3/8" @0.10'])
+def test_t9_estribos_que_no_cuadran_dan_none(texto):
+    assert pc._estribos_cantidad_diametro(texto) is None
+    assert pc._estribos_espaciamiento_unico(texto) is None
+
+
+@pytest.mark.parametrize("texto", ['4Ø1" 22Ø3/4"', '36Ø1" + 4Ø3/4"', '36Ø1"+GAN.', '36Ø1', 'Ø1"', '0Ø1"', PENDIENTE, '', None])
+def test_t9_barras_que_no_cuadran_dan_none(texto):
+    assert pc._barras_diametro_unico(texto) is None
+
+
+def test_t9_el_json_con_regla_desconocida_es_mapeo_roto(tmp_path):
+    ruta = tmp_path / "m.json"
+    ruta.write_text(json.dumps({"confirmado": True, "filas_stp": {"col": {"derivaciones": {"f": {"campo": "x", "regla": "inventada"}}}}}),
+                    encoding="utf-8")
+    assert pc.cargar_mapeo_stp(ruta) == ({}, False)
+
+
+def test_t9_c1_y_c3_llenan_f_g_h_m_n_y_la_cuantia_no_se_copia(entorno, monkeypatch):
+    _mapeo_real(monkeypatch)
+    capturado = _capturar_fichas(monkeypatch)
+    _elemento_visita(entorno, 1, "C1 D4", "C1", "EJE D-4")
+    _elemento_visita(entorno, 2, "C3 B4", "C3", "EJE B-4")
+    _diseno(uid="ed-0001", id_elemento="C1", ejes="EJE D-4", tipo="COLUMNA",  # SINTÉTICO
+            campos={"b_m": "0.60", "h_m": "1.50", "acero_longitudinal": '36Ø1"', "estribos": '9 EST. Ø3/8" @0.10',
+                    "cuantia": "9.99"})
+    _diseno(uid="ed-0002", id_elemento="C3", ejes="EJE B-4", tipo="COLUMNA",
+            campos={"b_m": "0.60", "h_m": "1.50", "acero_longitudinal": '40Ø1"', "estribos": '10 EST. Ø3/8"@0.10',
+                    "cuantia": "9.99"})
+    _procesar()
+    c1, c3 = capturado["fichas"]
+    assert c1["plano"] == {"h": '9 EST. Ø3/8"', "f": 'Ø3/8"@0.10', "g": 'Ø3/8"@0.10', "m": 'Ø1"', "n": 'Ø1"'}
+    assert c3["plano"] == {"h": '10 EST. Ø3/8"', "f": 'Ø3/8"@0.10', "g": 'Ø3/8"@0.10', "m": 'Ø1"', "n": 'Ø1"'}
+    for f in (c1, c3):  # error 12: la cuantía (p) y el total de barras (k) no salen de la derivación ni se copian
+        assert "p" not in f["plano"] and "k" not in f["plano"] and "9.99" not in json.dumps(f)
+    assert c1["barras"] == [(36, '1"')] and c3["barras"] == [(40, '1"')]
+    assert not [d for d in _abiertas() if "derivacion." in d["campo_afectado"]]
+
+
+def test_t9_la_duda_f_igual_g_no_bloquea_y_es_una_por_ficha(entorno, monkeypatch):
+    _mapeo_real(monkeypatch)
+    capturado = _capturar_fichas(monkeypatch)
+    _elemento_visita(entorno, 1, "C1 D4", "C1", "EJE D-4")
+    _diseno(id_elemento="C1", ejes="EJE D-4", tipo="COLUMNA",  # SINTÉTICO
+            campos={"b_m": "0.60", "h_m": "1.50", "acero_longitudinal": '36Ø1"', "estribos": '9 EST. Ø3/8" @0.10'})
+    _procesar()
+    assert capturado["fichas"]  # la ficha sigue: la duda no bloquea
+    d = [d for d in _abiertas() if d["campo_afectado"] == "diseno:p001:derivacion_igual"]
+    assert len(d) == 1
+    assert "f = g" in d[0]["descripcion_pregunta"] and "m = n" in d[0]["descripcion_pregunta"]
+    assert "PROPUESTA" in d[0]["descripcion_pregunta"] and "no bloquea" in d[0]["descripcion_pregunta"]
+    _procesar()  # otra corrida no la duplica
+    assert len([d for d in _abiertas() if d["campo_afectado"] == "diseno:p001:derivacion_igual"]) == 1
+
+
+def test_t9_la_duda_igual_no_se_repite_si_steven_ya_la_resolvio_ni_con_mapeo_confirmado(entorno, monkeypatch):
+    _mapeo_real(monkeypatch)
+    _capturar_fichas(monkeypatch)
+    _elemento_visita(entorno, 1, "C1 D4", "C1", "EJE D-4")
+    _diseno(id_elemento="C1", ejes="EJE D-4", tipo="COLUMNA",  # SINTÉTICO
+            campos={"b_m": "0.60", "h_m": "1.50", "acero_longitudinal": '36Ø1"', "estribos": '9 EST. Ø3/8" @0.10'})
+    _procesar()
+    with _bd() as conn:
+        conn.execute("UPDATE dudas_y_hallazgos SET resuelta = 1, respuesta_usuario = 'f = g, de acuerdo' "
+                     "WHERE campo_afectado = 'diseno:p001:derivacion_igual'")
+    _procesar()
+    assert "diseno:p001:derivacion_igual" not in {d["campo_afectado"] for d in _abiertas()}
+    with _bd() as conn:
+        conn.execute("DELETE FROM dudas_y_hallazgos WHERE campo_afectado = 'diseno:p001:derivacion_igual'")
+    monkeypatch.setattr(pc, "MAPEO_CONFIRMADO", True)  # confirmado el mapeo, Steven ya decidió
+    _procesar()
+    assert "diseno:p001:derivacion_igual" not in {d["campo_afectado"] for d in _abiertas()}
+
+
+def test_t9_texto_que_no_cuadra_abre_duda_con_el_texto_y_la_fila_queda_sin_llenar(entorno, monkeypatch):
+    _mapeo_real(monkeypatch)
+    capturado = _capturar_fichas(monkeypatch)
+    _elemento_visita(entorno, 1, "C1 D4", "C1", "EJE D-4")
+    _diseno(id_elemento="C1", ejes="EJE D-4", tipo="COLUMNA",  # SINTÉTICO
+            campos={"b_m": "0.60", "h_m": "1.50", "acero_longitudinal": '4Ø1" 22Ø3/4"', "estribos": '4 EST.+GAN. Ø3/8" @0.10'})
+    _procesar()
+    assert "fichas" not in capturado  # la ficha queda en espera: no se genera con datos adivinados
+    por_campo = {d["campo_afectado"]: d["descripcion_pregunta"] for d in _abiertas()}
+    for letra in "hfgmn":
+        assert f"diseno:p001:derivacion.{letra}" in por_campo
+    assert '4 EST.+GAN. Ø3/8" @0.10' in por_campo["diseno:p001:derivacion.f"]
+    assert '4Ø1" 22Ø3/4"' in por_campo["diseno:p001:derivacion.m"]
+    assert "diseno:p001:derivacion_igual" not in por_campo  # sin ficha lista no hay nota
+
+
+def test_t9_una_fila_mapeada_directo_manda_sobre_la_derivacion(entorno, monkeypatch):
+    mapeo = _mapeo_real(monkeypatch)
+    mapeo["col"] = {**mapeo["col"], "filas": {"f": "esp_nodos"}}
+    capturado = _capturar_fichas(monkeypatch)
+    _elemento_visita(entorno, 1, "C1 D4", "C1", "EJE D-4")
+    _diseno(id_elemento="C1", ejes="EJE D-4", tipo="COLUMNA",  # SINTÉTICO
+            campos={"b_m": "0.60", "h_m": "1.50", "acero_longitudinal": '36Ø1"', "estribos": '9 EST. Ø3/8" @0.10',
+                    "esp_nodos": '0.075'})
+    _procesar()
+    plano = capturado["fichas"][0]["plano"]
+    assert plano["f"] == "0.075" and plano["g"] == 'Ø3/8"@0.10' and plano["h"] == '9 EST. Ø3/8"'
+    # f no se derivó, así que ya no hay par f = g: la nota solo cubre m = n
+    d = next(d for d in _abiertas() if d["campo_afectado"] == "diseno:p001:derivacion_igual")
+    assert "m = n" in d["descripcion_pregunta"] and "f = g" not in d["descripcion_pregunta"]
+
+
+def test_t9_campo_vacio_no_abre_duda_de_derivacion(entorno, monkeypatch):
+    _mapeo_real(monkeypatch)
+    capturado = _capturar_fichas(monkeypatch)
+    _elemento_visita(entorno, 1, "C1 D4", "C1", "EJE D-4")
+    _diseno(id_elemento="C1", ejes="EJE D-4", tipo="COLUMNA",  # SINTÉTICO
+            campos={"b_m": "0.60", "h_m": "1.50", "acero_longitudinal": '36Ø1"', "estribos": PENDIENTE})
+    _procesar()
+    assert capturado["fichas"][0]["plano"] == {"m": 'Ø1"', "n": 'Ø1"'}  # lo pendiente no se rellena
+    assert not [d for d in _abiertas() if "derivacion." in d["campo_afectado"]]
+
+
+# ---------- T9: arreglos menores ----------
+
+def test_t9_equivalencias_de_sin_tabla_es_vacia_y_no_la_crea(tmp_path):
+    import equivalencias_nivel as eq
+    conn = sqlite3.connect(str(tmp_path / "sin_tabla.db"))
+    conn.row_factory = sqlite3.Row
+    try:
+        assert eq.equivalencias_de(conn, "P", "S-2") == []
+        assert conn.execute("SELECT name FROM sqlite_master WHERE name = 'equivalencias_nivel'").fetchone() is None
+    finally:
+        conn.close()
+
+
+def test_t9_el_procesador_cruza_en_una_bd_sin_tabla_de_equivalencias(entorno):
+    with _bd() as conn:
+        conn.execute("DROP TABLE equivalencias_nivel")
+    _elemento_visita(entorno, 1, "C1 D4", "C1", "EJE D-4")
+    _diseno(id_elemento="C9", ejes="EJE D-4", tipo="COLUMNA")  # SINTÉTICO: otro ID, sin candidato
+    _procesar()  # no falla con «no such table»
+    assert "cruce:p001" in {d["campo_afectado"] for d in _abiertas()}
+    with _bd() as conn:
+        assert conn.execute("SELECT name FROM sqlite_master WHERE name = 'equivalencias_nivel'").fetchone() is None
+
+
+def test_t9_inicializar_bd_crea_propuestas_proyecto(entorno):
+    with _bd() as conn:
+        cols = {r[1] for r in conn.execute("PRAGMA table_info(propuestas_proyecto)")}
+    assert {"proyecto_id", "campo", "valor", "situacion", "fuente_json", "estado", "creado"} <= cols

@@ -5,6 +5,7 @@
 # ejes (decisión D11) y el rango impreso no dice a qué sótano corresponde. Sin la fila, el cruce abre una duda.
 import json
 import re
+import sqlite3
 from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Optional
@@ -48,9 +49,14 @@ def clave_nivel_visita(texto) -> str:
 
 def equivalencias_de(conn, proyecto_id: str, nivel_visita: str) -> List[str]:
     """Los rangos impresos (tal como los escribió el usuario) de ese nivel de la visita en esa obra; [] si no hay."""
-    return [r["rango_impreso"] for r in conn.execute(
-        "SELECT rango_impreso FROM equivalencias_nivel WHERE proyecto_id = ? AND nivel_visita = ? ORDER BY id",
-        (proyecto_id, clave_nivel_visita(nivel_visita)))]
+    try:
+        return [r["rango_impreso"] for r in conn.execute(
+            "SELECT rango_impreso FROM equivalencias_nivel WHERE proyecto_id = ? AND nivel_visita = ? ORDER BY id",
+            (proyecto_id, clave_nivel_visita(nivel_visita)))]
+    except sqlite3.OperationalError as exc:
+        if "no such table" in str(exc).lower():  # BD que no pasó por inicializar_bd(): sin tabla = sin equivalencias
+            return []
+        raise
 
 
 def _ahora() -> str:

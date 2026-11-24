@@ -24,14 +24,14 @@ Ejemplos: C1 EJE D-4 (S2C pág. 5) y C3 EJE B-4 (S2C pág. 9). Campos del plano:
 | c | Dim LX | `b_m` | 0.60 / 0.60 (plano: 0.60 / 0.60) | **mapeada** (medida) |
 | d | Dim LY | `h_m` | 1.50 / 1.20 (plano: 1.50 / 1.50) | **mapeada** (medida); ver pregunta 1 |
 | e | Altura col. H | — (no sale del cuadro) | 2.95 / 2.95 | sin mapear |
-| f | Espac. estribos nodos | de `estribos` | ∅3/8"@0.10 | derivación propuesta, pendiente de Steven |
-| g | Espac. estribos paño central | de `estribos` | ∅3/8"@0.10 | derivación propuesta, pendiente de Steven |
-| h | Diám. Est. | de `estribos` | 9 EST. ∅3/8" / 10 EST. ∅3/8" | derivación propuesta, pendiente de Steven |
+| f | Espac. estribos nodos | de `estribos` | ∅3/8"@0.10 | **derivación propuesta (T9)**: `estribos_espaciamiento_unico`; `10 EST. Ø3/8"@0.10` → `Ø3/8"@0.10` |
+| g | Espac. estribos paño central | de `estribos` | ∅3/8"@0.10 | **derivación propuesta (T9)**: misma regla que f (f = g, ver abajo) |
+| h | Diám. Est. | de `estribos` | 9 EST. ∅3/8" / 10 EST. ∅3/8" | **derivación propuesta (T9)**: `estribos_cantidad_diametro`; `9 EST. Ø3/8" @0.10` → `9 EST. Ø3/8"` |
 | i | Eje x-x | — (conteo por cara del dibujo) | 6-∅1" | sin mapear |
 | j | Eje y-y | — | 14-∅1" / 16-∅1" | sin mapear |
 | k | Total barras | de `acero_longitudinal` | 36 / 40 | derivación propuesta; el generador la comprueba contra la suma de `barras`, no se copia |
-| m | Diám. barras nudos | de `acero_longitudinal` | ∅1" | derivación propuesta, pendiente de Steven |
-| n | Diám. barras internas | de `acero_longitudinal` | ∅1" | derivación propuesta, pendiente de Steven |
+| m | Diám. barras nudos | de `acero_longitudinal` | ∅1" | **derivación propuesta (T9)**: `barras_diametro_unico`; `36Ø1"` → `Ø1"` |
+| n | Diám. barras internas | de `acero_longitudinal` | ∅1" | **derivación propuesta (T9)**: misma regla que m (m = n, ver abajo) |
 | o | Solape | — | ZONA CENTRAL / 1.08 | sin mapear |
 | p | Cuantía | — | 0.0203 / 0.0282 | **Capa 3** (calculada, error 12: nunca se copia) |
 | barras | lista [[n, diámetro]] para la cuantía | `acero_longitudinal` | `36∅1"` → [[36, '1"']] | **mapeada** con conversión exacta (abajo) |
@@ -69,6 +69,19 @@ Notas de la comparación (sin transformar nada):
   sin dirección); el programa no los rellena y el generador pide cada fila con su duda. El STP entregado puso `∅1/2"@0.10` en las cuatro.
 - Tramo: el plano trae varios tramos de nivel (`FUNDACIONES @ E-1`, `E-1 @ E-2`…); los valores del ejemplo son del tramo citado. S-2 ↔ E-n sigue sin definir.
 
+Derivaciones (T9, `derivaciones` del JSON, `confirmado` sigue en false). Cada regla es una regex exacta sobre el texto ENTERO impreso
+y copia el símbolo (`Ø ∅ ø`) y la comilla (`" ″ ” “`) tal como vienen; no los cambia por los del STP:
+- `estribos_cantidad_diametro` (h): `<n> EST. <símbolo><diámetro><comilla> @<espaciamiento>` → `<n> EST. <símbolo><diámetro><comilla>`.
+- `estribos_espaciamiento_unico` (f y g): el mismo texto → `<símbolo><diámetro><comilla>@<espaciamiento>` (sin espacio, como en el STP entregado).
+- `barras_diametro_unico` (m y n): `<n><símbolo><diámetro><comilla>` con UN solo grupo → `<símbolo><diámetro><comilla>`.
+- Ejemplos reales: C1 `9 EST. Ø3/8" @0.10` + `36Ø1"` → h `9 EST. Ø3/8"`, f = g `Ø3/8"@0.10`, m = n `Ø1"`; C3 `10 EST. Ø3/8"@0.10` → h `10 EST. Ø3/8"`.
+- Un texto que no cuadra (varios grupos, `+GAN.`, `4 EST.+GAN.`, el espaciamiento en otro texto) abre la duda
+  `diseno:pNNN:derivacion.<letra>` con el texto impreso; la fila queda sin llenar y la ficha en espera. Nunca se adivina.
+- Una fila mapeada directo en `filas` manda sobre la derivación. Un campo vacío / `pendiente de verificar` no abre duda de derivación
+  (el generador pide la fila con la suya).
+- Si f y g (o m y n) salen del mismo valor único se llenan las dos y cada ficha abre UNA duda `diseno:pNNN:derivacion_igual` que NO bloquea
+  la ficha (no se repite si Steven ya la resolvió ni con el mapeo confirmado).
+
 ## Viga y losa
 
 Fuera de alcance de T4: sin entrada en el JSON, sigue la duda `diseno:pNNN:mapeo`.
@@ -79,9 +92,10 @@ Fuera de alcance de T4: sin entrada en el JSON, sigue la duda `diseno:pNNN:mapeo
    a 1.50 M atendiendo a plano anterior»; el dibujo de C3 `FUNDACIONES @ E-3` trae 1.50. ¿Qué vale para C3 en ese tramo: 1.20 o 1.50?
    El mapeo toma lo impreso en el dibujo (`h_m`); esta duda decide cuál se compara con la medida de obra.
 2. **Muro, caras:** ¿se aprueba que `alma.ASV` llene a la vez As Vert. Interno y Externo, y `alma.ASH` As Hor. Interno y Externo?
-3. **Columna, derivaciones:** ¿se aprueba derivar f, g, h de `estribos` y m, n de `acero_longitudinal` (hoy sin mapear y pidiendo su dato con duda)?
+3. **Columna, derivaciones:** ¿se aprueba derivar f, g, h de `estribos` y m, n de `acero_longitudinal` (ya implementado como propuesta en T9)?
    El total de barras (k) no se copia: lo comprueba el generador contra la suma de `barras`.
 4. **Barras de columna:** ¿se aprueba la conversión exacta `36∅1"` → [[36, '1"']] y que cualquier otro texto vaya a duda?
 5. **Longitud de muro (c):** ¿solo cuando el plano da un único valor (como MH3)? En muros en L (MH2) el informe suma las dos alas (`3.80 + 3.85`).
 6. **Filas sin campo** (b, e, i, j, o de columna; a, d, e de muro): ¿de dónde salen (notas generales, otra hoja, la visita)?
-7. **Confirmar el mapeo** (poner `"confirmado": true`) para que el STP deje de salir como BORRADOR y pueda ir a su carpeta definitiva.
+7. **f = g y m = n cuando el plano trae un solo valor:** el cuadro de columnas da un solo espaciamiento de estribos y un solo diámetro de barras; ¿se aprueba llenar con ese valor las dos filas (nodos y paño central; nudos e internas)? Hoy va como propuesta con una duda que no bloquea por ficha.
+8. **Confirmar el mapeo** (poner `"confirmado": true`) para que el STP deje de salir como BORRADOR y pueda ir a su carpeta definitiva.

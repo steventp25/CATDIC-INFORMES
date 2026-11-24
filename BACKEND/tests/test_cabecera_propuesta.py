@@ -148,7 +148,7 @@ def test_falta_la_hoja_no_inventa(entorno):
     doc.close()
     r = cp.proponer_cabecera(PID, entorno)
     assert r["informes_leidos"] == 0 and not r["escrito"] and r["notas"]
-    assert _n("SELECT COUNT(*) FROM sqlite_master WHERE name = 'propuestas_proyecto'") == 0
+    assert _n("SELECT COUNT(*) FROM propuestas_proyecto") == 0  # la tabla la crea inicializar_bd (T9); no se escribió nada
 
 
 def test_falta_el_rotulo_queda_pendiente(entorno):
@@ -195,7 +195,7 @@ def test_acepta_lista_de_pdf_y_en_seco_no_escribe(entorno):
     a = _pdf(entorno / _nombre(1, "01-01-2026"))
     r = cp.proponer_cabecera(PID, [a], escribir=False)
     assert r["informes_leidos"] == 1 and not r["escrito"]
-    assert _n("SELECT COUNT(*) FROM sqlite_master WHERE name = 'propuestas_proyecto'") == 0
+    assert _n("SELECT COUNT(*) FROM propuestas_proyecto") == 0  # la tabla la crea inicializar_bd (T9); no se escribió nada
     assert _n("SELECT COUNT(*) FROM auditoria WHERE modulo = ?", cp.MODULO_AUDITORIA) == 0
 
 

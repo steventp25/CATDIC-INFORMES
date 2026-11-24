@@ -318,6 +318,22 @@ def inicializar_bd():
     );
     """)
 
+    # 14. PROPUESTAS DE CABECERA DEL PROYECTO (Etapa 7 · T7): lo leído de los STP-MIVED entregados, sin confirmar.
+    #     Solo la confirma Steven; sync/cabecera_propuesta.py la usa (con el mismo CREATE IF NOT EXISTS como respaldo).
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS propuestas_proyecto (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        proyecto_id TEXT NOT NULL REFERENCES proyectos(id) ON DELETE CASCADE,
+        campo TEXT NOT NULL,                 -- columna de `proyectos` a la que se refiere
+        valor TEXT NOT NULL,                 -- el valor propuesto, o 'pendiente de verificar' (discrepa / no viene)
+        situacion TEXT NOT NULL CHECK(situacion IN ('coincide', 'discrepa', 'pendiente')),
+        fuente_json TEXT NOT NULL,           -- citas: archivo y página de cada informe, conteos, notas
+        estado TEXT NOT NULL DEFAULT 'propuesta',   -- 'propuesta' (sin confirmar); solo Steven la confirma
+        creado TEXT NOT NULL,
+        UNIQUE(proyecto_id, campo)
+    );
+    """)
+
     conn.commit()
     conn.close()
 

@@ -88,6 +88,39 @@ def es_propia_de_visita(campo: str) -> bool:
 RUTA_MAPEO_STP = Path(__file__).resolve().parent / "generators" / "mapeo_stp.json"
 
 
+# ---------- Derivaciones de filas (T9, PROPUESTA): una regex EXACTA sobre el texto ENTERO impreso en el plano ----------
+# El símbolo de diámetro (Ø ∅ ø) y la comilla se copian tal como vienen impresos; nunca se normalizan. Un texto que no
+# cuadra (varios grupos, +GAN., espaciamiento en otro texto) devuelve None y el procesador abre la duda con el texto.
+_SIMBOLO, _COMILLA = "[∅Øø]", "[\"″”“]"
+_RE_ESTRIBOS = re.compile(rf"^\s*(\d+)\s*EST\.\s*({_SIMBOLO})\s*(\d+(?:/\d+)?)({_COMILLA})\s*@\s*(\d*[.,]\d+)\s*$")
+_RE_BARRAS_UNICO = re.compile(rf"^\s*(\d+)\s*({_SIMBOLO})\s*(\d+(?:/\d+)?)({_COMILLA})\s*$")
+
+
+def _estribos_cantidad_diametro(texto) -> Optional[str]:
+    """'9 EST. Ø3/8" @0.10' -> '9 EST. Ø3/8"' (fila h)."""
+    m = _RE_ESTRIBOS.match(texto) if isinstance(texto, str) else None
+    return f"{int(m.group(1))} EST. {m.group(2)}{m.group(3)}{m.group(4)}" if m and int(m.group(1)) > 0 else None
+
+
+def _estribos_espaciamiento_unico(texto) -> Optional[str]:
+    """'10 EST. Ø3/8"@0.10' -> 'Ø3/8"@0.10' (filas f y g)."""
+    m = _RE_ESTRIBOS.match(texto) if isinstance(texto, str) else None
+    return f"{m.group(2)}{m.group(3)}{m.group(4)}@{m.group(5)}" if m and int(m.group(1)) > 0 else None
+
+
+def _barras_diametro_unico(texto) -> Optional[str]:
+    """'36Ø1"' -> 'Ø1"' (filas m y n); solo con UN grupo cantidad+diámetro."""
+    m = _RE_BARRAS_UNICO.match(texto) if isinstance(texto, str) else None
+    return f"{m.group(2)}{m.group(3)}{m.group(4)}" if m and int(m.group(1)) > 0 else None
+
+
+REGLAS_DERIVACION = {"estribos_cantidad_diametro": _estribos_cantidad_diametro,
+                     "estribos_espaciamiento_unico": _estribos_espaciamiento_unico,
+                     "barras_diametro_unico": _barras_diametro_unico}
+# Pares que salen del MISMO valor único del plano: que sean iguales lo decide Steven (duda que no bloquea por ficha).
+PARES_IGUALES = (("f", "g", "espaciamiento"), ("m", "n", "diámetro"))
+
+
 def cargar_mapeo_stp(ruta: Optional[Path] = None) -> Tuple[Dict[str, Dict], bool]:
     """(mapeo, confirmado). Ausente, roto o con otra forma: ({}, False). Solo `confirmado: true` exacto confirma."""
     try:
@@ -100,9 +133,16 @@ def cargar_mapeo_stp(ruta: Optional[Path] = None) -> Tuple[Dict[str, Dict], bool
             if not isinstance(m, dict):
                 raise ValueError(fila)
             filas, medidas, barras = m.get("filas") or {}, m.get("medidas") or {}, m.get("barras")
+            derivaciones = m.get("derivaciones") or {}
             if not isinstance(filas, dict) or not isinstance(medidas, dict) or not (barras is None or isinstance(barras, str)):
                 raise ValueError(fila)
-            mapeo[str(fila)] = {"filas": dict(filas), "medidas": dict(medidas), "barras": barras}
+            if not isinstance(derivaciones, dict) or not all(
+                    isinstance(d, dict) and isinstance(d.get("campo"), str) and d.get("regla") in REGLAS_DERIVACION
+                    for d in derivaciones.values()):  # regla desconocida = mapeo roto (nunca se adivina)
+                raise ValueError(fila)
+            mapeo[str(fila)] = {"filas": dict(filas), "medidas": dict(medidas), "barras": barras,
+                                "derivaciones": {str(l): {"campo": d["campo"], "regla": d["regla"]}
+                                                 for l, d in derivaciones.items()}}
         return mapeo, crudo.get("confirmado") is True
     except (OSError, ValueError, KeyError, TypeError, AttributeError):
         return {}, False
@@ -407,6 +447,7 @@ class ProcesoVisita:
         self.campos: set = set()            # campos de esas dudas: lo que no se vuelva a señalar se cierra solo
         self.pdf: List[Dict] = []
         self.avisos: List[str] = []
+        self.notas_ficha: List[Tuple[str, str]] = []
 
     # --- BD ---
     def _visita(self, conn=None):
@@ -722,6 +763,13 @@ class ProcesoVisita:
             for campo, texto in faltas:
                 espera(campo, texto, c)
             return fin({"estado": "espera"})
+        for campo, texto in self.notas_ficha:  # T9: dudas que no bloquean; no se esperan (la ficha sigue)
+            vigentes.add(campo)
+            ya_resuelta = _con_conexion(lambda conn: conn.execute(
+                "SELECT 1 FROM dudas_y_hallazgos WHERE visita_id = ? AND campo_afectado = ? AND resuelta = 1 "
+                "AND respuesta_usuario <> ?", (self.visita_id, campo, RESPUESTA_CIERRE)).fetchone())
+            if not MAPEO_CONFIRMADO and not ya_resuelta:  # confirmado el mapeo, o ya decidida por Steven, no se repite
+                self.duda(campo, c["id_elemento"], texto, self._refs(ev, c))
         _evento(self.trabajo_id, "elemento_listo", {"visita_id": self.visita_id, "titulo": ficha["titulo"],
                                                     **self._refs(ev, c)})
         return fin({"estado": "listo", "ficha": ficha, "uid_diseno": c["uid"]})
@@ -785,6 +833,7 @@ class ProcesoVisita:
         """Arma la ficha del generador (Capa 1 + Capa 2; la Capa 3 la calcula el generador). Devuelve (ficha, faltas)."""
         pagina = f"p{ev['orden_en_log']:03d}"
         faltas: List[Tuple[str, str]] = []
+        self.notas_ficha = []  # dudas que NO bloquean la ficha (se abren si la ficha queda lista)
         datos = _dict(c["datos_diseno_json"])
         tipo = c["tipo_elemento"]
         fila = stp_mived._tipo_de_fila(tipo)
@@ -839,6 +888,31 @@ class ProcesoVisita:
                         faltas.append((f"diseno:{pagina}:barras", f"Las barras de {c['id_elemento']} no se pueden leer "
                                                                   f"como [[n, diámetro], …] (texto impreso: "
                                                                   f"'{datos.get(mapeo['barras'])}'): {PENDIENTE}."))
+
+                # Derivaciones (T9, propuesta): una fila mapeada directo en `filas` manda; la derivación solo llena lo vacío
+                derivadas: Dict[str, str] = {}
+                for letra, d in (mapeo.get("derivaciones") or {}).items():
+                    if letra in mapeo.get("filas", {}) or letra in ficha["plano"]:
+                        continue
+                    impreso = datos.get(d["campo"])
+                    if _vacio(impreso):
+                        continue  # el generador pide la fila que falte con su duda
+                    valor = REGLAS_DERIVACION[d["regla"]](impreso)
+                    if valor is None:
+                        faltas.append((f"diseno:{pagina}:derivacion.{letra}",
+                                       f"La fila {letra} de {c['id_elemento']} se deriva de '{d['campo']}' pero el texto impreso "
+                                       f"'{impreso}' no cuadra con la regla '{d['regla']}' (un solo grupo, sin +GAN. ni texto "
+                                       f"extra): no se adivina ({PENDIENTE}). Indica el valor de la fila {letra}."))
+                    else:
+                        ficha["plano"][letra] = derivadas[letra] = valor
+                igualadas = [f"{a} = {b} ({nombre} {derivadas[a]})" for a, b, nombre in PARES_IGUALES
+                             if a in derivadas and b in derivadas and derivadas[a] == derivadas[b]
+                             and mapeo["derivaciones"][a]["campo"] == mapeo["derivaciones"][b]["campo"]]
+                if igualadas:
+                    self.notas_ficha.append((
+                        f"diseno:{pagina}:derivacion_igual",
+                        f"{c['id_elemento']}: el plano trae un solo valor ({'; '.join(igualadas)}); que las dos filas sean "
+                        "iguales es una PROPUESTA y no bloquea la ficha. Steven confirma."))
 
         # M3 / M4: recuadros confirmados en el visor (T5n) sobre el plano vigente
         plano = self.contexto["plano"]
