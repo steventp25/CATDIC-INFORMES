@@ -58,3 +58,35 @@
   - El importador no guarda la `zona` del DETALLE.
   - Falta la equivalencia S-2 ↔ E-n, un dato que da Steven.
   - La copia tiene un plano «PRUEBA T1» sin certificar.
+
+## Evaluación 3 · 24/11/2026 · Director (auditoría) · Etapa 7 · T6, T7, T8, T8b y T8c (rama `claude/etapa7-campo-informe-02d16d`, `db08f7e..2f973b5`)
+**Veredicto: APROBADO.**
+
+### Bloqueantes
+- Ninguno.
+
+### Regla de Oro (revisado en el diff)
+- **T6, equivalencias.**
+  - La tabla `equivalencias_nivel` solo la escribe el usuario, con `PUT`, respaldo previo y auditoría.
+  - Las equivalencias valen solo para los elementos de diseño sin EJES (D11). Si falta la equivalencia, se abre la duda `cruce:pNNN:equivalencia`. Si dos tramos del mismo ID cumplen, se abre la duda y no se elige ninguno.
+  - Los EJES de la ficha salen de la visita. Si no hay, se abre la duda `cruce:pNNN:ejes`.
+  - La normalización es exacta: espacios alrededor de `-` y `@`, y mayúsculas.
+- **T7, cabecera.**
+  - Solo lee los PDF.
+  - Guarda en `propuestas_proyecto` con estado `propuesta` y la cita (archivo y página). Nunca escribe en `proyectos`.
+  - No pisa lo que Steven resolvió, descarta la dirección de CATDIC y abre una sola duda.
+- **T8, T8b y T8c, recuadros.**
+  - Siempre quedan `pendiente de verificar` con su origen y su cita. Nunca escriben «confirmado».
+  - No pisan un recuadro confirmado y el sha256 debe coincidir con el vectorial.
+  - En T8c, los ejes de la visita se usan solo si hay exactamente uno válido, y en una copia del elemento: el diseño no se modifica.
+- **Visor (`f43511f`).** Distingue entre vacío, propuesto y confirmado.
+
+### Pruebas ejecutadas
+- **Suite completa** sobre una copia exacta de `2f973b5`, con BD, caché y salida temporales: **1117 pasan**, 3 se omiten y fallan las 2 conocidas de Dropbox.
+- **T5, corridas 2 y 3:** ver `etapa-7-prueba.md`. El cruce de C1 y C3, la cabecera (19 de 19 informes coinciden) y 4 localizaciones con 16 detalles funcionan.
+- **BD real sin cambios:** sha256 `eba26967…`.
+
+### Observaciones (no bloquean)
+- **Tabla sin crear.** `procesador_cola` consulta `equivalencias_nivel` sin comprobar que existe. En una BD vieja que no pasó por `inicializar_bd()` falla con `no such table`. El servidor la crea al arrancar, así que solo afecta a scripts. Conviene una prueba o una comprobación.
+- **Tabla creada por el módulo.** `propuestas_proyecto` la crea `cabecera_propuesta._asegurar_tabla` y no `database.inicializar_bd`. Es inconsistente con el resto del esquema.
+- **Mapeo de columna.** Sin la derivación de las filas f, g, h, m y n (pregunta 3 del mapeo), ninguna columna llega al PDF. Es decisión de Steven.

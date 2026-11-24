@@ -43,3 +43,46 @@
 4. Confirmar los datos del plano (28 dudas `IA:` de T1) y los recuadros (T8).
 5. Confirmar el mapeo de filas del STP (`PLANES/etapa-7-mapeo-stp.md`).
 6. Reemplazar Campo por la copia v11.
+
+# Corrida 2 (24/11/2026, Director)
+
+## Montaje
+- **Código:** copia exacta de `claude/etapa7-campo-informe-02d16d` en `2f973b5` (T6, T7, T8, T8b y T8c).
+- **BD:** copia nueva de la BD de T1, en `…\scratchpad\t5b\copia.db`. Se inicializó como lo hace el servidor al arrancar, para crear la tabla `equivalencias_nivel`.
+- **Equivalencia S-2:** cargada **solo en la copia y como hipótesis**, con el usuario `prueba-t5-hipotesis`. Lleva los tres rangos de `PLANES/etapa-7-niveles.md`: `FUNDACIONES @ E-3`, `FUNDACIONES @ E-1` y `FUNDACIONES @ E-2`.
+- **Paquete:** el mismo paquete v2 simulado de la corrida 1.
+- **BD real y Dropbox:** no se tocaron. La BD real tiene sha256 `eba26967…` antes y después; Dropbox solo se leyó.
+
+## Resultado: 0 fichas, pero el cruce ya funciona
+| Paso | Corrida 1 | Corrida 2 |
+|---|---|---|
+| Cruce de C1 y C3 con el diseño | se detenía | **cruza** por ID + nivel con la equivalencia (T6) |
+| Recuadros propuestos | ninguno | **DETALLE** de los 16 elementos y **LOCALIZACIÓN** de C1, C3, MH2 y MH3 en la planta de S-2. Todos quedan pendientes de confirmar (T8). El muro de contención no tiene localización: su ID no aparece en la planta y sus ejes no son un cruce puntual. |
+| Cabecera | faltaban 6 campos | **propuesta** con 19 de 19 STP entregados, todos coinciden (T7): solicitud (dato del cliente, en la BD), licencia (dato del cliente, en la BD), dirección (dato del cliente, en la BD), provincia (dato del cliente, en la BD), sector (dato del cliente, en la BD), residente (dato del cliente, en la BD). Sigue sin confirmar, así que el procesador todavía la pide. |
+| Dudas abiertas | 6 | 6, pero ahora solo las que resuelve Steven (abajo) |
+
+## Dónde se detiene ahora (todas dependen de Steven o del técnico)
+1. Ejes de MH2 y MH3, y el ID del muro de contención (dato de obra).
+2. Datos del plano de C1 y C3 sin confirmar («Confirmar plano»).
+3. La cabecera propuesta sin confirmar. **Ojo:** el número de solicitud y el de licencia salen iguales (dato del cliente, en la BD) en los 19 informes. Steven debe decir si es correcto.
+4. Después vendrán los recuadros propuestos (confirmarlos en el visor) y la equivalencia S-2 (hipótesis).
+
+**Ya no falta código para llegar al PDF de C1 y C3.** Falta que Steven confirme. Cuando lo haga, se repite la corrida 3 y debería salir el STP borrador de esas dos columnas.
+
+# Corrida 3: SIMULACIÓN de las confirmaciones (24/11/2026, Director)
+**No es un dato de Steven.** El objetivo era ver si el código llega al PDF cuando todo está confirmado. Se usó otra copia de la BD (`…\scratchpad\t5c\copia.db`) con el usuario `prueba-simulada`. En esa copia:
+- se dieron por confirmados los datos del plano y los dos recuadros de C1 y C3 (`FUNDACIONES @ E-3`);
+- se copió la cabecera propuesta a la obra;
+- se quitaron de la visita MH2, MH3 y el muro de contención, que tienen dudas de obra.
+
+**Resultado:** C1 y C3 quedan **«listo»**: el cruce, la ficha y los recuadros están bien. Aun así, el STP no se genera por 2 dudas, una por columna: *«Falta en el plano el valor de la fila 'f' de COLUMNA»* (espaciamiento de estribos en nodos).
+- **La causa:** en el mapeo de T4, las filas f, g y h (estribos) y m y n (diámetros) quedaron **sin mapear a propósito**. Son la pregunta 3 de `PLANES/etapa-7-mapeo-stp.md`: *¿se aprueba derivar f, g y h de `estribos` (`9 EST. ∅3/8" @0.10`) y m y n de `acero_longitudinal`?*
+- **Lo que significa:** cuando Steven apruebe esa derivación, hay que programar la conversión exacta (tarea corta, con pruebas). Después, la corrida con sus confirmaciones reales debería sacar el STP borrador de C1 y C3.
+
+## Lista corta de Steven (actualizada)
+1. Dudas de obra: ejes de MH2 y MH3, e ID del muro de contención.
+2. Equivalencia S-2: confirmar o corregir la hipótesis (`PLANES/etapa-7-niveles.md`).
+3. Cabecera propuesta: confirmarla. Ojo: la solicitud y la licencia salen iguales, (dato del cliente, en la BD).
+4. Datos del plano de C1 y C3 (y de los muros) y sus recuadros, en el visor.
+5. Mapeo STP, **sobre todo la pregunta 3** (estribos y diámetros de columna): sin eso no sale el PDF.
+6. Reemplazar Campo por la copia v11.
