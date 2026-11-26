@@ -361,7 +361,7 @@ def test_b3_la_conformidad_exige_cero_datos_de_obra_pendientes(mundo, entorno):
     ficha["medidas"]["d"]["medida_acero_campo_m"] = None
     r = _generar(mundo, entorno, [ficha])
     insp = _textos(r["ruta"])[1]
-    assert "ACORDE A PLANOS APROBADOS" not in insp and "CELDAS O MEDIDAS DE OBRA PENDIENTES DE VERIFICAR: 2" in " ".join(insp.split())
+    assert "ACORDE A PLANOS APROBADOS" not in insp and "CELDAS O MEDIDAS DE OBRA PENDIENTES DE VERIFICAR: 3" in " ".join(insp.split())  # + la cuantía de OBRA (C14: duda obra.p)
     # una fila de OBRA sin dato tampoco permite la conformidad
     ficha2 = mundo.ficha_viga()
     del ficha2["obra"]["i"]
@@ -446,7 +446,7 @@ def test_una_viga_y_una_zapata_la_hoja_de_inspeccion_nombra_la_zapata_y_separa_l
     assert r["ok"] and r["excluidos"] == ["ZAPATA-Z1"]
     insp = " ".join(_textos(r["ruta"])[1].split())
     assert "ELEMENTOS NO INCLUIDOS EN ESTE INFORME (pendientes de verificar): ZAPATA-Z1" in insp
-    assert "CELDAS O MEDIDAS DE OBRA PENDIENTES DE VERIFICAR: 1" in insp  # solo la celda; la zapata no se mezcla
+    assert "CELDAS O MEDIDAS DE OBRA PENDIENTES DE VERIFICAR: 2" in insp  # la celda y la cuantía de OBRA (C14); la zapata no se mezcla
     assert "ACORDE A PLANOS APROBADOS" not in insp
     assert len(_textos(r["ruta"])) == 4  # la zapata no tiene hojas: solo se nombra en la inspección
 

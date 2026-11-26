@@ -26,6 +26,11 @@ T13 a T16: aprobadas por el Director en la Evaluación 10.
 | T17 (valores del proyecto con cita) | hecha, falta la auditoría del Director | `4905c4c`. `valores_proyecto_confirmados.json` y `valores_proyecto.py`; el origen queda en `ficha.origen_filas` |
 | T18 (C14, C16, regla 11, mapeo confirmado) | hecha, falta la auditoría del Director | `07ad64c`. `mapeo_stp.json` con `confirmado: true` |
 
+Evaluación 11 (Director): T17 y T18 quedaron BLOQUEADAS por C14. En obra, la fila «o» es una descripción del empalme y nunca coincide con el plano, así que 2.p salía vacía y sin duda. Corrección del Líder:
+- C14 usa el mismo criterio que las discrepancias del generador: solo cuentan las filas dimensionales y que no falte ninguna fila de OBRA obligatoria.
+- Cuando no aplica y no hay barras medidas en obra, se abre `obra.p` sin bloquear, con las filas que lo impiden.
+- Consecuencia: una fila de texto distinta (incluida la h) ya no rompe la conformidad, porque el generador no compara filas de texto.
+
 Desvíos de T17 y T18 (los hizo el Ejecutor; el Líder está de acuerdo):
 - La derivación de la altura (e) sale de `mapeo_stp.json`: así la única fuente es el archivo de valores, y si este falla no se toma el 3.00 del plano en silencio.
 - En C16, un dato vacío deja la duda sin bloquear y una forma que no cuadra la bloquea.

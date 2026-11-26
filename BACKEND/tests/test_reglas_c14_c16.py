@@ -49,23 +49,38 @@ def test_c14_filas_iguales_al_plano_escritas_en_obra_tambien_son_conformes():
     assert filas["obra"]["p"] == "0.0203"
 
 
-def test_c14_una_fila_de_obra_distinta_al_plano_deja_la_cuantia_vacia():
+def test_c14_la_fila_o_de_obra_distinta_no_rompe_la_conformidad():
+    """Evaluación 11: en obra la «o» es una descripción del empalme; el generador no la compara, así que no rompe C14."""
+    ficha = _col(conforme_por_omision=list("bcdefghijkmn"), obra={"o": "Empalme inicia a 0.60 y tiene 1.30 de long"})
+    filas, dudas, _ = _filas(ficha)
+    assert filas["obra"]["o"] != filas["plano"]["o"] and filas["discrepancias"] == []
+    assert filas["obra"]["p"] == filas["plano"]["p"] == "0.0203"
+    assert filas["origen_obra"] == {"p": "plano (C14: elemento conforme)"}
+    assert not any(d["campo_afectado"] == "obra.p" for d in dudas)
+
+
+def test_c14_una_fila_de_texto_distinta_sigue_el_criterio_del_generador():
+    """Mismo criterio que las discrepancias del generador: solo las filas dimensionales se comparan con el plano."""
     ficha = _col(conforme_por_omision=list("bcdefgijkmno"), obra={"h": "8 EST. Ø3/8\""})
     filas, _, _ = _filas(ficha)
-    assert filas["obra"]["h"] != filas["plano"]["h"] and filas["obra"]["p"] == "" and filas["origen_obra"] == {}
+    assert filas["discrepancias"] == [] and filas["obra"]["p"] == "0.0203"
 
 
 def test_c14_una_fila_sin_dato_de_obra_ni_omision_deja_la_cuantia_vacia():
-    filas, _, _ = _filas(_col(conforme_por_omision=list("bcdefgijkmno")))  # falta la h
+    filas, dudas, _ = _filas(_col(conforme_por_omision=list("bcdefgijkmno")))  # falta la h
     assert filas["obra"]["h"] == "" and filas["obra"]["p"] == ""
+    duda_p = [d for d in dudas if d["campo_afectado"] == "obra.p"]
+    assert len(duda_p) == 1 and not duda_p[0]["bloquea"] and "OBRA sin dato en h" in duda_p[0]["descripcion_pregunta"]
 
 
 def test_c14_una_discrepancia_abierta_deja_la_cuantia_vacia():
     ficha = _col(conforme_por_omision=list("befghijkmno"),
                  medidas={"c": {"valor_plano_m": 0.60, "medida_acero_campo_m": 0.20},  # 0.20 + 0.08 != 0.60
                           "d": {"valor_plano_m": 1.50, "medida_acero_campo_m": None}})
-    filas, _, _ = _filas(ficha)
+    filas, dudas, _ = _filas(ficha)
     assert filas["discrepancias"] and filas["obra"]["p"] == ""
+    duda_p = [d for d in dudas if d["campo_afectado"] == "obra.p"]
+    assert len(duda_p) == 1 and not duda_p[0]["bloquea"] and "discrepancia en c" in duda_p[0]["descripcion_pregunta"]
 
 
 def test_c14_con_barras_medidas_en_obra_se_calcula_con_ellas():

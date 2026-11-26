@@ -154,6 +154,7 @@ def _filas_de_ficha(ficha: Dict, tipo_txt: str, kind: str, tolerancia) -> Tuple[
     obra: Dict[str, str] = {}
     medidas_aud: List[Dict] = []
     discrepancias: List[str] = []
+    filas_discrepantes: List[str] = []  # letras dimensionales con discrepancia (C14 las nombra en la duda obra.p)
 
     def duda(campo, texto, bloquea=True):
         dudas.append({"id_elemento": id_el, "campo_afectado": campo, "descripcion_pregunta": texto,
@@ -225,6 +226,7 @@ def _filas_de_ficha(ficha: Dict, tipo_txt: str, kind: str, tolerancia) -> Tuple[
                             "valor_obra_m": ev["valor_columna_obra_m"]})
         if not ev["conforme"]:
             discrepancias.append(f"{id_el}: {ev['hallazgo_interno']}")
+            filas_discrepantes.append(letra)
 
     # Cuantía (decimal, §4.6): siempre calculada, nunca copiada
     aud = {"tipo_elemento": tipo_txt, "ejes": ficha.get("ejes"), "medidas_obra": medidas_aud,
@@ -259,15 +261,21 @@ def _filas_de_ficha(ficha: Dict, tipo_txt: str, kind: str, tolerancia) -> Tuple[
         if letra in obra and not obra[letra] and letra not in DIMENSIONALES[kind] and plano.get(letra):
             obra[letra] = plano[letra]
 
-    # C14 (aprobado por Steven 26/11/2026): en un elemento CONFORME la cuantía de OBRA (p) es la del plano. Conforme = todas
-    # las filas con valor en PLANOS tienen el mismo texto en OBRA (iguales al plano o conformes por omisión) y ninguna
-    # discrepancia abierta. Si hay barras medidas en obra se calcula con ellas; en cualquier otro caso queda como hoy (vacía).
+    # C14 (aprobado por Steven 26/11/2026): en un elemento CONFORME la cuantía de OBRA (p) es la del plano. Conforme se
+    # decide con el MISMO criterio que las discrepancias de este generador: ninguna discrepancia en las filas
+    # dimensionales (las únicas que se comparan con el plano, §4.5) y ninguna fila de OBRA que la visita debía traer
+    # vacía (nadie la comprobó). Las filas de texto que el generador no compara (p. ej. la «o», que en obra es una
+    # descripción del empalme) no la rompen. Con barras medidas en obra se calcula con ellas (arriba).
     origen_obra: Dict[str, str] = {}
-    if kind in CON_CUANTIA and not ficha.get("barras_obra") and plano.get("p") and not discrepancias:
-        comparables = [l for l, _ in ROTULOS[kind] if l not in ("p", "q") and plano.get(l)]
-        if comparables and all(" ".join(obra.get(l, "").split()) == " ".join(plano[l].split()) for l in comparables):
+    if kind in CON_CUANTIA and not ficha.get("barras_obra") and plano.get("p"):
+        sin_dato = sorted(l for l in (OBLIGATORIAS[kind] | OBRA_EXTRA.get(kind, set())) - {"p", "q"} if not obra.get(l))
+        if not discrepancias and not sin_dato:
             obra["p"] = plano["p"]
             origen_obra["p"] = "plano (C14: elemento conforme)"
+        else:
+            motivos = ([f"discrepancia en {', '.join(sorted(filas_discrepantes))}"] if discrepancias else []) +                       ([f"OBRA sin dato en {', '.join(sin_dato)}"] if sin_dato else [])
+            duda("obra.p", f"La cuantía de OBRA (fila p) de {id_el} queda vacía: el elemento no es conforme "
+                           f"({'; '.join(motivos)}) y no hay barras medidas en obra ({PENDIENTE}).", bloquea=False)
 
     # OBRA vacío en filas que debe traer la visita: queda vacío y se crea una duda (no bloquea)
     for letra in sorted(OBLIGATORIAS[kind] | OBRA_EXTRA.get(kind, set())):
