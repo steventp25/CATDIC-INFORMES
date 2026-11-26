@@ -39,7 +39,7 @@ AREA_BARRA_CONFIRMADA_CM2 = {  # NORMA: respuesta de Steven P4 (tabla 3/8" 0.71 
     '5/8"': 1.99, '#5': 1.99,
     '3/4"': 2.84, '#6': 2.84,
     '7/8"': 3.87, '#7': 3.87,
-    '1"': 5.10, '#8': 5.10,
+    '1"': 5.07, '#8': 5.07,  # decisión de Steven 26/11/2026 (T16): 5.07 como en sus informes
     '1-1/8"': 6.45, '#9': 6.45,
     '1-1/4"': 8.19, '#10': 8.19,
     '1-3/8"': 10.06, '#11': 10.06,
@@ -1516,3 +1516,10 @@ def test_auditor_15_no_modifica_el_pdf(tmp_path):
     pdf.write_bytes(b"%PDF-1.7 contenido")  # SINTÉTICO: no es dato de proyecto
     ri.auditar_archivo_pdf_generado(pdf, destino_existia_antes=False)
     assert pdf.read_bytes() == b"%PDF-1.7 contenido"
+
+
+def test_t16_cuantia_c1_36_barras_de_1_pulgada():
+    """T16: C1 con 36∅1" en 0.60 × 1.50 m → 36 × 5.07 / 9000 = 0.02028 → 0.0203 (como el informe de Steven)."""
+    assert ri.AREA_BARRA_CM2['1"'] == 5.07 and ri.AREA_BARRA_CM2['#8'] == 5.07
+    assert ri.calcular_cuantia_elemento(0.60, 1.50, [(36, '1"')]) == 0.0203
+    assert ri.calcular_cuantia_elemento(0.60, 1.50, [(36, '1"')], en_porcentaje=True) == 2.03

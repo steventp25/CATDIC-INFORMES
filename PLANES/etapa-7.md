@@ -283,6 +283,14 @@ carpeta de pruebas. Al volver Steven, solo faltan sus confirmaciones (datos del 
 - **Duda de la cabecera:** guardar resuelve, con auditoría, la duda de proyecto `proyecto.cabecera_propuesta` si estaba abierta.
 - **Tablero:** una tarjeta «Cabecera del proyecto» en la vista del proyecto, para ver y editar. Muestra la propuesta de T7 al lado si existe. Se mantiene el tablero clásico.
 
+### T16 — Área de ∅1" = 5.07 cm² (decisión de Steven)
+- Steven, 26/11/2026: «5.07 (como mi informe)». Respondió después de que el Director le explicara que ASTM A615 #8 da 5.10.
+- La hace el Líder, en cola detrás de T13 y T14 para no compartir `reglas_ingenieria.py`.
+- **Cambio:** en `AREA_BARRA_CM2`, `'1"'` y `'#8'` pasan de 5.10 a 5.07, con el comentario «decisión de Steven 26/11/2026, coincide con sus informes entregados». Los demás diámetros no se tocan.
+- **Pruebas:**
+  - Se ajustan las que dependían del 5.10.
+  - Una nueva con C1: 36∅1" en 0.60 × 1.50 da 0.0203 (36 × 5.07 / 9000 = 0.02028).
+
 ## Paralelismo
 - T1, T2 y T3 a la vez (no comparten archivos). T4 espera a T1. T5 al final.
 - T6 y T8 a la vez; T7 después de T6 (comparten `database.py` y `main.py`).
