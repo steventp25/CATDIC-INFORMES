@@ -21,6 +21,16 @@ Rama `claude/etapa7-campo-informe-02d16d`. Commits locales, sin push ni PR (los 
 
 Suite tras T13–T16: 1323 pasan, 3 omitidas y solo las 2 fallas conocidas de Dropbox.
 
+T13 a T16: aprobadas por el Director en la Evaluación 10.
+
+| T17 (valores del proyecto con cita) | hecha, falta la auditoría del Director | `4905c4c`. `valores_proyecto_confirmados.json` y `valores_proyecto.py`; el origen queda en `ficha.origen_filas` |
+| T18 (C14, C16, regla 11, mapeo confirmado) | hecha, falta la auditoría del Director | `07ad64c`. `mapeo_stp.json` con `confirmado: true` |
+
+Desvíos de T17 y T18 (los hizo el Ejecutor; el Líder está de acuerdo):
+- La derivación de la altura (e) sale de `mapeo_stp.json`: así la única fuente es el archivo de valores, y si este falla no se toma el 3.00 del plano en silencio.
+- En C16, un dato vacío deja la duda sin bloquear y una forma que no cuadra la bloquea.
+- Preguntas nuevas para Steven: al final de `PLANES/etapa-7-mapeo-stp.md` (altura 3.00 de C1 y C3 en E-3, qué es el perimetral, alas de MH2).
+
 **Observaciones de T13–T16 (no bloquean):**
 - MH2 y MH3 cruzan como muros únicos, pero sus ejes de diseño siguen «pendiente de verificar». Por eso abren `diseno:pNNN:ejes`.
 - El MC real de la visita no trae ID escrito: su duda del importador sigue abierta hasta que el técnico escriba «MC».

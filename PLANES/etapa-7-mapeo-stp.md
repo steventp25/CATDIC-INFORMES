@@ -133,3 +133,20 @@ Numeración de `PENDIENTES-STEVEN.md` (C10–C16), con su equivalente en la list
 | C16 | 5 | Muro en L: c = suma de las alas (3.80 + 3.85): **aprobado**. **Aún sin programar** (tarea nueva; hoy c solo se copia cuando el plano trae un único valor). |
 
 **Siguen abiertas:** 9e (área de ∅1": 5.10 cm² según ASTM A615 #8, o 5.07 del círculo de 25.4 mm, que reproduce el 0.0203 entregado), 9c (altura H), 6/17 (fila o de columna y filas a, d y e de muro) y 8/18.
+
+## Estado tras T16, T17 y T18 (25/11/2026)
+`mapeo_stp.json` pasa a **`confirmado: true`** (`07ad64c`) y el STP deja de salir como BORRADOR. La salida sigue yendo solo a la carpeta de pruebas, nunca a Dropbox.
+
+| Pregunta | Cómo quedó |
+|---|---|
+| 9e | 1" (#8) = 5.07 cm² (T16, `2b17ccb`) |
+| 9c / 2 | La altura sale de `valores_proyecto_confirmados.json` (2.95, T17, `4905c4c`). Ya no se deriva del plano. Si el diseño trae una `altura_m` legible distinta, se abre `diseno:pNNN:altura` |
+| 6 / 17 | Salen del mismo archivo: col o = «ZONA CENTRAL / 1.08»; muro a = 350 (H.A.) o 240 (solo si el `id_elemento` trae «PERIMETRAL»); muro d = 2.95; muro e = «SI» |
+| C11 | Ya no se abre `derivacion_igual`; el origen queda en `ficha.origen_filas` (T18) |
+| C14 | En un elemento conforme, la cuantía de OBRA = la del plano (T18) |
+| C16 | Muro c = suma de las alas cuando el texto es «n + n» en metros (T18) |
+
+**Preguntas nuevas para Steven:**
+- C1 y C3 en `FUNDACIONES @ E-3` traen `altura_m` = 3.00 en el diseño. Hoy eso abre `diseno:pNNN:altura` y deja vacía la fila e. ¿Es un dato del plano o un error de lectura?
+- ¿Todo MURO DE CONTENCION es el perimetral, o solo el que el plano rotula así? Un ID «MC» sin la palabra abre `valor.a`.
+- MH2 y el muro de contención tienen `longitud` «pendiente de verificar». Las alas de MH2 no están en ningún campo legible, así que la fila c queda vacía con una duda que no bloquea.
