@@ -236,9 +236,9 @@ def test_migracion_conserva_fila_hijos_y_crea_respaldo(bd_vieja):
         conn.close()
 
     respaldos = _respaldos(bd_vieja.parent, bd_vieja.stem)
-    # Una BD vieja pasa por tres migraciones con respaldo: visitas, proyectos (T7a) y columnas de T4n. Exactamente 3
-    # respaldos, y cada uno corresponde a una fila MIGRACION_* de auditoría (ninguno huérfano).
-    assert len(respaldos) == 3
+    # Una BD vieja pasa por cuatro migraciones con respaldo: visitas, proyectos (T7a), CODIA del residente (Etapa 7 T15)
+    # y columnas de T4n. Exactamente 4 respaldos, y cada uno corresponde a una fila MIGRACION_* de auditoría.
+    assert len(respaldos) == 4
     conn = database.get_connection()
     try:
         filas = conn.execute(
@@ -246,7 +246,8 @@ def test_migracion_conserva_fila_hijos_y_crea_respaldo(bd_vieja):
     finally:
         conn.close()
     por_accion = {f["accion"]: json.loads(f["detalle_json"])["respaldo"] for f in filas}
-    assert set(por_accion) == {"MIGRACION_VISITAS", "MIGRACION_PROYECTOS_CABECERA", "MIGRACION_COLUMNAS_T4N"}
+    assert set(por_accion) == {"MIGRACION_VISITAS", "MIGRACION_PROYECTOS_CABECERA", "MIGRACION_CABECERA_CODIA",
+                               "MIGRACION_COLUMNAS_T4N"}
     assert sorted(por_accion.values()) == respaldos
     assert por_accion["MIGRACION_VISITAS"] == detalle["respaldo"]
     # El respaldo conserva el esquema viejo y la fila

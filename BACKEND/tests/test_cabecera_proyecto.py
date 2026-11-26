@@ -112,3 +112,22 @@ def test_guardar_resuelve_la_duda_de_cabecera(cliente):
 def test_proyecto_inexistente_404(cliente):
     assert cliente.get("/api/proyectos/nada/cabecera").status_code == 404
     assert cliente.put("/api/proyectos/nada/cabecera", json={"sector": "x"}).status_code == 404
+
+
+def test_inicializar_bd_migra_codia_residente_al_arrancar(tmp_path, monkeypatch):
+    """Una BD vieja sin `codia_residente` la recibe al arrancar (inicializar_bd), con respaldo y auditoría."""
+    (tmp_path / "bd").mkdir()
+    ruta = tmp_path / "bd" / "vieja.db"
+    monkeypatch.setenv(config.ENV_DB_PATH, str(ruta))
+    monkeypatch.delenv(config.ENV_DROPBOX_RAIZ, raising=False)
+    database.inicializar_bd()
+    with _bd() as conn:
+        conn.execute("ALTER TABLE proyectos DROP COLUMN codia_residente")
+        conn.execute("DELETE FROM auditoria WHERE accion = 'MIGRACION_CABECERA_CODIA'")
+    database.inicializar_bd()
+    with _bd() as conn:
+        assert "codia_residente" in {r[1] for r in conn.execute("PRAGMA table_info(proyectos)")}
+        auds = conn.execute("SELECT detalle_json FROM auditoria WHERE accion = 'MIGRACION_CABECERA_CODIA'").fetchall()
+    assert len(auds) == 1
+    assert (ruta.parent / json.loads(auds[0][0])["respaldo"]).exists()
+    assert database.migrar_codia_residente()["migrada"] is False  # idempotente

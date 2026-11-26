@@ -11,7 +11,7 @@ from typing import Dict
 from fastapi import APIRouter, Body, HTTPException
 
 import config
-from database import _respaldar_bd, get_connection, usuario_auditoria
+from database import _respaldar_bd, get_connection, migrar_codia_residente, usuario_auditoria
 from sync import cabecera_propuesta as _propuesta
 
 MODULO_AUDITORIA = "CABECERA"
@@ -27,28 +27,11 @@ router = APIRouter()
 
 
 def _asegurar_columna(conn) -> None:
-    """Añade `codia_residente` a `proyectos` si falta. Idempotente; respalda la BD y audita al migrar."""
+    """Si falta `codia_residente` (BD que no pasó por `inicializar_bd`), la añade con la migración de
+    database.py, que respalda la BD y audita (MIGRACION_CABECERA_CODIA)."""
     columnas = {r[1] for r in conn.execute("PRAGMA table_info(proyectos)")}
-    if COLUMNA_NUEVA in columnas:
-        return
-    respaldo = _respaldar_bd(conn, Path(config.obtener_db_path()))
-    conn.isolation_level = None
-    try:
-        conn.execute("BEGIN IMMEDIATE")
-        conn.execute(f"ALTER TABLE proyectos ADD COLUMN {COLUMNA_NUEVA} TEXT DEFAULT ''")
-        filas = conn.execute("SELECT COUNT(*) FROM proyectos").fetchone()[0]
-        conn.execute("""INSERT INTO auditoria (fecha_hora, usuario, modulo, accion, entidad_id, detalle_json)
-                        VALUES (?, ?, ?, ?, ?, ?)""",
-                     (datetime.now().isoformat(), usuario_auditoria(), "SISTEMA", ACCION_MIGRAR, "proyectos",
-                      json.dumps({"respaldo": Path(respaldo).name, "filas_conservadas": filas,
-                                  "columnas_nuevas": [COLUMNA_NUEVA]}, ensure_ascii=False)))
-        conn.execute("COMMIT")
-    except Exception:
-        if conn.in_transaction:
-            conn.execute("ROLLBACK")
-        raise
-    finally:
-        conn.isolation_level = ""
+    if COLUMNA_NUEVA not in columnas:
+        migrar_codia_residente()
 
 
 def _proyecto(conn, proyecto_id: str):
