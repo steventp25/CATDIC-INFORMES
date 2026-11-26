@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Maquetas B1 · tres estilos</title>
+<style>
+  :root { --tinta: #1d1d1b; --tinta-2: #55534e; --fondo: #f3f2ee; --linea: #c9c6be; }
+  @media (prefers-color-scheme: dark) { :root { --tinta: #efede8; --tinta-2: #bdb9b0; --fondo: #191917; --linea: #44423d; } }
+  body { margin: 0; background: var(--fondo); color: var(--tinta); font: 400 1rem/1.55 "Segoe UI Variable Text", "Segoe UI", sans-serif; }
+  main { max-width: 760px; margin: 0 auto; padding: 40px 16px 64px; }
+  h1 { font: 650 1.75rem/1.2 "Segoe UI Variable Display", "Segoe UI", sans-serif; margin: 0 0 8px; }
+  p { margin: 0 0 12px; color: var(--tinta-2); max-width: 68ch; }
+  ol { list-style: none; padding: 0; margin: 28px 0 0; display: grid; gap: 0; }
+  li { border-top: 1px solid var(--linea); padding: 18px 0; }
+  a { color: inherit; font-weight: 650; font-size: 1.125rem; text-underline-offset: 3px; }
+  .muestra { display: inline-block; width: 14px; height: 14px; margin-right: 8px; vertical-align: -1px; border-radius: 2px; }
+  li p { margin: 6px 0 0; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Maquetas B1: tres estilos, una organización</h1>
+  <p>Las tres usan la organización que aprobó Steven: Inicio · Mis obras · Bandeja de trabajo · Informes · Configuración, más «Crear informe». Dentro de cada obra van Resumen · Visitas y trabajos · Planos y ficha · Avance · Informes · Cierre. Solo cambia el estilo visual.</p>
+  <p>Todos los datos son sintéticos: no son obras, visitas ni valores de plano reales. La barra oscura de arriba es de la maqueta. Con ella se cambia el estado (con datos, vacío, cargando, error) y el tema.</p>
+  <ol>
+    <li><a href="hormigon.html"><span class="muestra" style="background:#4a2a20"></span>A · Hormigón</a>
+      <p>Riel de encofrado fenólico, suelo de concreto y crayón naranja. Lo que no tiene dato va rayado, como una sección sin definir.</p></li>
+    <li><a href="plano.html"><span class="muestra" style="background:#16263a"></span>B · Plano sellado</a>
+      <p>Papel con retícula, tinta azul-negra, cajetín de hoja y globos de eje. Lo que falta se dibuja como un hueco en planta, con una X.</p></li>
+    <li><a href="tablero.html"><span class="muestra" style="background:#ffb000"></span>C · Tablero de obra</a>
+      <p>Paneles neutros de alto contraste y cifras grandes. El ámbar se reserva para lo nuevo, que queda encendido hasta que lo abres.</p></li>
+  </ol>
+  <p>Pantallas en cada estilo: Inicio · Resumen de obra · Bandeja · Revisión de planos (Mis obras → obra → Planos y ficha) · Crear informe. Las maquetas del 16/11 siguen en <code>../expediente</code>, <code>../plano</code> y <code>../obra</code> como antecedente.</p>
+</main>
+</body>
+</html>

@@ -1,0 +1,71 @@
+/* Estilo B · Plano sellado — la elección del skill (candidato mejor clasificado; riesgo: es la lectura literal).
+   Mundo: la hoja de planos estructurales. Papel con retícula, tinta azul-negra, cajetín y globos de eje.
+   Firma: la obra se lee en un CAJETÍN dibujado con líneas de tinta, y lo que falta se marca como un hueco
+   en planta: un recuadro con una X. */
+:root {
+  --f-texto: "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif;
+  --f-titulo: "Segoe UI Variable Display", "Segoe UI", system-ui, sans-serif;
+  --f-dato: Consolas, "Cascadia Mono", monospace;
+  --radio: 2px; --radio-caja: 0;
+  --peso-h1: 600; --track-h1: 0.01em; --peso-marca: 700; --track-marca: 0.18em; --peso-tipo: 600;
+  --fondo: #f1f2ee; --superficie: #fdfdfb; --superficie-2: #f0f2f4;
+  --tinta: #14202e; --tinta-2: #4a5868; --borde: #d3d8de; --borde-fuerte: #9aa5b1;
+  --sombra: none;
+  --riel-fondo: #16263a; --riel-tinta: #f2f5f8; --riel-tinta-2: #b8c4d1; --riel-hover: #22364f; --riel-activo: #2c4565;
+  --acento: #1f4fa8; --acento-hover: #183f88; --sobre-acento: #ffffff;
+  --crear-fondo: #f2f5f8; --crear-tinta: #16263a; --crear-hover: #ffffff;
+  --enlace: #1f4fa8; --foco: #1f4fa8; --seleccion: #cfdcf3;
+  --alerta: #b91c1c; --alerta-tinta: #a31515; --ok-tinta: #23663a;
+  --error-fondo: #f8e3e3;
+  --pend-tinta: #14202e; --pend-fondo: transparent; --pend-borde: #4a5868;
+  --pend-patron: linear-gradient(to top right, transparent calc(50% - 0.6px), #4a5868 50%, transparent calc(50% + 0.6px)), linear-gradient(to bottom right, transparent calc(50% - 0.6px), #4a5868 50%, transparent calc(50% + 0.6px));
+  --fased-tinta: #4a5868; --fased-borde: #7d8a98;
+  --nuevo-fondo: #1f4fa8; --nuevo-tinta: #ffffff;
+  --hueso: #e2e6ea; --deshab-fondo: #eceff2; --deshab-tinta: #4a5868;
+  --sel-fondo: #e6eef9; --sel-borde: #1f4fa8;
+  --seg-activo: #16263a; --seg-activo-tinta: #f2f5f8;
+  --pestana-activa: #14202e;
+  --papel: #fdfdfb; --pl-tinta: #14202e; --pl-tinta-2: #4a5868; --pl-linea: #7d8a98;
+}
+:root[data-tema="oscuro"] {
+  --fondo: #0d1520; --superficie: #131e2c; --superficie-2: #1a2738;
+  --tinta: #e6ecf2; --tinta-2: #a9b6c4; --borde: #26364a; --borde-fuerte: #46586e;
+  --riel-fondo: #0a111a; --riel-hover: #16222f; --riel-activo: #22344a;
+  --acento: #7aa7f5; --acento-hover: #9bbdf8; --sobre-acento: #0a111a;
+  --crear-fondo: #e6ecf2; --crear-tinta: #0a111a;
+  --enlace: #9bbdf8; --foco: #9bbdf8; --seleccion: #2c4565;
+  --alerta: #ff7a6e; --alerta-tinta: #ff958b; --ok-tinta: #86d39c;
+  --error-fondo: #3d1d22;
+  --pend-tinta: #e6ecf2; --pend-borde: #a9b6c4;
+  --pend-patron: linear-gradient(to top right, transparent calc(50% - 0.6px), #a9b6c4 50%, transparent calc(50% + 0.6px)), linear-gradient(to bottom right, transparent calc(50% - 0.6px), #a9b6c4 50%, transparent calc(50% + 0.6px));
+  --fased-tinta: #a9b6c4; --fased-borde: #6d7f94;
+  --nuevo-fondo: #7aa7f5; --nuevo-tinta: #0a111a;
+  --hueso: #1f2d3f; --deshab-fondo: #1a2738; --deshab-tinta: #a9b6c4;
+  --sel-fondo: #1c2f4a; --sel-borde: #7aa7f5;
+  --seg-activo: #e6ecf2; --seg-activo-tinta: #0a111a;
+  --pestana-activa: #e6ecf2;
+  --papel: #0f1823; --pl-tinta: #dde5ee; --pl-tinta-2: #a9b6c4; --pl-linea: #5d7088;
+}
+/* papel con retícula muy leve */
+body { background-image: linear-gradient(rgb(20 32 46 / 0.045) 1px, transparent 1px), linear-gradient(90deg, rgb(20 32 46 / 0.045) 1px, transparent 1px); background-size: 24px 24px; }
+:root[data-tema="oscuro"] body { background-image: linear-gradient(rgb(230 236 242 / 0.035) 1px, transparent 1px), linear-gradient(90deg, rgb(230 236 242 / 0.035) 1px, transparent 1px); }
+.marca-n { text-transform: uppercase; }
+.caja { border-color: var(--borde-fuerte); }
+h1 { text-transform: none; }
+.caja-cabeza h2, .caja > h2, .rev-cabeza h2, .rev .caja > h3 { text-transform: uppercase; letter-spacing: 0.08em; font-size: 0.875rem; }
+/* cajetín: rejilla de celdas con línea de tinta, como el rótulo de la hoja */
+.cajetin { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); border: 1.5px solid var(--tinta); background: var(--superficie); }
+.cajetin > div { padding: 6px 10px 8px; border-right: 1px solid var(--tinta); border-bottom: 1px solid var(--tinta); margin: 0 -1px -1px 0; }
+.cajetin dt { font-size: 0.6875rem; letter-spacing: 0.1em; }
+.cajetin dd { font-family: var(--f-dato); font-size: 0.9375rem; }
+/* «pendiente de verificar»: recuadro discontinuo, sin relleno, como lo «por definir» */
+.pendiente { border: 1px dashed var(--pend-borde); padding: 0 6px; }
+.ind-barra { height: 34px; border: 1px solid var(--pend-borde); background-color: transparent; }
+.ind-valor .pendiente { font-family: var(--f-dato); }
+/* globos de eje en la lista */
+.eje { display: inline-flex; align-items: center; justify-content: center; min-width: 2.4em; height: 1.6em; padding: 0 0.5em; border: 1.25px solid var(--tinta); border-radius: 999px; font: 600 0.8125rem/1 var(--f-dato); }
+.el-b { border-radius: 0; }
+.pestanas a[aria-current="page"] { border-bottom-width: 3px; }
+.conteos a { border-radius: 0; }
+.es-nuevo .marca-nuevo { border-radius: 0; }
+.p-n { border-radius: 50%; }

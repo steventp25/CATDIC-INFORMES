@@ -20,11 +20,14 @@ def test_paginas_se_sirven_sin_sesion_y_la_api_no(entorno):
     with cliente(main.app) as c:
         entrada = c.get("/entrar.html")
         assert entrada.status_code == 200 and "X-CATDIC-Peticion" in entrada.text and "/api/sesion" in entrada.text
-        inicio = c.get("/")
-        assert inicio.status_code == 200
-        # El tablero clásico manda el encabezado propio en las mutaciones y vuelve a la entrada con 401
-        assert "X-CATDIC-Peticion" in inicio.text and "/entrar.html" in inicio.text
-        assert "credentials: 'same-origin'" in inicio.text
+        assert c.get("/").status_code == 200
+        # El tablero nuevo (cliente js/api.js) y el clásico (/clasico/) mandan el encabezado propio en las mutaciones,
+        # la cookie de sesión y vuelven a la entrada con 401
+        for pagina in ("/js/api.js", "/clasico/"):
+            r = c.get(pagina)
+            assert r.status_code == 200, pagina
+            assert "X-CATDIC-Peticion" in r.text and "/entrar.html" in r.text, pagina
+            assert "credentials: 'same-origin'" in r.text, pagina
         assert c.get("/api/dashboard").status_code == 401
 
 

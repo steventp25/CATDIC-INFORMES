@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CATDIC · Maqueta C · Obra</title>
+<style>
+:root {
+  color-scheme: dark;
+  --fondo: #16181b;
+  --riel: #0f1012;
+  --capa: #1e2125;
+  --capa-2: #262a2f;
+  --borde: #30353b;
+  --borde-2: #3d434a;
+  --texto: #e8e9eb;
+  --texto-2: #a9aeb6;
+  --texto-3: #8a9099;
+  --amarillo: #f5c400;
+  --amarillo-txt: #1a1500;
+  --duda: #ff9a4d; --duda-fondo: #3a2414;
+  --ok: #5cc98a; --ok-fondo: #15301f;
+  --proc: #7aa7ff; --proc-fondo: #18243d;
+  --rojo: rgb(220, 0, 0);
+  --pend: #f0b37a;
+  --foco: #f5c400;
+  --ui: "Segoe UI Variable Text", "Segoe UI Variable", "Segoe UI", system-ui, sans-serif;
+  --cifra: "Bahnschrift", "Segoe UI Variable Text", sans-serif;
+  --dato: "Consolas", "Cascadia Mono", ui-monospace, monospace;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; }
+body { background: var(--fondo); color: var(--texto); font: 14px/1.45 var(--ui); font-variant-numeric: tabular-nums; }
+::selection { background: #f5c40055; color: #fff; }
+:focus-visible { outline: 2px solid var(--foco); outline-offset: 2px; border-radius: 4px; }
+* { scrollbar-color: var(--borde-2) transparent; }
+button { font: inherit; color: inherit; cursor: pointer; }
+svg.ic { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+kbd { font: 600 11px/1 var(--dato); padding: 3px 5px; border: 1px solid var(--borde-2); border-bottom-width: 2px; border-radius: 4px; color: var(--texto-2); background: var(--capa); }
+[hidden] { display: none !important; }
+
+.app { display: grid; grid-template-columns: 64px 1fr; height: 100vh; }
+.riel { background: var(--riel); display: flex; flex-direction: column; align-items: center; padding: 12px 0; gap: 4px; border-right: 1px solid var(--borde); }
+.logo { width: 40px; height: 40px; border-radius: 8px; background: var(--amarillo); color: var(--amarillo-txt); display: grid; place-items: center; font: 700 13px/1 var(--cifra); letter-spacing: .02em; margin-bottom: 10px; }
+.riel a { position: relative; width: 44px; height: 44px; border-radius: 8px; display: grid; place-items: center; color: var(--texto-3); text-decoration: none; }
+.riel a:hover { background: var(--capa); color: var(--texto); }
+.riel a[aria-current="page"] { background: var(--capa-2); color: var(--amarillo); }
+.riel a .n { position: absolute; top: 3px; right: 1px; min-width: 18px; height: 16px; padding: 0 4px; border-radius: 8px; font: 700 11px/16px var(--cifra); text-align: center; background: var(--duda); color: #1d0d00; }
+.riel a.inactivo { opacity: .4; cursor: default; }
+.riel a.inactivo:hover { background: none; color: var(--texto-3); }
+.riel .sep { width: 28px; height: 1px; background: var(--borde); margin: 6px 0; }
+.riel .abajo { margin-top: auto; font: 600 11px/1.2 var(--ui); color: var(--texto-3); text-align: center; }
+.riel .abajo i { display: block; width: 8px; height: 8px; border-radius: 50%; background: var(--ok); margin: 0 auto 4px; }
+.tip { position: absolute; left: 52px; top: 50%; transform: translateY(-50%); white-space: nowrap; background: #000; color: #fff; font-size: 12.5px; padding: 4px 8px; border-radius: 5px; opacity: 0; pointer-events: none; transition: opacity .12s; z-index: 3; }
+.riel a:hover .tip, .riel a:focus-visible .tip { opacity: 1; }
+
+.trabajo { display: flex; flex-direction: column; min-width: 0; height: 100vh; }
+.barra { display: flex; align-items: center; gap: 12px; padding: 12px 22px; border-bottom: 1px solid var(--borde); }
+.comando { flex: 1; max-width: 560px; display: flex; align-items: center; gap: 10px; height: 38px; padding: 0 12px; border-radius: 8px; border: 1px solid var(--borde-2); background: var(--capa); color: var(--texto-3); text-align: left; }
+.comando:hover { border-color: #565d66; }
+.comando span { flex: 1; }
+.esp { flex: 1; }
+.btn { display: inline-flex; align-items: center; gap: 8px; height: 36px; padding: 0 14px; border-radius: 7px; border: 1px solid var(--borde-2); background: var(--capa); font-size: 13.5px; font-weight: 500; transition: background-color .15s, transform .1s; }
+.btn:hover { background: var(--capa-2); }
+.btn:active { transform: scale(.97); }
+.btn.prim { background: var(--amarillo); border-color: var(--amarillo); color: var(--amarillo-txt); font-weight: 650; }
+.btn.prim:hover { background: #ffd21f; }
+.btn.peq { height: 30px; padding: 0 10px; font-size: 12.5px; }
+.btn[disabled] { opacity: .4; cursor: not-allowed; transform: none; }
+.desplaza { flex: 1; overflow: auto; padding: 18px 22px 72px; }
+
+/* ---------- Franja de obras con semáforo ---------- */
+.obras { display: grid; grid-template-columns: 1.5fr 1fr 1fr; gap: 12px; margin-bottom: 18px; }
+.obra { background: var(--capa); border: 1px solid var(--borde); border-radius: 10px; padding: 12px 14px; display: grid; gap: 8px; }
+.obra.activa { border-color: #5a4f1a; background: linear-gradient(var(--capa), var(--capa)) padding-box; box-shadow: 0 0 0 1px #f5c40040 inset; }
+.obra .cab { display: flex; align-items: baseline; gap: 8px; }
+.obra h2 { margin: 0; font-size: 15.5px; font-weight: 650; }
+.obra .tipo { font-size: 12px; color: var(--texto-3); }
+.obra .linea { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 12.5px; color: var(--texto-2); }
+.semaforo { display: flex; gap: 2px; height: 10px; }
+.semaforo i { flex: 1; border-radius: 2px; }
+.semaforo .d { background: var(--duda); }
+.semaforo .s { background: #59606a; }
+.semaforo .p { background: var(--ok); }
+.semaforo .pb { background: repeating-linear-gradient(135deg, var(--ok) 0 3px, #1d0d00 3px 5px); }
+.semaforo-vacio { font-size: 12.5px; color: var(--texto-3); }
+.pend { font-style: italic; color: var(--pend); border-bottom: 1px dashed #b07a45; white-space: nowrap; }
+.sinplano { color: var(--duda); font-weight: 600; }
+.acciones { display: flex; flex-wrap: wrap; gap: 6px; }
+
+/* ---------- Tablero de triaje ---------- */
+.cab-seccion { display: flex; align-items: center; gap: 12px; margin: 4px 0 10px; }
+.cab-seccion h3 { margin: 0; font-size: 15px; font-weight: 650; }
+.cab-seccion .s { color: var(--texto-3); font-size: 12.5px; }
+.filtros { display: flex; gap: 4px; }
+.filtros button { border: 1px solid var(--borde); background: transparent; color: var(--texto-2); border-radius: 6px; padding: 4px 10px; font-size: 12.5px; }
+.filtros button[aria-pressed="true"] { background: var(--capa-2); color: var(--texto); border-color: var(--borde-2); }
+.tablero { display: grid; grid-template-columns: 1.15fr 1fr 1fr 220px; gap: 12px; align-items: start; }
+.col { background: #1a1c20; border: 1px solid var(--borde); border-radius: 10px; min-width: 0; }
+.col-cab { display: flex; align-items: center; gap: 8px; padding: 10px 12px; border-bottom: 1px solid var(--borde); font-weight: 600; font-size: 13.5px; }
+.col-cab .cuenta { font: 700 18px/1 var(--cifra); }
+.col-cab .punto { width: 8px; height: 8px; border-radius: 50%; }
+.col-cab .s { margin-left: auto; font-weight: 400; color: var(--texto-3); font-size: 12px; }
+.tarjetas { padding: 8px; display: grid; gap: 6px; max-height: 470px; overflow: auto; }
+.tarjeta { display: grid; grid-template-columns: 34px 1fr auto; gap: 4px 10px; align-items: start; padding: 8px 10px; background: var(--capa); border: 1px solid var(--borde); border-radius: 8px; text-align: left; width: 100%; transition: border-color .12s, background-color .12s; }
+.tarjeta:hover { border-color: var(--borde-2); background: var(--capa-2); }
+.tarjeta .num { font: 700 17px/1.2 var(--cifra); color: var(--texto); }
+.tarjeta .nom { font-size: 12.5px; line-height: 1.35; color: var(--texto); overflow-wrap: anywhere; }
+.tarjeta .meta { grid-column: 2 / 4; font-size: 12px; color: var(--texto-3); display: flex; gap: 10px; flex-wrap: wrap; }
+.chip { display: inline-flex; align-items: center; gap: 4px; font: 700 12px/1 var(--cifra); padding: 4px 7px; border-radius: 5px; white-space: nowrap; }
+.chip.duda { background: var(--duda-fondo); color: var(--duda); }
+.chip.peligro { color: #1d0d00; background: repeating-linear-gradient(135deg, var(--amarillo) 0 6px, #2a2200 6px 9px); text-shadow: 0 0 2px var(--amarillo), 0 0 2px var(--amarillo); }
+.chip.peligro b { background: var(--amarillo); padding: 1px 4px; border-radius: 3px; }
+.vacias { padding: 12px; display: grid; gap: 8px; font-size: 13px; color: var(--texto-2); }
+.vacias div { display: flex; justify-content: space-between; border-bottom: 1px solid var(--borde); padding-bottom: 6px; }
+.vacias div:last-child { border-bottom: 0; }
+.vacias b { font: 700 15px/1 var(--cifra); color: var(--texto-3); }
+.ot { margin-top: 12px; }
+.ot .doc { font: 600 13px/1.2 var(--dato); color: var(--amarillo); }
+
+/* ---------- Paleta de comandos ---------- */
+.velo { position: fixed; inset: 0; background: #0009; display: grid; place-items: start center; padding-top: 12vh; z-index: 20; }
+.paleta { width: min(620px, 92vw); background: var(--capa); border: 1px solid var(--borde-2); border-radius: 12px; box-shadow: 0 24px 60px #000a; overflow: hidden; }
+.paleta input { width: 100%; height: 50px; border: 0; border-bottom: 1px solid var(--borde); background: transparent; color: var(--texto); font: 15px var(--ui); padding: 0 16px; outline: none; }
+.paleta ul { list-style: none; margin: 0; padding: 6px; max-height: 360px; overflow: auto; }
+.paleta li { display: flex; align-items: center; gap: 10px; padding: 9px 10px; border-radius: 7px; font-size: 14px; color: var(--texto-2); }
+.paleta li[aria-selected="true"] { background: var(--capa-2); color: var(--texto); }
+.paleta li .k { margin-left: auto; }
+.paleta .grupo { font-size: 12px; color: var(--texto-3); padding: 8px 10px 4px; }
+
+/* ---------- Confirmar datos del plano ---------- */
+.confirmar { flex: 1; min-height: 0; display: grid; grid-template-columns: 270px minmax(0, 1fr) 400px; }
+.tablas { border-right: 1px solid var(--borde); overflow: auto; padding: 10px 8px; }
+.tablas h2 { margin: 4px 8px 2px; font-size: 13px; font-weight: 650; }
+.tablas .s { margin: 0 8px 10px; font-size: 12px; color: var(--texto-3); }
+.ti { display: block; width: 100%; text-align: left; border: 0; background: none; padding: 9px 10px; border-radius: 8px; margin-bottom: 2px; }
+.ti:hover { background: var(--capa); }
+.ti[aria-selected="true"] { background: var(--capa-2); box-shadow: inset 0 0 0 1px var(--borde-2); }
+.ti .t { display: flex; justify-content: space-between; gap: 8px; font-weight: 600; font-size: 13px; }
+.ti .m { display: block; font-size: 12px; color: var(--texto-3); margin-top: 2px; }
+.ti .f { display: block; font-size: 12px; color: var(--duda); margin-top: 2px; }
+.res { font: 700 11px/1 var(--cifra); letter-spacing: .04em; padding: 3px 6px; border-radius: 4px; text-transform: uppercase; }
+.res.verde { background: var(--ok-fondo); color: var(--ok); }
+.res.rojo { background: #3a1616; color: #ff8a80; }
+.ti .mas { font-size: 12px; color: var(--texto-3); padding: 8px 10px; }
+.visor { overflow: auto; padding: 18px; display: grid; align-content: start; gap: 12px; background: #121316; }
+.visor .cab { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.visor h2 { margin: 0; font-size: 17px; font-weight: 650; }
+.visor .meta { font-size: 12.5px; color: var(--texto-3); }
+.papel { background: #fff; color: #000; border-radius: 4px; padding: 26px 22px; justify-self: center; width: 100%; max-width: 640px; box-shadow: 0 2px 0 #000, 0 10px 30px #0008; }
+.papel .titulo { text-align: center; font: 700 13px/1 var(--cifra); letter-spacing: .04em; margin-bottom: 10px; }
+.tabla-plano { border-collapse: collapse; margin: 0 auto; font: 500 13px/1 var(--cifra); }
+.tabla-plano td { border: 1px solid #000; padding: 8px 11px; text-align: center; }
+.tabla-plano tr:first-child td { font-weight: 700; }
+.tabla-plano td.marcada { outline: 2.5px solid var(--rojo); outline-offset: -1px; background: rgba(220,0,0,.08); }
+.nota { font-size: 12px; color: var(--texto-3); text-align: center; }
+.comprob { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px 14px; font-size: 12.5px; color: var(--texto-2); }
+.comprob span { display: inline-flex; gap: 5px; align-items: center; }
+.comprob svg { color: var(--ok); width: 15px; height: 15px; }
+.valores { border-left: 1px solid var(--borde); display: flex; flex-direction: column; min-height: 0; }
+.valores .cab { padding: 12px 14px; border-bottom: 1px solid var(--borde); display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: var(--texto-3); }
+.valores .cab b { color: var(--texto); font-size: 13.5px; }
+.lista-v { flex: 1; overflow: auto; padding: 6px 8px; }
+.elem { font-size: 12.5px; color: var(--texto-2); padding: 10px 8px 4px; }
+.elem b { color: var(--texto); }
+.v { display: grid; grid-template-columns: 82px 1fr auto; align-items: center; gap: 10px; padding: 7px 8px; border-radius: 7px; font-size: 13.5px; border: 1px solid transparent; }
+.v .val { font: 600 13.5px/1.3 var(--dato); }
+.v .e { font-size: 12px; color: var(--pend); }
+.v.activa { background: var(--capa-2); border-color: #6b2020; box-shadow: inset 2px 0 0 var(--rojo); }
+.pie-confirmar { border-top: 1px solid var(--borde); padding: 12px 14px; display: grid; gap: 10px; background: #1a1c20; }
+.casilla { display: flex; gap: 10px; align-items: flex-start; font-size: 13px; color: var(--texto); }
+.casilla input { width: 17px; height: 17px; margin-top: 1px; accent-color: var(--amarillo); }
+.casilla small { display: block; color: var(--texto-3); font-size: 12px; margin-top: 2px; }
+.teclas { display: flex; gap: 12px; flex-wrap: wrap; font-size: 12px; color: var(--texto-3); }
+.teclas span { display: inline-flex; gap: 4px; align-items: center; }
+
+.maqueta { position: fixed; left: 50%; bottom: 14px; transform: translateX(-50%); display: flex; gap: 4px; align-items: center; background: #000c; border: 1px solid #333; padding: 5px; border-radius: 999px; font: 12px/1 "Segoe UI", sans-serif; color: #fff; z-index: 9; }
+.maqueta span { padding: 0 10px; opacity: .85; }
+.maqueta button { border: 0; background: transparent; color: #fff; padding: 7px 12px; border-radius: 999px; }
+.maqueta button[aria-pressed="true"] { background: var(--amarillo); color: var(--amarillo-txt); }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-obras" viewBox="0 0 24 24"><path d="M4 21V5l8-2v18M12 8l8 2v11M3 21h18M7.5 9h1M7.5 13h1M7.5 17h1M15.5 13h1M15.5 17h1"/></symbol>
+  <symbol id="i-cola" viewBox="0 0 24 24"><path d="M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01"/></symbol>
+  <symbol id="i-duda" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.6 9.3a2.5 2.5 0 0 1 4.8.9c0 1.7-2.4 2.2-2.4 3.6M12 17.2h.01"/></symbol>
+  <symbol id="i-plano" viewBox="0 0 24 24"><path d="M3 5h18v14H3zM3 10h18M9 10v9M15 14h3"/></symbol>
+  <symbol id="i-ot" viewBox="0 0 24 24"><path d="M4 4h4v16H4zM10 4h4v10h-4zM16 4h4v7h-4z"/></symbol>
+  <symbol id="i-lectura" viewBox="0 0 24 24"><path d="M4 7V4h3M17 4h3v3M20 17v3h-3M7 20H4v-3M8 12h8M12 8v8"/></symbol>
+  <symbol id="i-sync" viewBox="0 0 24 24"><path d="M20 11a8 8 0 0 0-14.3-4.9L4 8M4 4v4h4M4 13a8 8 0 0 0 14.3 4.9L20 16M20 20v-4h-4"/></symbol>
+  <symbol id="i-rayo" viewBox="0 0 24 24"><path d="M13 3 5 14h6l-1 7 8-11h-6z"/></symbol>
+  <symbol id="i-buscar" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></symbol>
+  <symbol id="i-ok" viewBox="0 0 24 24"><path d="m5 12.5 4.5 4.5L19 7"/></symbol>
+  <symbol id="i-extraer" viewBox="0 0 24 24"><path d="M4 4h10l6 6v10H4zM14 4v6h6M8 15h8"/></symbol>
+</svg>
+
+<div class="app">
+  <nav class="riel" aria-label="Secciones">
+    <span class="logo" aria-label="CATDIC">CAT</span>
+    <a href="#principal" data-ir="principal" aria-current="page"><svg class="ic"><use href="#i-obras"/></svg><span class="tip">Obras</span></a>
+    <a href="#principal" data-ir="principal"><svg class="ic"><use href="#i-cola"/></svg><span class="tip">Cola de visitas · 24</span></a>
+    <a href="#principal" data-ir="principal"><svg class="ic"><use href="#i-duda"/></svg><span class="n">22</span><span class="tip">Mesa de Dudas · 22 abiertas</span></a>
+    <a href="#confirmar" data-ir="confirmar"><svg class="ic"><use href="#i-plano"/></svg><span class="tip">Planos y datos de diseño</span></a>
+    <a href="#principal" data-ir="principal"><svg class="ic"><use href="#i-ot"/></svg><span class="tip">Órdenes de trabajo · 1</span></a>
+    <span class="sep"></span>
+    <a class="inactivo" aria-disabled="true"><svg class="ic"><use href="#i-lectura"/></svg><span class="tip">Lectura asistida · Fase C</span></a>
+    <div class="abajo"><i></i>local</div>
+  </nav>
+
+  <!-- ================= PANTALLA PRINCIPAL ================= -->
+  <section class="trabajo" id="pantalla-principal">
+    <header class="barra">
+      <button class="comando" data-paleta><svg class="ic"><use href="#i-buscar"/></svg><span>Buscar obra, visita o acción…</span><kbd>Ctrl</kbd><kbd>K</kbd></button>
+      <span class="esp"></span>
+      <button class="btn"><svg class="ic"><use href="#i-sync"/></svg>Sincronizar desde Dropbox</button>
+      <button class="btn prim"><svg class="ic"><use href="#i-rayo"/></svg>Procesar cola · 6</button>
+    </header>
+    <div class="desplaza">
+      <div class="obras">
+        <article class="obra activa">
+          <div class="cab"><h2>Terra Living</h2><span class="tipo">Supervisión · STP-MIVED + Formularios MIVED</span></div>
+          <div class="semaforo" id="semaforo" aria-label="24 visitas: 12 con dudas, 6 sin procesar, 6 procesadas"></div>
+          <div class="linea"><span>CONSTRUCTORA CEBALLOS</span><span>Supervisor <span class="pend">pendiente de verificar</span></span><span class="sinplano">Sin plano</span></div>
+          <div class="acciones"><button class="btn peq">Subir planos</button><button class="btn peq">Subir visita</button><button class="btn peq">Dropbox conectado</button><button class="btn peq">Datos de la obra</button></div>
+        </article>
+        <article class="obra">
+          <div class="cab"><h2>Torre P16</h2><span class="tipo">Supervisión</span></div>
+          <div class="semaforo-vacio">0 visitas registradas</div>
+          <div class="linea"><span>Cliente <span class="pend">pendiente de verificar</span></span><span class="sinplano">Sin plano</span></div>
+          <div class="acciones"><button class="btn peq">Subir planos</button><button class="btn peq">Subir visita</button><button class="btn peq">Dropbox conectado</button><button class="btn peq">Datos de la obra</button></div>
+        </article>
+        <article class="obra">
+          <div class="cab"><h2>Hotel Zoetry Cap Cana · H2 y H5</h2></div>
+          <div class="semaforo-vacio">Levantamiento HV · sin cola de visitas</div>
+          <div class="linea"><span>Cliente <span class="pend">pendiente de verificar</span></span><span class="sinplano">Sin plano</span></div>
+          <div class="acciones"><button class="btn peq">Subir planos</button><button class="btn peq">Datos de la obra</button></div>
+        </article>
+      </div>
+
+      <div class="cab-seccion">
+        <h3>Cola de visitas · Terra Living</h3><span class="s">24 visitas · 12 con dudas · lo bloqueado primero</span>
+        <span class="esp"></span>
+        <div class="filtros"><button aria-pressed="true">Todas</button><button aria-pressed="false">Parcial</button><button aria-pressed="false">Completivo</button><button aria-pressed="false">Sin fecha</button></div>
+      </div>
+      <div class="tablero">
+        <div class="col"><div class="col-cab"><span class="punto" style="background:var(--duda)"></span><span class="cuenta">12</span>Con dudas<span class="s">responder en la Mesa</span></div><div class="tarjetas" id="c-dudas"></div></div>
+        <div class="col"><div class="col-cab"><span class="punto" style="background:#8a929c"></span><span class="cuenta">6</span>Sin procesar<span class="s">listas para la cola</span></div><div class="tarjetas" id="c-sin"></div></div>
+        <div class="col"><div class="col-cab"><span class="punto" style="background:var(--ok)"></span><span class="cuenta">6</span>Procesada</div><div class="tarjetas" id="c-proc"></div></div>
+        <div>
+          <div class="col"><div class="col-cab">Otros estados</div>
+            <div class="vacias"><div>En cola<b>0</b></div><div>En proceso<b>0</b></div><div>En revisión<b>0</b></div></div>
+          </div>
+          <div class="col ot"><div class="col-cab">Órdenes de trabajo<span class="s">1 abierta</span></div>
+            <div class="vacias"><span class="doc">OT-LEV-001</span><span>Ensamble de informes H2 y H5 · HV-INFTEC</span><span class="chip" style="background:var(--proc-fondo);color:var(--proc);justify-self:start">En proceso</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= CONFIRMAR DATOS DEL PLANO ================= -->
+  <section class="trabajo" id="pantalla-confirmar" hidden>
+    <header class="barra">
+      <button class="comando" data-paleta><svg class="ic"><use href="#i-buscar"/></svg><span>Terra Living › Confirmar datos del plano</span><kbd>Ctrl</kbd><kbd>K</kbd></button>
+      <span class="esp"></span>
+      <button class="btn">Mesa de Dudas de la obra</button>
+      <button class="btn"><svg class="ic"><use href="#i-extraer"/></svg>Extraer del plano vigente</button>
+    </header>
+    <div class="confirmar">
+      <aside class="tablas" aria-label="Tablas extraídas">
+        <h2>Tablas extraídas</h2>
+        <p class="s">38 del vectorial · 1 verde · 37 rojo</p>
+        <button class="ti" aria-selected="true"><span class="t">Zapata de muro lindero<span class="res verde">verde</span></span><span class="m">pág. 6</span></button>
+        <button class="ti"><span class="t">Acero en losa<span class="res rojo">rojo</span></span><span class="m">pág. 10 · hoja de fundaciones</span><span class="f">losa_tipo_asignado · ids_en_planta_sin_duplicados</span></button>
+        <button class="ti"><span class="t">Acero en losa<span class="res rojo">rojo</span></span><span class="m">pág. 26 · planta primer nivel</span><span class="f">losa_tipo_asignado</span></button>
+        <button class="ti"><span class="t">f'c por rango<span class="res rojo">rojo</span></span><span class="m">pág. 20</span><span class="f">rangos_expandidos · faltan E-n ↔ nivel</span></button>
+        <div class="mas" style="font-size:12px;color:var(--texto-3);padding:8px 10px">+ 34 más (20 f'c · 14 acero en losa)</div>
+      </aside>
+      <div class="visor">
+        <div class="cab"><h2>Zapata de muro lindero</h2><span class="res verde">verde</span><span class="meta">pág. 6 · nivel <span class="pend">pendiente de verificar</span> · ejes <span class="pend">pendiente de verificar</span></span></div>
+        <div class="comprob">
+          <span><svg class="ic"><use href="#i-ok"/></svg>celdas_completas</span><span><svg class="ic"><use href="#i-ok"/></svg>unidades</span><span><svg class="ic"><use href="#i-ok"/></svg>total_de_barras</span><span><svg class="ic"><use href="#i-ok"/></svg>ids_duplicados</span><span><svg class="ic"><use href="#i-ok"/></svg>sin_notas_de_modificacion</span>
+        </div>
+        <div class="papel">
+          <div class="titulo">ZAPATA DE MURO LINDERO</div>
+          <table class="tabla-plano" id="recorte">
+            <tr><td>MURO</td><td>B</td><td>h</td><td>Df</td><td>ACERO Ast</td><td>ACERO Asl</td></tr>
+            <tr><td data-c="6-et">6"</td><td data-c="6-B">0.60</td><td data-c="6-h">0.30</td><td data-c="6-Df">0.80</td><td data-c="6-Ast">∅ 3/8" @ 0.15</td><td data-c="6-Asl">4 ∅ 3/8"</td></tr>
+            <tr><td data-c="8-et">8"</td><td data-c="8-B">0.80</td><td data-c="8-h">0.30</td><td data-c="8-Df">1.00</td><td data-c="8-Ast">∅ 3/8" @ 0.10</td><td data-c="8-Asl">5 ∅ 3/8"</td></tr>
+          </table>
+        </div>
+        <p class="nota">En la app real: recorte nítido del vectorial; el recuadro rojo sigue al valor seleccionado.</p>
+      </div>
+      <div class="valores">
+        <div class="cab"><b>10 valores propuestos</b><span>· todos pendientes</span></div>
+        <div class="lista-v" id="propuestas" tabindex="0" aria-label="Valores propuestos; usa J y K para moverte">
+          <div class="elem"><b>ZAPATA MURO LINDERO 6"</b> · nivel <span class="pend">pendiente de verificar</span></div>
+          <div class="v" data-c="6-B"><span>B</span><span class="val">0.60</span><span class="e">pendiente</span></div>
+          <div class="v" data-c="6-h"><span>h</span><span class="val">0.30</span><span class="e">pendiente</span></div>
+          <div class="v" data-c="6-Df"><span>Df</span><span class="val">0.80</span><span class="e">pendiente</span></div>
+          <div class="v" data-c="6-Ast"><span>ACERO Ast</span><span class="val">∅ 3/8" @ 0.15</span><span class="e">pendiente</span></div>
+          <div class="v" data-c="6-Asl"><span>ACERO Asl</span><span class="val">4 ∅ 3/8"</span><span class="e">pendiente</span></div>
+          <div class="elem"><b>ZAPATA MURO LINDERO 8"</b> · nivel <span class="pend">pendiente de verificar</span></div>
+          <div class="v" data-c="8-B"><span>B</span><span class="val">0.80</span><span class="e">pendiente</span></div>
+          <div class="v" data-c="8-h"><span>h</span><span class="val">0.30</span><span class="e">pendiente</span></div>
+          <div class="v" data-c="8-Df"><span>Df</span><span class="val">1.00</span><span class="e">pendiente</span></div>
+          <div class="v" data-c="8-Ast"><span>ACERO Ast</span><span class="val">∅ 3/8" @ 0.10</span><span class="e">pendiente</span></div>
+          <div class="v" data-c="8-Asl"><span>ACERO Asl</span><span class="val">5 ∅ 3/8"</span><span class="e">pendiente</span></div>
+        </div>
+        <div class="pie-confirmar">
+          <label class="casilla"><input type="checkbox" id="revisado"><span>Revisé los 10 valores pendientes contra el recorte del plano y los confirmo, junto con la identidad de los elementos (6 campos: ID, nivel, ejes, hoja y archivo).<small>Queda auditado con tu usuario y el lote.</small></span></label>
+          <button class="btn prim" id="btn-confirmar" disabled><svg class="ic"><use href="#i-ok"/></svg>Confirmar tabla completa</button>
+          <div class="teclas"><span><kbd>J</kbd><kbd>K</kbd> mover</span><span><kbd>Espacio</kbd> marcar casilla</span><span><kbd>Ctrl</kbd><kbd>Enter</kbd> confirmar</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<div class="velo" id="velo" hidden>
+  <div class="paleta" role="dialog" aria-label="Paleta de comandos">
+    <input id="buscar" placeholder="Escribe una obra, una visita o una acción…" aria-label="Buscar">
+    <ul id="opciones" role="listbox">
+      <li class="grupo" role="presentation">Acciones</li>
+      <li role="option" aria-selected="true">Procesar cola de visitas<span class="k"><kbd>P</kbd></span></li>
+      <li role="option">Sincronizar desde Dropbox<span class="k"><kbd>S</kbd></span></li>
+      <li role="option">Abrir Mesa de Dudas · 22 abiertas<span class="k"><kbd>D</kbd></span></li>
+      <li role="option">Nueva obra</li>
+      <li class="grupo" role="presentation">Obras</li>
+      <li role="option">Terra Living</li>
+      <li role="option">Torre P16</li>
+      <li role="option">Hotel Zoetry Cap Cana · H2 y H5</li>
+      <li class="grupo" role="presentation">Visitas</li>
+      <li role="option">Visita 17 · COMPLETIVO VERTICALES S-4 · 3 bloqueantes</li>
+      <li role="option">Visita 21 · VERTICALES S-2 PARCIAL</li>
+    </ul>
+  </div>
+</div>
+
+<div class="maqueta" role="group" aria-label="Maqueta">
+  <span>Maqueta C · Obra</span>
+  <button data-ir="principal" aria-pressed="true">Pantalla principal</button>
+  <button data-ir="confirmar" aria-pressed="false">Confirmar datos del plano</button>
+</div>
+
+<script>
+(function () {
+  /* Visitas reales de Terra Living (copia de la BD): n, carpeta, fecha, clase, estado, dudas abiertas, bloqueantes */
+  const V = [
+    [1,'1. FONDO DE SEPTICO','','','Con dudas',2,2],[1,'1. FUNDACIONES PARCIAL','','Parcial','Con dudas',1,1],
+    [2,'2. MURO DE SEPTICO','','','Con dudas',2,2],[3,'3. VERTICALES SOTANO -7','','','Con dudas',2,2],
+    [4,'4. FUNDACIONES COMPLETIVO','','Completivo','Con dudas',1,1],[5,'5. VERTICALES SOTANO -6 PARCIAL','','Parcial','Con dudas',1,1],
+    [6,'6. LOSA SEPTICO','','','Con dudas',2,2],[7,'7. LOSA SOTANO -7','','','Con dudas',2,2],
+    [8,'8 - COLUMNAS S-6 COMPLETIVO','','Completivo','Con dudas',2,1],[9,'9 - LOSA S-6 PARCIAL','23/07/2026','Parcial','Sin procesar',0,0],
+    [10,'10 - LOSA S-6 COMPLETIVO','','Completivo','Con dudas',1,1],[11,'11 - COLUMNAS S-5 31-07-2026','31/07/2026','Parcial','Sin procesar',0,0],
+    [12,'12. COLUMNAS  S-5 COMPLETIVO Y PORTICOS PARCIALES S-5 17-08-2026','17/08/2026','Mixta','Sin procesar',0,0],
+    [13,'13. LOSAS Y PORTICOS S-5 PARCIAL 19-08-2026','19/08/2026','Parcial','Sin procesar',0,0],
+    [14,'14. VERTICALES PARCIALES S-4 28-08-2026','28/08/2026','Parcial','Procesada',0,0],
+    [15,'15 LOSAS Y PORTICOS S-5 COMPLETIVO 02-09-2026','02/09/2026','Completivo','Procesada',0,0],
+    [16,'16. VERTICALES PARCIAL S-4 11-09-2026','11/09/2026','Parcial','Procesada',0,0],
+    [17,'17. COMPLETIVO VERTICALES S-4 28-09-2026','28/09/2026','Completivo','Procesada',3,3],
+    [17,'17.PARCIAL VERTICALES S-3 28-09-2026','28/09/2026','Parcial','Procesada',0,0],
+    [18,'18. LOSA Y VIGA ENTREPISO S-4 COMPLETIVO 02-10-2026','02/10/2026','Completivo','Con dudas',1,1],
+    [19,'19. VERTICALES S-3 COMPLETIVO 09-10-2026','09/10/2026','Completivo','Con dudas',2,1],
+    [20,'20. LOSA SOTANO 3 PARCIAL 15-10-2026','15/10/2026','Parcial','Procesada',0,0],
+    [21,'21. VERTICALES S-2 PARCIAL 23-10-2026','23/10/2026','Parcial','Sin procesar',0,0],
+    [21,'21. VERTICALES S-3 COMPLETIVO 23-10-2026','23/10/2026','Completivo','Sin procesar',0,0]
+  ];
+  const pend = '<span class="pend">pendiente de verificar</span>';
+  const destino = { 'Con dudas': 'c-dudas', 'Sin procesar': 'c-sin', 'Procesada': 'c-proc' };
+  /* lo bloqueado primero: más bloqueantes arriba, luego por número */
+  const orden = V.map((v, i) => i).sort((a, b) => (V[b][6] - V[a][6]) || (V[a][0] - V[b][0]));
+  orden.forEach(i => {
+    const v = V[i], b = document.createElement('button');
+    b.className = 'tarjeta';
+    let chip = '<span></span>';
+    if (v[4] === 'Procesada' && v[6]) chip = '<span class="chip peligro"><b>' + v[6] + ' bloqueantes</b></span>';
+    else if (v[5]) chip = '<span class="chip duda">' + v[5] + (v[5] === 1 ? ' duda' : ' dudas') + '</span>';
+    const clase = v[3] === 'Mixta' ? 'Mixta · detalle ' + pend : (v[3] || 'clase ' + pend);
+    b.innerHTML = '<span class="num">' + v[0] + '</span><span class="nom">' + v[1] + '</span>' + chip +
+      '<span class="meta"><span>' + (v[2] || 'fecha ' + pend) + '</span><span>' + clase + '</span></span>';
+    document.getElementById(destino[v[4]]).appendChild(b);
+  });
+  const sem = document.getElementById('semaforo');
+  V.forEach(v => { const i = document.createElement('i'); i.className = v[4] === 'Con dudas' ? 'd' : v[4] === 'Procesada' ? (v[6] ? 'pb' : 'p') : 's'; i.title = 'Visita ' + v[0] + ' · ' + v[4]; sem.appendChild(i); });
+
+  const pant = { principal: document.getElementById('pantalla-principal'), confirmar: document.getElementById('pantalla-confirmar') };
+  function ir(n) {
+    if (!pant[n]) n = 'principal';
+    for (const k in pant) pant[k].hidden = k !== n;
+    document.querySelectorAll('.maqueta button').forEach(b => b.setAttribute('aria-pressed', b.dataset.ir === n));
+    document.querySelectorAll('.riel a[data-ir]').forEach(a => a.removeAttribute('aria-current'));
+    document.querySelector(n === 'confirmar' ? '.riel a[href="#confirmar"]' : '.riel a[data-ir="principal"]').setAttribute('aria-current', 'page');
+  }
+  document.querySelectorAll('[data-ir]').forEach(a => a.addEventListener('click', e => { e.preventDefault(); ir(a.dataset.ir); history.replaceState(null, '', '#' + a.dataset.ir); }));
+  ir((location.hash || '#principal').slice(1));
+
+  const velo = document.getElementById('velo'), buscar = document.getElementById('buscar');
+  const abrirPaleta = () => { velo.hidden = false; buscar.value = ''; buscar.focus(); };
+  const cerrarPaleta = () => { velo.hidden = true; };
+  document.querySelectorAll('[data-paleta]').forEach(b => b.addEventListener('click', abrirPaleta));
+  velo.addEventListener('click', e => { if (e.target === velo) cerrarPaleta(); });
+
+  const recorte = document.getElementById('recorte');
+  const filas = [...document.querySelectorAll('#propuestas .v')];
+  let actual = -1;
+  function marcar(i) {
+    filas.forEach(f => f.classList.remove('activa'));
+    recorte.querySelectorAll('.marcada').forEach(c => c.classList.remove('marcada'));
+    actual = i; if (i < 0) return;
+    filas[i].classList.add('activa'); filas[i].scrollIntoView({ block: 'nearest' });
+    const c = recorte.querySelector('[data-c="' + filas[i].dataset.c + '"]'); if (c) c.classList.add('marcada');
+  }
+  filas.forEach((f, i) => { f.addEventListener('mouseenter', () => marcar(i)); f.addEventListener('mouseleave', () => marcar(-1)); });
+  const casilla = document.getElementById('revisado'), boton = document.getElementById('btn-confirmar');
+  casilla.addEventListener('change', () => { boton.disabled = !casilla.checked; });
+
+  document.addEventListener('keydown', e => {
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); velo.hidden ? abrirPaleta() : cerrarPaleta(); return; }
+    if (e.key === 'Escape' && !velo.hidden) { cerrarPaleta(); return; }
+    if (pant.confirmar.hidden || !velo.hidden || /INPUT|TEXTAREA|SELECT/.test(e.target.tagName)) return;
+    if (e.key === 'j' || e.key === 'ArrowDown') { e.preventDefault(); marcar(Math.min(filas.length - 1, actual + 1)); }
+    else if (e.key === 'k' || e.key === 'ArrowUp') { e.preventDefault(); marcar(Math.max(0, actual - 1)); }
+    else if (e.key === ' ' && e.target === document.body) { e.preventDefault(); casilla.checked = !casilla.checked; casilla.dispatchEvent(new Event('change')); }
+    else if (e.key === 'Enter' && e.ctrlKey && !boton.disabled) { boton.focus(); }
+  });
+})();
+</script>
+</body>
+</html>

@@ -64,6 +64,15 @@ def _trabajo(req, conn):
     return obras or [None]
 
 
+def _informe(req, conn):
+    """Obras de las visitas cuyo evento `pdf_generado` registró esta ruta (Etapa 5 · B3g). Ruta no registrada: no existe."""
+    ruta = req.query_params.get("ruta") or ""
+    filas = conn.execute("""SELECT DISTINCT v.proyecto_id FROM trabajo_eventos e
+                            JOIN visitas v ON v.id = json_extract(e.datos_json, '$.visita_id')
+                            WHERE e.tipo = 'pdf_generado' AND json_extract(e.datos_json, '$.ruta') = ?""", (ruta,)).fetchall()
+    return [f[0] for f in filas] or [None]
+
+
 def _consulta_opcional(req, conn):
     """?proyecto_id= opcional: si viene se comprueba; si no, la ruta filtra por las obras del usuario."""
     pid = req.query_params.get("proyecto_id")
@@ -118,9 +127,14 @@ POLITICAS = {
     ("POST", "/api/visitas/{visita_id}/procesar"): Politica(PREPARAR, _visita),
     ("GET", "/api/trabajos/{trabajo_id}"): Politica(CONSULTAR, _trabajo),
     ("GET", "/api/trabajos/{trabajo_id}/eventos"): Politica(CONSULTAR, _trabajo),
+    # Tablero nuevo (Etapa 5 · Fase B): regenerar el STP de una visita e informes de la obra
+    ("POST", "/api/visitas/{visita_id}/regenerar"): Politica(PREPARAR, _visita),
+    ("GET", "/api/proyectos/{proyecto_id}/informes"): Politica(CONSULTAR, _P),
+    ("GET", "/api/informes/archivo"): Politica(CONSULTAR, _informe),
     # Mesa de Dudas: responder confirma datos o cierra dudas bloqueantes
     ("GET", "/api/dudas"): Politica(CONSULTAR, _filtro_dudas, filtra=True),
     ("PATCH", "/api/dudas/{duda_id}"): Politica(REVISAR_AUTORIZAR, _duda),
+    ("GET", "/api/dudas/{duda_id}/refs"): Politica(CONSULTAR, _duda),
     # Obras y planos (obras.py). Subir planos certifica la revisión: revisar_autorizar (rev. 3)
     ("POST", "/api/proyectos"): Politica(admin=True),
     ("POST", "/api/proyectos/{proyecto_id}/planos"): Politica(REVISAR_AUTORIZAR, _P),

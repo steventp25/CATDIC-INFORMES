@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CATDIC · Maqueta B · Plano</title>
+<style>
+:root {
+  --papel: #ffffff;
+  --tinta: #111418;
+  --tinta-2: #434a53;
+  --tinta-3: #69717b;
+  --linea: #111418;
+  --linea-2: #c4cad1;
+  --linea-3: #e3e7ec;
+  --reticula: #eef2f6;
+  --seleccion: #2557a7;
+  --seleccion-fondo: #e6eefa;
+  --rojo: rgb(220, 0, 0);
+  --rojo-fondo: rgba(220, 0, 0, .07);
+  --duda: #a14a00; --duda-fondo: #fdf0e3;
+  --ok: #1d6b3a; --ok-fondo: #e5f3ea;
+  --pend: #8a3d00;
+  --foco: #2557a7;
+  --txt: "Bahnschrift", "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif;
+  --dato: "Consolas", "Cascadia Mono", ui-monospace, monospace;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; }
+body {
+  color: var(--tinta); font: 14px/1.45 var(--txt); font-variant-numeric: tabular-nums;
+  background-color: var(--papel);
+  background-image: linear-gradient(var(--reticula) 1px, transparent 1px), linear-gradient(90deg, var(--reticula) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+::selection { background: var(--seleccion-fondo); color: var(--tinta); }
+:focus-visible { outline: 2px solid var(--foco); outline-offset: 2px; }
+button, select { font: inherit; color: inherit; cursor: pointer; }
+svg.ic { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+[hidden] { display: none !important; }
+
+/* ---------- Barra superior: obra + pestañas ---------- */
+.cabecera { position: sticky; top: 0; z-index: 5; background: var(--papel); border-bottom: 2px solid var(--linea); }
+.fila1 { display: flex; align-items: center; gap: 14px; padding: 10px 24px; }
+.marca { font: 700 15px/1 var(--txt); letter-spacing: .12em; border: 2px solid var(--linea); padding: 5px 8px 4px; }
+.selector { display: flex; align-items: center; gap: 8px; border: 1px solid var(--linea-2); padding: 4px 6px 4px 10px; background: var(--papel); }
+.selector label { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--tinta-3); }
+.selector select { border: 0; background: transparent; font-weight: 600; font-size: 15px; padding: 2px 4px; }
+.esp { flex: 1; }
+.btn { display: inline-flex; align-items: center; gap: 7px; height: 32px; padding: 0 13px; border: 1px solid var(--linea); background: var(--papel); font-size: 13.5px; transition: background-color .15s, transform .1s; }
+.btn:hover { background: #f3f5f8; }
+.btn:active { transform: scale(.98); }
+.btn.prim { background: var(--tinta); color: #fff; }
+.btn.prim:hover { background: #2a3038; }
+.btn.peq { height: 28px; padding: 0 10px; font-size: 12.5px; }
+.btn.fino { border-color: var(--linea-2); }
+.btn[disabled] { opacity: .4; cursor: not-allowed; transform: none; }
+.mesa-global { display: inline-flex; align-items: center; gap: 8px; height: 32px; padding: 0 12px; border: 1px solid var(--duda); color: var(--duda); background: var(--duda-fondo); font-weight: 600; font-size: 13.5px; }
+.pestanas { display: flex; gap: 0; padding: 0 24px; }
+.pestanas a { display: inline-flex; align-items: center; gap: 7px; padding: 9px 14px 8px; color: var(--tinta-2); text-decoration: none; font-size: 14px; border-bottom: 3px solid transparent; margin-bottom: -2px; }
+.pestanas a:hover { color: var(--tinta); }
+.pestanas a[aria-current="page"] { color: var(--tinta); font-weight: 600; border-bottom-color: var(--seleccion); }
+.pestanas .n { font: 600 12px/1 var(--dato); padding: 2px 5px; border: 1px solid var(--linea-2); }
+.pestanas .n.duda { border-color: var(--duda); color: var(--duda); }
+.pestanas a.inactivo { color: #9aa1a9; cursor: default; }
+.pestanas .fase { font-size: 11px; border: 1px dashed #9aa1a9; padding: 0 4px; }
+
+.lienzo { max-width: 1480px; margin: 0 auto; padding: 22px 24px 72px; }
+
+/* ---------- Cajetín de la obra ---------- */
+.cajetin { display: grid; grid-template-columns: 2.2fr 1.3fr 1.3fr 1.2fr 1.6fr; border: 2px solid var(--linea); background: var(--papel); }
+.cajetin > div { padding: 7px 12px 9px; border-right: 1px solid var(--linea); min-width: 0; }
+.cajetin > div:last-child { border-right: 0; }
+.cajetin .r { display: block; font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--tinta-3); margin-bottom: 2px; }
+.cajetin .v { font-size: 15px; font-weight: 600; }
+.cajetin .v.grande { font-size: 22px; letter-spacing: -.005em; }
+.cajetin .s { display: block; font-size: 12.5px; color: var(--tinta-2); }
+.cajetin .fila-b { grid-column: 1 / -1; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; border-top: 1px solid var(--linea); border-right: 0; padding: 8px 12px; background: #fafbfc; }
+.cajetin .fila-b .r { margin: 0 6px 0 0; }
+.pend { font-style: italic; color: var(--pend); border-bottom: 1.5px dashed #c98a4e; padding-bottom: 1px; font-weight: 500; white-space: nowrap; }
+.sinplano { color: var(--duda); font-weight: 600; }
+
+/* ---------- Línea de visitas (firma) ---------- */
+.bloque { margin-top: 22px; background: var(--papel); border: 1px solid var(--linea-2); }
+.bloque-cab { display: flex; align-items: baseline; gap: 12px; padding: 10px 14px; border-bottom: 1px solid var(--linea-2); }
+.bloque-cab h2 { margin: 0; font-size: 16px; font-weight: 600; }
+.bloque-cab .s { color: var(--tinta-3); font-size: 12.5px; }
+.leyenda { display: flex; gap: 16px; font-size: 12px; color: var(--tinta-2); }
+.leyenda span { display: inline-flex; align-items: center; gap: 6px; }
+.eje-visitas { padding: 18px 14px 6px; overflow-x: auto; }
+.eje-visitas svg { display: block; min-width: 980px; width: 100%; height: auto; }
+.globo { cursor: pointer; }
+.globo circle { transition: stroke-width .12s; }
+.globo:hover circle.c, .globo:focus-visible circle.c { stroke-width: 2.6; }
+.globo:focus { outline: none; }
+.globo:focus-visible circle.c { stroke: var(--seleccion); }
+
+.ficha-visita { display: grid; grid-template-columns: auto 1fr auto; gap: 18px; align-items: start; padding: 12px 14px 14px; border-top: 1px dashed var(--linea-2); }
+.ficha-visita .n { font: 700 26px/1 var(--dato); border: 2px solid var(--linea); border-radius: 50%; width: 52px; height: 52px; display: grid; place-items: center; }
+.ficha-visita h3 { margin: 0 0 3px; font-size: 15px; font-weight: 600; }
+.ficha-visita dl { margin: 6px 0 0; display: grid; grid-template-columns: repeat(4, auto); gap: 2px 22px; font-size: 13px; justify-content: start; }
+.ficha-visita dt { font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--tinta-3); }
+.ficha-visita dd { margin: 0; }
+
+.est { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; padding: 1px 7px; border: 1px solid currentColor; white-space: nowrap; }
+.est.dudas { color: var(--duda); background: var(--duda-fondo); }
+.est.sinproc { color: var(--tinta-2); background: #f2f4f6; }
+.est.procesada { color: var(--ok); background: var(--ok-fondo); }
+.bloq { display: inline-flex; align-items: center; gap: 6px; margin-top: 4px; color: var(--duda); font-weight: 600; font-size: 12.5px; }
+
+.dos { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: 22px; }
+.lista { list-style: none; margin: 0; padding: 0; }
+.lista li { display: grid; grid-template-columns: 1fr auto; gap: 10px; padding: 9px 14px; border-bottom: 1px solid var(--linea-3); font-size: 13.5px; }
+.lista li:last-child { border-bottom: 0; }
+.lista .s { display: block; font-size: 12px; color: var(--tinta-3); }
+.mono { font-family: var(--dato); font-size: 13px; }
+.otras { display: grid; grid-template-columns: repeat(2, 1fr); }
+.otras > div { padding: 10px 14px; border-right: 1px solid var(--linea-3); font-size: 13px; }
+.otras > div:last-child { border-right: 0; }
+.otras b { display: block; font-size: 14px; }
+
+/* ---------- Confirmar datos del plano ---------- */
+.indice-hojas { display: flex; gap: 0; border: 1px solid var(--linea); background: var(--papel); margin-bottom: 18px; overflow-x: auto; }
+.indice-hojas button { border: 0; border-right: 1px solid var(--linea-2); background: var(--papel); padding: 8px 14px; text-align: left; min-width: 190px; }
+.indice-hojas button:hover { background: #f5f7fa; }
+.indice-hojas button[aria-selected="true"] { background: var(--seleccion-fondo); box-shadow: inset 0 -3px 0 var(--seleccion); }
+.indice-hojas .p { font: 600 12px/1 var(--dato); color: var(--tinta-3); }
+.indice-hojas .t { display: block; font-weight: 600; font-size: 13.5px; margin: 3px 0 2px; }
+.indice-hojas .f { display: block; font-size: 12px; color: var(--duda); }
+.indice-hojas .ok { display: block; font-size: 12px; color: var(--ok); }
+.indice-hojas .mas { color: var(--tinta-3); font-size: 12.5px; min-width: 210px; cursor: default; }
+
+.mesa-plano { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); gap: 22px; align-items: start; }
+.hoja-plano { background: var(--papel); border: 2px solid var(--linea); position: relative; padding: 0; }
+.hoja-plano .marco { margin: 10px; border: 1px solid var(--linea); position: relative; min-height: 460px; display: grid; grid-template-rows: 1fr auto; }
+.hoja-plano .dibujo { position: relative; padding: 40px 28px 26px; }
+.globo-eje { position: absolute; width: 26px; height: 26px; border: 1.5px solid var(--linea); border-radius: 50%; display: grid; place-items: center; font: 600 12px/1 var(--txt); background: var(--papel); }
+.titulo-tabla { text-align: center; font-weight: 700; font-size: 13px; letter-spacing: .04em; margin-bottom: 8px; }
+.tabla-plano { border-collapse: collapse; margin: 0 auto; font: 500 13px/1 var(--txt); }
+.tabla-plano td { border: 1px solid #000; padding: 8px 11px; text-align: center; position: relative; }
+.tabla-plano tr:first-child td { font-weight: 700; }
+.tabla-plano td.marcada { outline: 2.5px solid var(--rojo); outline-offset: -1px; background: var(--rojo-fondo); }
+.cota { position: absolute; font: 600 12px/1 var(--dato); color: var(--rojo); white-space: nowrap; pointer-events: none; background: var(--papel); border: 1px solid var(--rojo); padding: 4px 6px; }
+.cota::before { content: ""; position: absolute; left: 10px; bottom: 100%; height: var(--guia, 20px); border-left: 1px solid var(--rojo); }
+.cajetin-hoja { display: grid; grid-template-columns: 1.6fr 1fr 1fr .7fr; border-top: 1px solid var(--linea); font-size: 12px; }
+.cajetin-hoja > div { padding: 5px 8px; border-right: 1px solid var(--linea); }
+.cajetin-hoja > div:last-child { border-right: 0; }
+.cajetin-hoja .r { display: block; font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--tinta-3); }
+.nota-maqueta { font-size: 12px; color: var(--tinta-3); margin: 8px 2px 0; }
+
+.registro { background: var(--papel); border: 1px solid var(--linea-2); }
+.registro table { width: 100%; border-collapse: collapse; }
+.registro th { text-align: left; font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--tinta-3); font-weight: 600; padding: 8px 12px; border-bottom: 1px solid var(--linea); }
+.registro td { padding: 7px 12px; border-bottom: 1px solid var(--linea-3); font-size: 13.5px; }
+.registro tbody tr { cursor: default; }
+.registro tbody tr.activa td { background: var(--rojo-fondo); }
+.registro tbody tr.activa td:first-child { box-shadow: inset 2px 0 0 var(--rojo); }
+.registro .val { font: 600 13.5px/1.3 var(--dato); }
+.registro .dir { font: 500 12px/1.2 var(--dato); color: var(--tinta-3); }
+.registro .grupo td { background: #f6f8fa; font-weight: 600; font-size: 12.5px; letter-spacing: .02em; }
+.comprob { display: flex; flex-wrap: wrap; gap: 4px 14px; padding: 10px 12px; border-bottom: 1px solid var(--linea-2); font-size: 12.5px; color: var(--tinta-2); }
+.comprob span { display: inline-flex; align-items: center; gap: 5px; }
+.comprob svg { color: var(--ok); width: 15px; height: 15px; }
+.cierre { padding: 12px; display: grid; gap: 10px; border-top: 1px solid var(--linea); }
+.casilla { display: flex; gap: 10px; align-items: flex-start; font-size: 13.5px; }
+.casilla input { width: 17px; height: 17px; margin-top: 2px; accent-color: var(--tinta); }
+.casilla small { display: block; color: var(--tinta-3); font-size: 12px; margin-top: 2px; }
+
+.maqueta { position: fixed; left: 50%; bottom: 14px; transform: translateX(-50%); display: flex; gap: 4px; align-items: center; background: #111c; backdrop-filter: blur(6px); padding: 5px; border-radius: 999px; font: 12px/1 "Segoe UI", sans-serif; color: #fff; z-index: 9; }
+.maqueta span { padding: 0 10px; opacity: .85; }
+.maqueta button { border: 0; background: transparent; color: #fff; padding: 7px 12px; border-radius: 999px; }
+.maqueta button[aria-pressed="true"] { background: #fff; color: #111; }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-sync" viewBox="0 0 24 24"><path d="M20 11a8 8 0 0 0-14.3-4.9L4 8M4 4v4h4M4 13a8 8 0 0 0 14.3 4.9L20 16M20 20v-4h-4"/></symbol>
+  <symbol id="i-rayo" viewBox="0 0 24 24"><path d="M13 3 5 14h6l-1 7 8-11h-6z"/></symbol>
+  <symbol id="i-mas" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-subir" viewBox="0 0 24 24"><path d="M12 16V4M7 9l5-5 5 5M4 20h16"/></symbol>
+  <symbol id="i-ok" viewBox="0 0 24 24"><path d="m5 12.5 4.5 4.5L19 7"/></symbol>
+  <symbol id="i-duda" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.6 9.3a2.5 2.5 0 0 1 4.8.9c0 1.7-2.4 2.2-2.4 3.6M12 17.2h.01"/></symbol>
+  <symbol id="i-extraer" viewBox="0 0 24 24"><path d="M4 4h10l6 6v10H4zM14 4v6h6M8 15h8"/></symbol>
+  <symbol id="i-alerta" viewBox="0 0 24 24"><path d="M12 4 2.8 19.5h18.4zM12 10v4.5M12 17.2h.01"/></symbol>
+</svg>
+
+<header class="cabecera">
+  <div class="fila1">
+    <span class="marca">CATDIC</span>
+    <div class="selector">
+      <label for="obra">Obra</label>
+      <select id="obra">
+        <option selected>Terra Living</option>
+        <option>Torre P16</option>
+        <option>Hotel Zoetry Cap Cana · H2 y H5</option>
+        <option>Todas las obras (3)</option>
+      </select>
+    </div>
+    <button class="btn fino peq"><svg class="ic"><use href="#i-mas"/></svg>Nueva obra</button>
+    <span class="esp"></span>
+    <span class="mesa-global"><svg class="ic"><use href="#i-duda"/></svg>22 dudas abiertas</span>
+    <button class="btn"><svg class="ic"><use href="#i-sync"/></svg>Sincronizar desde Dropbox</button>
+    <button class="btn prim"><svg class="ic"><use href="#i-rayo"/></svg>Procesar cola de visitas</button>
+  </div>
+  <nav class="pestanas" aria-label="Secciones de la obra">
+    <a href="#principal" data-ir="principal" aria-current="page">Resumen</a>
+    <a href="#principal" data-ir="principal">Visitas <span class="n">24</span></a>
+    <a href="#confirmar" data-ir="confirmar">Plano y datos de diseño</a>
+    <a href="#principal" data-ir="principal">Mesa de Dudas <span class="n duda">22</span></a>
+    <a href="#principal" data-ir="principal">Órdenes</a>
+    <a class="inactivo" aria-disabled="true">Lectura asistida <span class="fase">Fase C</span></a>
+  </nav>
+</header>
+
+<!-- ================= PANTALLA PRINCIPAL ================= -->
+<main class="lienzo" id="pantalla-principal">
+  <section class="cajetin" aria-label="Datos de la obra">
+    <div><span class="r">Obra</span><span class="v grande">Terra Living</span><span class="s">Cliente: CONSTRUCTORA CEBALLOS</span></div>
+    <div><span class="r">Tipo · formato</span><span class="v">Supervisión</span><span class="s">STP-MIVED + Formularios MIVED</span></div>
+    <div><span class="r">Supervisor</span><span class="v"><span class="pend">pendiente de verificar</span></span><span class="s">Estado del informe: Sin iniciar</span></div>
+    <div><span class="r">Plano vigente</span><span class="v sinplano">Sin plano</span><span class="s">Ni vectorial ni sellado</span></div>
+    <div><span class="r">Próxima acción</span><span class="v" style="font-weight:500;font-size:14px">Completa supervisor, estado y fechas.</span></div>
+    <div class="fila-b">
+      <span class="r">Acciones</span>
+      <button class="btn peq"><svg class="ic"><use href="#i-subir"/></svg>Subir planos</button>
+      <button class="btn peq fino">Datos de la obra</button>
+      <button class="btn peq fino">Subir visita</button>
+      <button class="btn peq fino">Dropbox conectado</button>
+    </div>
+  </section>
+
+  <section class="bloque" aria-labelledby="t-eje">
+    <div class="bloque-cab">
+      <h2 id="t-eje">Visitas a obra</h2><span class="s">24 carpetas · numeradas como ejes · elige una para ver su ficha</span>
+      <span class="esp"></span>
+      <div class="leyenda">
+        <span><svg width="14" height="14"><circle cx="7" cy="7" r="6" fill="#fdf0e3" stroke="#a14a00" stroke-width="1.5"/></svg>Con dudas 12</span>
+        <span><svg width="14" height="14"><circle cx="7" cy="7" r="6" fill="#fff" stroke="#111418" stroke-width="1.5"/></svg>Sin procesar 6</span>
+        <span><svg width="14" height="14"><circle cx="7" cy="7" r="6" fill="#111418"/></svg>Procesada 6</span>
+      </div>
+    </div>
+    <div class="eje-visitas"><svg id="eje" viewBox="0 0 1100 150" role="list" aria-label="Línea de visitas de Terra Living"></svg></div>
+    <div class="ficha-visita" id="ficha" aria-live="polite"></div>
+  </section>
+
+  <div class="dos">
+    <section class="bloque" aria-labelledby="t-bloq">
+      <div class="bloque-cab"><h2 id="t-bloq">Lo que bloquea</h2><span class="s">20 bloqueantes · 2 hallazgos internos</span><span class="esp"></span><button class="btn peq">Abrir Mesa de Dudas</button></div>
+      <ul class="lista">
+        <li><span>Visita 17 · Completivo verticales S-4<span class="s">Procesada, pero con 3 etiquetas de fotos sin leer: «Mh4», «Mh1 pantalla eje 3», «Pantalla eje B»</span></span><span class="est dudas">3</span></li>
+        <li><span>Visitas 1 a 8 y 10<span class="s">15 sin fecha o sin clase (se responde DD/MM/AAAA o Parcial/Completivo) · visita 8: el PDF dice Parcial (hallazgo)</span></span><span class="est dudas">16</span></li>
+        <li><span>Visita 18 · Losa y viga entrepiso S-4<span class="s">Decidir si el estado corresponde: ya hay un STP con esa visita</span></span><span class="est dudas">1</span></li>
+        <li><span>Visita 19 · Verticales S-3 completivo<span class="s">La carpeta no tiene el PDF de la visita · el PDF dice parcial (hallazgo)</span></span><span class="est dudas">2</span></li>
+      </ul>
+    </section>
+    <section class="bloque" aria-labelledby="t-otras">
+      <div class="bloque-cab"><h2 id="t-otras">Datos de diseño y órdenes</h2></div>
+      <div class="otras">
+        <div><b>0 elementos</b>Sin plano vigente: aún no hay tablas que confirmar.<br><a href="#confirmar" data-ir="confirmar" style="color:var(--seleccion)">Ver plano y datos de diseño</a></div>
+        <div><b class="mono">OT-LEV-001</b>Hotel Zoetry · HV-INFTEC<br><span class="est" style="color:#1e40af;background:#e8eefc;margin-top:4px">En proceso</span></div>
+      </div>
+    </section>
+  </div>
+</main>
+
+<!-- ================= CONFIRMAR DATOS DEL PLANO ================= -->
+<main class="lienzo" id="pantalla-confirmar" hidden>
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px">
+    <h1 style="margin:0;font-size:22px;font-weight:600">Confirmar datos del plano</h1>
+    <span style="color:var(--tinta-3);font-size:13px">Terra Living · vectorial vigente · 38 tablas extraídas (1 en verde, 37 en rojo)</span>
+    <span class="esp"></span>
+    <button class="btn fino">Mesa de Dudas de la obra</button>
+    <button class="btn"><svg class="ic"><use href="#i-extraer"/></svg>Extraer del plano vigente</button>
+  </div>
+
+  <div class="indice-hojas" role="tablist" aria-label="Tablas extraídas">
+    <button role="tab" aria-selected="true"><span class="p">pág. 6</span><span class="t">Zapata de muro lindero</span><span class="ok">verde · lista para confirmar</span></button>
+    <button role="tab" aria-selected="false"><span class="p">pág. 10</span><span class="t">Acero en losa</span><span class="f">rojo · falta tipo de cada L#</span></button>
+    <button role="tab" aria-selected="false"><span class="p">pág. 26</span><span class="t">Acero en losa</span><span class="f">rojo · falta tipo de cada L#</span></button>
+    <button role="tab" aria-selected="false"><span class="p">pág. 20</span><span class="t">f'c por rango</span><span class="f">rojo · faltan equivalencias E-n ↔ nivel</span></button>
+    <button class="mas" tabindex="-1" aria-disabled="true">+ 34 tablas más<br>20 de f'c · 14 de acero en losa</button>
+  </div>
+
+  <div class="mesa-plano">
+    <div>
+      <div class="hoja-plano">
+        <div class="marco">
+          <div class="dibujo" id="dibujo">
+            <div class="titulo-tabla">ZAPATA DE MURO LINDERO</div>
+            <table class="tabla-plano" id="recorte">
+              <tr><td>MURO</td><td>B</td><td>h</td><td>Df</td><td>ACERO Ast</td><td>ACERO Asl</td></tr>
+              <tr><td data-c="6-et">6"</td><td data-c="6-B">0.60</td><td data-c="6-h">0.30</td><td data-c="6-Df">0.80</td><td data-c="6-Ast">∅ 3/8" @ 0.15</td><td data-c="6-Asl">4 ∅ 3/8"</td></tr>
+              <tr><td data-c="8-et">8"</td><td data-c="8-B">0.80</td><td data-c="8-h">0.30</td><td data-c="8-Df">1.00</td><td data-c="8-Ast">∅ 3/8" @ 0.10</td><td data-c="8-Asl">5 ∅ 3/8"</td></tr>
+            </table>
+            <span class="cota" id="cota" hidden></span>
+          </div>
+          <div class="cajetin-hoja">
+            <div><span class="r">Proyecto</span>Terra Living</div>
+            <div><span class="r">Página</span>6 del vectorial</div>
+            <div><span class="r">Hoja</span><span class="pend">pendiente de verificar</span></div>
+            <div><span class="r">Rev.</span><span class="pend">pendiente</span></div>
+          </div>
+        </div>
+      </div>
+      <p class="nota-maqueta">En la app real aquí va el recorte nítido del vectorial; el recuadro rojo cae sobre la celda de donde sale cada valor.</p>
+    </div>
+
+    <div class="registro">
+      <div class="comprob">
+        <span><svg class="ic"><use href="#i-ok"/></svg>celdas_completas</span>
+        <span><svg class="ic"><use href="#i-ok"/></svg>unidades</span>
+        <span><svg class="ic"><use href="#i-ok"/></svg>total_de_barras</span>
+        <span><svg class="ic"><use href="#i-ok"/></svg>ids_duplicados</span>
+        <span><svg class="ic"><use href="#i-ok"/></svg>sin_notas_de_modificacion</span>
+      </div>
+      <table>
+        <thead><tr><th>Campo</th><th>Valor propuesto</th><th>Celda en el plano</th><th>Estado</th></tr></thead>
+        <tbody id="propuestas">
+          <tr class="grupo"><td colspan="4">ZAPATA MURO LINDERO 6" · nivel <span class="pend">pendiente de verificar</span> · ejes <span class="pend">pendiente de verificar</span></td></tr>
+          <tr data-c="6-B"><td>B</td><td class="val">0.60</td><td class="dir">fila 6" · col B</td><td><span class="est dudas">pendiente</span></td></tr>
+          <tr data-c="6-h"><td>h</td><td class="val">0.30</td><td class="dir">fila 6" · col h</td><td><span class="est dudas">pendiente</span></td></tr>
+          <tr data-c="6-Df"><td>Df</td><td class="val">0.80</td><td class="dir">fila 6" · col Df</td><td><span class="est dudas">pendiente</span></td></tr>
+          <tr data-c="6-Ast"><td>ACERO Ast</td><td class="val">∅ 3/8" @ 0.15</td><td class="dir">fila 6" · col Ast</td><td><span class="est dudas">pendiente</span></td></tr>
+          <tr data-c="6-Asl"><td>ACERO Asl</td><td class="val">4 ∅ 3/8"</td><td class="dir">fila 6" · col Asl</td><td><span class="est dudas">pendiente</span></td></tr>
+          <tr class="grupo"><td colspan="4">ZAPATA MURO LINDERO 8" · nivel <span class="pend">pendiente de verificar</span> · ejes <span class="pend">pendiente de verificar</span></td></tr>
+          <tr data-c="8-B"><td>B</td><td class="val">0.80</td><td class="dir">fila 8" · col B</td><td><span class="est dudas">pendiente</span></td></tr>
+          <tr data-c="8-h"><td>h</td><td class="val">0.30</td><td class="dir">fila 8" · col h</td><td><span class="est dudas">pendiente</span></td></tr>
+          <tr data-c="8-Df"><td>Df</td><td class="val">1.00</td><td class="dir">fila 8" · col Df</td><td><span class="est dudas">pendiente</span></td></tr>
+          <tr data-c="8-Ast"><td>ACERO Ast</td><td class="val">∅ 3/8" @ 0.10</td><td class="dir">fila 8" · col Ast</td><td><span class="est dudas">pendiente</span></td></tr>
+          <tr data-c="8-Asl"><td>ACERO Asl</td><td class="val">5 ∅ 3/8"</td><td class="dir">fila 8" · col Asl</td><td><span class="est dudas">pendiente</span></td></tr>
+        </tbody>
+      </table>
+      <div class="cierre">
+        <label class="casilla"><input type="checkbox" id="revisado"><span>Revisé los 10 valores pendientes contra el recorte del plano y los confirmo, junto con la identidad de los elementos (6 campos: ID, nivel, ejes, hoja y archivo).<small>Queda auditado campo por campo con tu usuario y el lote.</small></span></label>
+        <div><button class="btn prim" id="btn-confirmar" disabled><svg class="ic"><use href="#i-ok"/></svg>Confirmar tabla completa</button></div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<div class="maqueta" role="group" aria-label="Maqueta">
+  <span>Maqueta B · Plano</span>
+  <button data-ir="principal" aria-pressed="true">Pantalla principal</button>
+  <button data-ir="confirmar" aria-pressed="false">Confirmar datos del plano</button>
+</div>
+
+<script>
+(function () {
+  /* Visitas reales de Terra Living (copia de la BD). d = dudas abiertas, b = bloqueantes. */
+  const V = [
+    [1,'1. FONDO DE SEPTICO','','','Con dudas',2,2],[1,'1. FUNDACIONES PARCIAL','','Parcial','Con dudas',1,1],
+    [2,'2. MURO DE SEPTICO','','','Con dudas',2,2],[3,'3. VERTICALES SOTANO -7','','','Con dudas',2,2],
+    [4,'4. FUNDACIONES COMPLETIVO','','Completivo','Con dudas',1,1],[5,'5. VERTICALES SOTANO -6 PARCIAL','','Parcial','Con dudas',1,1],
+    [6,'6. LOSA SEPTICO','','','Con dudas',2,2],[7,'7. LOSA SOTANO -7','','','Con dudas',2,2],
+    [8,'8 - COLUMNAS S-6 COMPLETIVO','','Completivo','Con dudas',2,1],[9,'9 - LOSA S-6 PARCIAL','23/07/2026','Parcial','Sin procesar',0,0],
+    [10,'10 - LOSA S-6 COMPLETIVO','','Completivo','Con dudas',1,1],[11,'11 - COLUMNAS S-5 31-07-2026','31/07/2026','Parcial','Sin procesar',0,0],
+    [12,'12. COLUMNAS  S-5 COMPLETIVO Y PORTICOS PARCIALES S-5 17-08-2026','17/08/2026','Mixta','Sin procesar',0,0],
+    [13,'13. LOSAS Y PORTICOS S-5 PARCIAL 19-08-2026','19/08/2026','Parcial','Sin procesar',0,0],
+    [14,'14. VERTICALES PARCIALES S-4 28-08-2026','28/08/2026','Parcial','Procesada',0,0],
+    [15,'15 LOSAS Y PORTICOS S-5 COMPLETIVO 02-09-2026','02/09/2026','Completivo','Procesada',0,0],
+    [16,'16. VERTICALES PARCIAL S-4 11-09-2026','11/09/2026','Parcial','Procesada',0,0],
+    [17,'17. COMPLETIVO VERTICALES S-4 28-09-2026','28/09/2026','Completivo','Procesada',3,3],
+    [17,'17.PARCIAL VERTICALES S-3 28-09-2026','28/09/2026','Parcial','Procesada',0,0],
+    [18,'18. LOSA Y VIGA ENTREPISO S-4 COMPLETIVO 02-10-2026','02/10/2026','Completivo','Con dudas',1,1],
+    [19,'19. VERTICALES S-3 COMPLETIVO 09-10-2026','09/10/2026','Completivo','Con dudas',2,1],
+    [20,'20. LOSA SOTANO 3 PARCIAL 15-10-2026','15/10/2026','Parcial','Procesada',0,0],
+    [21,'21. VERTICALES S-2 PARCIAL 23-10-2026','23/10/2026','Parcial','Sin procesar',0,0],
+    [21,'21. VERTICALES S-3 COMPLETIVO 23-10-2026','23/10/2026','Completivo','Sin procesar',0,0]
+  ];
+  const NS = 'http://www.w3.org/2000/svg', svg = document.getElementById('eje');
+  const x0 = 40, paso = (1100 - 80) / 20, yEje = 112;
+  function el(n, a, p) { const e = document.createElementNS(NS, n); for (const k in a) e.setAttribute(k, a[k]); (p || svg).appendChild(e); return e; }
+  el('line', { x1: 14, y1: yEje, x2: 1086, y2: yEje, stroke: '#111418', 'stroke-width': 1, 'stroke-dasharray': '14 4 2 4' });
+  const pila = {};
+  const pend = '<span class="pend">pendiente de verificar</span>';
+  const ficha = document.getElementById('ficha');
+  let sel = null;
+  function mostrar(i, g) {
+    const v = V[i];
+    if (sel) sel.querySelector('circle.c').setAttribute('stroke-width', sel.dataset.sw);
+    sel = g; g.querySelector('circle.c').setAttribute('stroke-width', '3');
+    const cls = v[4] === 'Con dudas' ? 'dudas' : v[4] === 'Procesada' ? 'procesada' : 'sinproc';
+    let bloq = '';
+    if (v[5]) bloq = '<span class="bloq"><svg class="ic" style="width:15px;height:15px"><use href="#i-alerta"/></svg>' + v[6] + (v[6] === 1 ? ' duda bloqueante abierta' : ' dudas bloqueantes abiertas') + (v[5] > v[6] ? ' · ' + (v[5] - v[6]) + ' hallazgo' : '') + '</span>';
+    const clase = v[3] === 'Mixta' ? 'Mixta · detalle ' + pend : (v[3] || pend);
+    ficha.innerHTML = '<span class="n">' + v[0] + '</span><div><h3>' + v[1] + '</h3><span class="est ' + cls + '">' + v[4] + '</span> ' + bloq +
+      '<dl><div><dt>Fecha</dt><dd>' + (v[2] || pend) + '</dd></div><div><dt>Clase</dt><dd>' + clase + '</dd></div><div><dt>Dudas abiertas</dt><dd>' + v[5] + '</dd></div><div><dt>Carpeta</dt><dd>LEVANTAMIENTO\\VISITA A OBRA</dd></div></dl></div>' +
+      (v[5] ? '<button class="btn peq">Responder en la Mesa</button>' : '<span></span>');
+  }
+  V.forEach((v, i) => {
+    const n = v[0], k = pila[n] = (pila[n] || 0) + 1;
+    const cx = x0 + (n - 1) * paso, cy = yEje - 26 - (k - 1) * 40;
+    if (k === 1) {
+      el('line', { x1: cx, y1: yEje - 8, x2: cx, y2: yEje + 8, stroke: '#111418', 'stroke-width': 1 });
+      const t = el('text', { x: cx, y: yEje + 26, 'text-anchor': 'middle', 'font-family': 'Consolas, monospace', 'font-size': 11, fill: '#69717b' }); t.textContent = n;
+    }
+    const g = el('g', { class: 'globo', tabindex: 0, role: 'listitem', 'aria-label': 'Visita ' + n + ', ' + v[4] + (v[5] ? ', ' + v[5] + ' dudas abiertas' : '') });
+    let fill = '#fff', stroke = '#111418', txt = '#111418', sw = 1.5;
+    if (v[4] === 'Con dudas') { fill = '#fdf0e3'; stroke = '#a14a00'; txt = '#7a3500'; }
+    if (v[4] === 'Procesada') { fill = '#111418'; txt = '#fff'; }
+    g.dataset.sw = sw;
+    if (k > 1) el('line', { x1: cx, y1: cy + 15, x2: cx, y2: cy + 25, stroke: '#111418', 'stroke-width': 1 }, g);
+    el('circle', { class: 'c', cx: cx, cy: cy, r: 15, fill: fill, stroke: stroke, 'stroke-width': sw }, g);
+    const t = el('text', { x: cx, y: cy + 4.5, 'text-anchor': 'middle', 'font-family': 'Bahnschrift, sans-serif', 'font-weight': 600, 'font-size': 13, fill: txt }, g); t.textContent = n;
+    if (v[6]) { /* bloqueantes: marca por forma, no solo color */
+      el('rect', { x: cx + 8, y: cy - 19, width: 13, height: 13, fill: '#a14a00' }, g);
+      const b = el('text', { x: cx + 14.5, y: cy - 9, 'text-anchor': 'middle', 'font-family': 'Consolas, monospace', 'font-size': 10, 'font-weight': 700, fill: '#fff' }, g); b.textContent = v[6];
+    }
+    g.addEventListener('click', () => mostrar(i, g));
+    g.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); mostrar(i, g); } });
+    if (i === 17) setTimeout(() => mostrar(i, g));
+  });
+
+  const pant = { principal: document.getElementById('pantalla-principal'), confirmar: document.getElementById('pantalla-confirmar') };
+  function ir(nombre) {
+    if (!pant[nombre]) nombre = 'principal';
+    for (const k in pant) pant[k].hidden = k !== nombre;
+    document.querySelectorAll('.maqueta button').forEach(b => b.setAttribute('aria-pressed', b.dataset.ir === nombre));
+    document.querySelectorAll('.pestanas a[data-ir]').forEach(a => a.removeAttribute('aria-current'));
+    document.querySelector(nombre === 'confirmar' ? '.pestanas a[href="#confirmar"]' : '.pestanas a[data-ir="principal"]').setAttribute('aria-current', 'page');
+  }
+  document.querySelectorAll('[data-ir]').forEach(a => a.addEventListener('click', e => { e.preventDefault(); ir(a.dataset.ir); history.replaceState(null, '', '#' + a.dataset.ir); }));
+  ir((location.hash || '#principal').slice(1));
+
+  const recorte = document.getElementById('recorte'), cota = document.getElementById('cota'), dibujo = document.getElementById('dibujo');
+  document.querySelectorAll('#propuestas tr[data-c]').forEach(tr => {
+    tr.addEventListener('mouseenter', () => {
+      tr.classList.add('activa');
+      const c = recorte.querySelector('[data-c="' + tr.dataset.c + '"]'); if (!c) return;
+      c.classList.add('marcada');
+      const r = c.getBoundingClientRect(), d = dibujo.getBoundingClientRect();
+      cota.textContent = 'pág. 6 · ' + tr.querySelector('.dir').textContent;
+      const t = recorte.getBoundingClientRect(), y = t.bottom - d.top + 26;
+      cota.style.left = (r.left - d.left + r.width / 2 - 10) + 'px'; cota.style.top = y + 'px';
+      cota.style.setProperty('--guia', (y - (r.bottom - d.top)) + 'px'); cota.hidden = false;
+    });
+    tr.addEventListener('mouseleave', () => { tr.classList.remove('activa'); recorte.querySelectorAll('.marcada').forEach(c => c.classList.remove('marcada')); cota.hidden = true; });
+  });
+  const casilla = document.getElementById('revisado'), boton = document.getElementById('btn-confirmar');
+  casilla.addEventListener('change', () => { boton.disabled = !casilla.checked; });
+})();
+</script>
+</body>
+</html>
