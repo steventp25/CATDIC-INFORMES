@@ -12,6 +12,7 @@ from pydantic import BaseModel
 
 import procesador_cola
 from database import get_connection, inicializar_bd, sembrar_datos_iniciales_catdic
+from cabecera_proyecto import router as router_cabecera_proyecto
 from equivalencias_nivel import router as router_equivalencias_nivel
 from sync.cabecera_propuesta import router as router_cabecera_propuesta
 from mesa_dudas import router as router_mesa_dudas
@@ -193,6 +194,7 @@ app.include_router(router_confirmacion)  # Etapa 2 · T7n: confirmación de los 
 app.include_router(router_visitas_obra)  # Etapa 2 · T4v: subir visita o conectar la obra con Dropbox
 app.include_router(router_equivalencias_nivel)  # Etapa 7 · T6: equivalencia nivel de la visita -> rango impreso
 app.include_router(router_cabecera_propuesta)  # Etapa 7 · T7: cabecera propuesta desde STP entregados (solo lectura)
+app.include_router(router_cabecera_proyecto)  # Etapa 7 · T15: cabecera del proyecto editable (GET/PUT)
 
 
 # Se monta al final para que /api/* conserve prioridad. Un solo servidor local entrega

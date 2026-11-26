@@ -208,6 +208,7 @@
                                             <button @click="abrirCambiarPlano(p)" :data-cambiar-plano="p.id" class="bg-[#29292e] hover:bg-[#323238] text-white px-2 py-1 rounded">{{ planosVigentes[p.id] ? 'Cambiar plano' : 'Subir planos' }}</button>
                                             <button v-if="planosVigentes[p.id]" @click="abrirVisor(p)" :data-ver-plano="p.id" class="bg-[#29292e] hover:bg-[#323238] text-white px-2 py-1 rounded">Ver plano</button>
                                             <button @click="abrirDatosObra(p)" :data-datos-obra="p.id" class="bg-[#29292e] hover:bg-[#323238] text-white px-2 py-1 rounded">Datos de la obra</button>
+                                            <button @click="abrirCabecera(p)" :data-abrir-cabecera="p.id" class="bg-[#29292e] hover:bg-[#323238] text-white px-2 py-1 rounded">Cabecera</button>
                                         </span>
                                         <span class="flex gap-2 mt-1.5">
                                             <button v-if="planosVigentes[p.id]" @click="abrirConfirmar(p)" :data-confirmar-plano="p.id" class="bg-[#29292e] hover:bg-[#323238] text-white px-2 py-1 rounded">Confirmar datos del plano</button>
@@ -612,6 +613,42 @@
         </div>
     </div>
 
+
+    <!-- MODAL: CABECERA DEL PROYECTO (Etapa 7 · T15): ver y editar los 7 datos de la hoja de inspección, con la propuesta de los STP al lado -->
+    <div v-if="cabecera" class="fixed inset-0 bg-black/70 z-50 flex items-start justify-center overflow-y-auto p-6" data-cabecera>
+        <div class="bg-[#1a1a1e] border border-[#29292e] rounded-xl w-full max-w-2xl">
+            <div class="px-6 py-4 border-b border-[#29292e] flex justify-between items-center">
+                <h3 class="font-bold text-white"><i class="fa-solid fa-id-card mr-2 text-yellow-400"></i>Cabecera del proyecto · {{ cabecera.nombre }}</h3>
+                <button @click="cabecera = null" class="text-gray-400 hover:text-white" title="Cerrar"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="p-6 text-sm">
+                <p v-if="cabecera.cargando" class="text-gray-400">Cargando…</p>
+                <template v-else-if="cabecera.valores">
+                    <p class="text-xs text-gray-400 mb-3">Estos datos salen en la hoja de inspección de los informes. Lo que dejes vacío sale como «pendiente de verificar». Cada cambio queda en la auditoría.</p>
+                    <p v-if="cabecera.propuesta && cabecera.propuesta.duda_abierta_id" class="mb-3 bg-orange-950 border border-orange-600 text-orange-200 rounded px-3 py-2 text-xs" data-cabecera-duda>Hay una duda abierta sobre la cabecera (propuesta desde los STP entregados). Al guardar un cambio se cierra.</p>
+                    <div class="divide-y divide-[#29292e] border-y border-[#29292e]">
+                        <div v-for="c in camposCabecera" :key="c.clave" class="py-3 grid grid-cols-3 gap-3 items-start">
+                            <label class="text-gray-300 text-xs uppercase tracking-wide pt-1.5">{{ c.rotulo }}</label>
+                            <div class="col-span-2" :data-campo-cabecera="c.clave">
+                                <input v-if="cabecera.editando" v-model="cabecera.form[c.clave]" type="text" class="w-full bg-[#121214] border border-[#29292e] rounded px-3 py-1.5 text-white" :data-input-cabecera="c.clave">
+                                <p v-else class="text-white py-1" :class="cabecera.valores[c.clave] ? '' : 'text-orange-300 italic'">{{ cabecera.valores[c.clave] || 'pendiente de verificar' }}</p>
+                                <p v-if="propuestaCabecera(c.clave)" class="text-xs text-gray-500 mt-1" :data-propuesta-cabecera="c.clave">propuesta: {{ propuestaCabecera(c.clave) }}</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex justify-end gap-2 mt-4">
+                        <template v-if="cabecera.editando">
+                            <button @click="cancelarCabecera" :disabled="cabecera.guardando" class="bg-[#29292e] hover:bg-[#323238] text-white text-xs px-3 py-1.5 rounded">Cancelar</button>
+                            <button @click="guardarCabecera" :disabled="cabecera.guardando" data-guardar-cabecera class="bg-yellow-500 hover:bg-yellow-400 disabled:opacity-50 text-black text-xs font-bold px-3 py-1.5 rounded">{{ cabecera.guardando ? 'Guardando…' : 'Guardar' }}</button>
+                        </template>
+                        <button v-else @click="editarCabecera" data-editar-cabecera class="bg-yellow-500 hover:bg-yellow-400 text-black text-xs font-bold px-3 py-1.5 rounded">Editar</button>
+                    </div>
+                </template>
+                <p v-if="cabecera.error" class="mt-3 bg-red-950 border border-red-700 text-red-200 rounded px-3 py-2 text-xs" data-cabecera-error>{{ cabecera.error }}</p>
+                <p v-if="cabecera.mensaje" class="mt-3 bg-green-950 border border-green-700 text-green-200 rounded px-3 py-2 text-xs" data-cabecera-mensaje>{{ cabecera.mensaje }}</p>
+            </div>
+        </div>
+    </div>
 
     <!-- MODAL: CONFIRMAR DATOS DEL PLANO (Etapa 2 · T7n): confirmación por lote de una tabla en verde, con el recorte al lado -->
     <div v-if="confirmar" class="fixed inset-0 bg-black/80 z-30 flex flex-col p-4" data-confirmar>
@@ -1082,6 +1119,54 @@
                     { tipo: 'hoja_par', titulo: 'Emparejamiento de hojas vectorial → sellado', ayuda: '(número de hoja del vectorial = número de hoja del sellado, o «sin pareja»)', ejemplo: '1 = 1\n9 = sin pareja' },
                     { tipo: 'techo', titulo: 'Nivel de las plantas repetidas', ayuda: '(página del vectorial = nivel; solo para plantas con el mismo título en varias hojas, p. ej. dos «DE TECHO»)', ejemplo: '32 = TECHO\n33 = TECHO ASCENSOR', sinDuda: true },
                 ];
+                // ---- Cabecera del proyecto (Etapa 7 · T15) ----
+                const camposCabecera = [
+                    { clave: 'no_solicitud', rotulo: 'No. solicitud' }, { clave: 'no_licencia', rotulo: 'Licencia' },
+                    { clave: 'direccion_obra', rotulo: 'Dirección de la obra' }, { clave: 'provincia', rotulo: 'Provincia' },
+                    { clave: 'sector', rotulo: 'Sector' }, { clave: 'residente_obra', rotulo: 'Residente de obra' },
+                    { clave: 'codia_residente', rotulo: 'CODIA del residente' },
+                ];
+                const cabecera = ref(null);
+                const abrirCabecera = async (p) => {
+                    cabecera.value = { id: p.id, nombre: p.nombre, cargando: true, valores: null, propuesta: null, editando: false, form: {}, guardando: false, error: '', mensaje: '' };
+                    try {
+                        let res;
+                        try { res = await fetch(`${API}/api/proyectos/${encodeURIComponent(p.id)}/cabecera`); }
+                        catch (e) { throw new Error(`El backend no responde en ${API}. Verifica que el servidor FastAPI esté corriendo.`); }
+                        if (!res.ok) throw new Error(await leerError(res));
+                        const j = await res.json();
+                        Object.assign(cabecera.value, { valores: j.valores, propuesta: j.propuesta });
+                    } catch (e) { cabecera.value.error = e.message; }
+                    finally { if (cabecera.value) cabecera.value.cargando = false; }
+                };
+                const propuestaCabecera = (clave) => {
+                    const c = cabecera.value;
+                    const f = c && c.propuesta && c.propuesta.campos && c.propuesta.campos[clave];
+                    if (!f || f.estado !== 'propuesta' || f.valor === c.valores[clave]) return '';
+                    return f.valor;
+                };
+                const editarCabecera = () => { cabecera.value.form = { ...cabecera.value.valores }; cabecera.value.editando = true; cabecera.value.mensaje = ''; cabecera.value.error = ''; };
+                const cancelarCabecera = () => { cabecera.value.editando = false; cabecera.value.error = ''; };
+                const guardarCabecera = async () => {
+                    const c = cabecera.value;
+                    if (c.guardando) return;
+                    c.guardando = true; c.error = ''; c.mensaje = '';
+                    try {
+                        let res;
+                        try {
+                            res = await fetch(`${API}/api/proyectos/${encodeURIComponent(c.id)}/cabecera`, {
+                                method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(c.form),
+                            });
+                        } catch (e) { throw new Error(`El backend no responde en ${API}. Verifica que el servidor FastAPI esté corriendo.`); }
+                        if (!res.ok) throw new Error(await leerError(res));
+                        const r = await res.json();
+                        c.valores = r.valores; c.editando = false; c.mensaje = r.mensaje;
+                        const j = await (await fetch(`${API}/api/proyectos/${encodeURIComponent(c.id)}/cabecera`)).json();
+                        c.propuesta = j.propuesta;
+                    } catch (e) { c.error = e.message; }
+                    finally { c.guardando = false; }
+                };
+
                 const abrirDatosObra = async (p) => {
                     modalDatos.value = { proyecto_id: p.id, nombre: p.nombre, texto: { equivalencia_nivel: '', losa_tipo: '', hoja_par: '', techo: '' },
                         completo: { equivalencia_nivel: false, losa_tipo: false, hoja_par: false, techo: false }, mensajes: {}, errores: {}, enviando: false };
@@ -1555,6 +1640,7 @@
                     dudasAbiertas, bloqueantesAbiertas, candidatosStp, abrirMesa, cerrarMesa, responder, responderEstado,
                     esElementoVisita, fotosDe,
                     sincronizarDropbox, contarOTs, filtrarOTs, trabajoCola, procesarCola,
+                    cabecera, camposCabecera, abrirCabecera, propuestaCabecera, editarCabecera, cancelarCabecera, guardarCabecera,
                     planosVigentes, avisoObra, modalObra, modalDatos, gruposDatos,
                     abrirNuevaObra, abrirCambiarPlano, cerrarModalObra, enviarObra, abrirDatosObra, guardarDatos,
                     visor, lienzoVisor, tiposRecuadro, elementoVisor, cajasVisibles, ptAPx, abrirVisor, cargarHoja, zoomVisor, ajustarVisor,
