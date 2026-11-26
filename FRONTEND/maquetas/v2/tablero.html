@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="es" data-tema="claro">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Maqueta B1 · Tablero de obra</title>
+<link rel="stylesheet" href="base.css">
+<link rel="stylesheet" href="estilo-tablero.css">
+</head>
+<body data-estilo="tablero" data-nombre-estilo="Tablero de obra">
+<a class="saltar" href="#contenido">Saltar al contenido</a>
+<div class="maqueta-barra" role="region" aria-label="Controles de la maqueta">
+  <strong>Maqueta B1 · Estilo Tablero de obra</strong>
+  <span class="mb-sint">Datos sintéticos: no son obras reales</span>
+  <label>Estado <select id="estado-demo"><option value="datos">Con datos</option><option value="vacio">Vacío</option><option value="cargando">Cargando</option><option value="error">Error</option></select></label>
+  <button type="button" id="tema" aria-pressed="false">Tema: claro</button>
+  <a href="index.html">Otros estilos</a>
+</div>
+<div class="app">
+  <aside class="riel" aria-label="Navegación principal">
+    <a class="marca" href="#/inicio"><span class="marca-n">CATDIC</span><span class="marca-s">Control de obras</span></a>
+    <a class="btn btn-crear" href="#/crear-informe" data-nav="crear"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Crear informe</a>
+    <nav><ul class="nav">
+      <li><a href="#/inicio" data-nav="inicio"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 11.5 12 5l8 6.5V20a1 1 0 0 1-1 1h-4.5v-6h-5v6H5a1 1 0 0 1-1-1z"/></svg>Inicio</a></li>
+      <li><a href="#/obras" data-nav="obras"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 21V8l6-3v16M10 21V3l10 4v14M3 21h18M14 10h2M14 14h2M6.5 12h1M6.5 16h1"/></svg>Mis obras</a></li>
+      <li><a href="#/bandeja" data-nav="bandeja"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 13l2.5-8h13L21 13v6a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1zM3 13h5l1.5 3h5L16 13h5"/></svg>Bandeja de trabajo<span class="nav-n">8</span></a></li>
+      <li><a href="#/informes" data-nav="informes"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3h7l5 5v12a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1zM14 3v5h5M9 13h7M9 17h5"/></svg>Informes</a></li>
+      <li><a href="#/configuracion" data-nav="configuracion"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/><path d="M4 12h2M18 12h2M12 4v2M12 18v2M6.3 6.3l1.4 1.4M16.3 16.3l1.4 1.4M6.3 17.7l1.4-1.4M16.3 7.7l1.4-1.4"/></svg>Configuración</a></li>
+    </ul></nav>
+    <p class="riel-pie">Lectura asistida · Fase C</p>
+  </aside>
+  <header class="cabeza-movil">
+    <a class="marca" href="#/inicio"><span class="marca-n">CATDIC</span></a>
+    <a class="btn btn-crear" href="#/crear-informe" data-nav="crear"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Crear informe</a>
+  </header>
+  <main id="contenido" tabindex="-1"></main>
+  <nav class="nav-inferior" aria-label="Navegación principal (móvil)">
+    <a href="#/inicio" data-nav="inicio"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 11.5 12 5l8 6.5V20a1 1 0 0 1-1 1h-4.5v-6h-5v6H5a1 1 0 0 1-1-1z"/></svg>Inicio</a>
+    <a href="#/obras" data-nav="obras"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 21V8l6-3v16M10 21V3l10 4v14M3 21h18M14 10h2M14 14h2M6.5 12h1M6.5 16h1"/></svg>Obras</a>
+    <a href="#/bandeja" data-nav="bandeja"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 13l2.5-8h13L21 13v6a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1zM3 13h5l1.5 3h5L16 13h5"/></svg>Bandeja</a>
+    <a href="#/informes" data-nav="informes"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3h7l5 5v12a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1zM14 3v5h5M9 13h7M9 17h5"/></svg>Informes</a>
+    <a href="#/configuracion" data-nav="configuracion"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/><path d="M4 12h2M18 12h2M12 4v2M12 18v2M6.3 6.3l1.4 1.4M16.3 16.3l1.4 1.4M6.3 17.7l1.4-1.4M16.3 7.7l1.4-1.4"/></svg>Configuración</a>
+  </nav>
+</div>
+<script src="datos.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

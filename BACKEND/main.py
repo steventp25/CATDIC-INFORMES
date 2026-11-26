@@ -5,10 +5,13 @@ from pathlib import Path
 from typing import Optional
 
 from fastapi import Depends, FastAPI, HTTPException
+from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
+import informes_obra
 import procesador_cola
+import regenerar_visita
 from database import get_connection, inicializar_bd, sembrar_datos_iniciales_catdic, usuario_auditoria
 from cabecera_proyecto import router as router_cabecera_proyecto
 from equivalencias_nivel import router as router_equivalencias_nivel
@@ -189,6 +192,20 @@ def procesar_visita(visita_id: str):
     return {"trabajo": _lanzar([visita_id], "visita"), "mensaje": "Trabajo lanzado."}
 
 
+# --- Etapa 5 · B3g-2: regenerar el informe de una visita ya procesada (solo STP-MIVED, versión nueva) ---
+@app.post("/api/visitas/{visita_id}/regenerar", status_code=202)
+def regenerar_informe_visita(visita_id: str):
+    """Lanza un trabajo que vuelve a generar el STP-MIVED de una visita 'Procesada' como versión nueva (v2, v3…).
+    No relee la visita, no toca los FI ni cambia el estado de la visita."""
+    try:
+        trabajo = regenerar_visita.lanzar_regeneracion(visita_id)
+    except (procesador_cola.TrabajoEnCurso, procesador_cola.VisitaNoProcesable) as e:
+        raise HTTPException(status_code=409, detail=str(e))
+    except LookupError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    return {"trabajo": trabajo, "mensaje": "Regeneración lanzada."}
+
+
 @app.get("/api/trabajos/{trabajo_id}")
 def obtener_trabajo(trabajo_id: str):
     trabajo = procesador_cola.obtener_trabajo(trabajo_id)
@@ -203,6 +220,28 @@ def eventos_trabajo(trabajo_id: str, desde: int = 0):
     if procesador_cola.obtener_trabajo(trabajo_id) is None:
         raise HTTPException(status_code=404, detail="Trabajo no encontrado.")
     return procesador_cola.listar_eventos(trabajo_id, max(0, desde))
+
+
+# --- Etapa 5 · B3g: informes de una obra (solo lectura) ---
+@app.get("/api/proyectos/{proyecto_id}/informes")
+def informes_de_la_obra(proyecto_id: str):
+    """Los PDF que generó el procesador para las visitas de la obra, del más nuevo al más viejo."""
+    try:
+        return {"informes": informes_obra.informes_de_obra(proyecto_id)}
+    except informes_obra.ObraNoEncontrada as e:
+        raise HTTPException(status_code=404, detail=str(e))
+
+
+@app.get("/api/informes/archivo")
+def abrir_informe(ruta: str = ""):
+    """Abre en el navegador un PDF publicado por el procesador. Solo sirve rutas registradas tal cual en un evento
+    `pdf_generado`: cualquier otra, exista o no el archivo, da 404."""
+    if not informes_obra.ruta_registrada(ruta):
+        raise HTTPException(status_code=404, detail="Esa ruta no es la de un informe generado por el sistema.")
+    archivo = Path(ruta)
+    if not archivo.is_file():
+        raise HTTPException(status_code=404, detail="El archivo de este informe ya no está en la carpeta.")
+    return FileResponse(archivo, media_type="application/pdf", filename=archivo.name, content_disposition_type="inline")
 
 
 app.include_router(router_identidad)  # Fundación F2: sesión, usuarios, obras autorizadas y membresías
