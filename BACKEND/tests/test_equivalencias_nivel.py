@@ -291,7 +291,8 @@ def test_get_vacio_lista_ayudas_sin_aplicar_nada(cliente):
     _visita_columna(entorno)
     r = c.get(f"/api/proyectos/{PID}/equivalencias-nivel")
     assert r.status_code == 200
-    assert r.json() == {"proyecto_id": PID, "equivalencias": [], "rangos_en_diseno": [RANGO], "niveles_en_visitas": ["S-2"]}
+    assert r.json() == {"proyecto_id": PID, "equivalencias": [], "equivalencias_confirmadas": [], "avisos": [],
+                        "rangos_en_diseno": [RANGO], "niveles_en_visitas": ["S-2"]}
 
 
 def test_put_guarda_la_lista_por_nivel_respalda_y_audita(cliente):

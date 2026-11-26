@@ -32,7 +32,8 @@ from generators import fi_mived, stp_mived
 from generators.comun import localizacion as m3_localizacion
 from plano import zona_planta
 from generators.comun import salida
-from reglas_ingenieria import PENDIENTE, auditar_archivo_pdf_generado, obtener_ruta_salida_sin_sobrescribir
+from reglas_ingenieria import (PENDIENTE, TOKEN_MURO_CONTENCION, auditar_archivo_pdf_generado,
+                               obtener_ruta_salida_sin_sobrescribir)
 from sync import lector_visita, paquete_visita
 from sync.escaner_dropbox import SUBRUTA_INFORMES_PROCESADOS, _escanear_informes
 from sync.parser_visitas import CLASE_COMPLETIVO, CLASE_PARCIAL, interpretar_nombre_carpeta_visita
@@ -59,6 +60,11 @@ CARPETA_DE_PASO = "_en_proceso"           # dentro de la salida de pruebas; se v
 SUFIJO_CON_DUDAS = " - CON DUDAS"
 RESPUESTA_CIERRE = "resuelta por el procesador: la causa ya no existe"
 RESPUESTA_ANTERIOR = "PERTENECE AL ANTERIOR"
+# T13 (Steven, 26/11/2026): un muro es único en el plano; un ID único en el nivel da sus EJES desde el diseño.
+TIPOS_MURO = ("MURO H.A.", "MURO DE CONTENCION")
+TIPO_MURO_CONTENCION = "MURO DE CONTENCION"
+EJES_DEL_PLANO = "plano (ID único en el nivel)"
+NOTA_EJES_DEL_PLANO = "ejes tomados del plano (ID único en el nivel)"
 
 FORMATO_STP, FORMATO_CATDIC = "STP-MIVED", "CATDIC-STP"
 FORMATOS_FI = {"MIVED FI", "MIVED FI-01/02/03", "FI-01/02/03", "FORMULARIOS MIVED", "FI-01", "FI-02", "FI-03"}
@@ -490,7 +496,7 @@ def interpretar_respuesta(texto: str) -> Optional[Dict]:
     datos = lector_visita.interpretar_etiqueta(t)
     if datos["id_elemento"] != PENDIENTE and datos["ejes"] != PENDIENTE:
         return {"id": datos["id_elemento"], "ejes": datos["ejes"]}
-    if len(tokens) == 1 and _RE_ID.fullmatch(tokens[0]):
+    if len(tokens) == 1 and (_RE_ID.fullmatch(tokens[0]) or tokens[0] == TOKEN_MURO_CONTENCION):
         return {"id": tokens[0], "ejes": None}
     return None
 
@@ -744,6 +750,11 @@ class ProcesoVisita:
                 resultado["esperando"] = esperando
             return resultado
 
+        # T13: muro con ID único en el nivel y sin ejes en la visita: los EJES salen del diseño. Gana la respuesta de Steven.
+        muro = None
+        if _vacio(ev["ejes"]) and _con_conexion(lambda c: self._respuesta_vigente(c, pagina)) is None:
+            muro = self._muro_unico_sin_ejes(ev, pagina)
+
         # Identificación: lo que dio el lector sin interpretar, o la respuesta de Steven (O4); nunca la etiqueta
         abiertas_lector = _con_conexion(lambda c: c.execute(
             """SELECT id FROM dudas_y_hallazgos WHERE visita_id = ? AND campo_afectado = ? AND categoria = ?
@@ -757,7 +768,9 @@ class ProcesoVisita:
             return fin({"estado": "espera"})
 
         ident = None
-        if ev["id_elemento"] != PENDIENTE and ev["ejes"] != PENDIENTE:
+        if muro is not None:
+            ident = muro
+        elif ev["id_elemento"] != PENDIENTE and ev["ejes"] != PENDIENTE:
             ident = {"id": ev["id_elemento"], "ejes": ev["ejes"]}
         else:
             respuesta = _con_conexion(lambda c: self._respuesta_vigente(c, pagina))
@@ -803,6 +816,12 @@ class ProcesoVisita:
         if c["ejes"] == PENDIENTE:
             # Diseño sin EJES (D11): los EJES de la ficha son los de la visita (o los de la respuesta de Steven)
             ejes = ident.get("ejes") or (ev["ejes"] if not _vacio(ev["ejes"]) else None)
+            if ejes is None and ident.get("ejes_del_plano"):
+                # T13: ni la visita ni el diseño traen los ejes: es un dato que falta en el DISEÑO (no de obra ni de cruce)
+                espera(f"diseno:{pagina}:ejes", f"El muro {c['id_elemento']} ({c['nivel_rango']}, {c['uid']}) es único en el "
+                                                f"nivel, pero el diseño no trae sus ejes ({PENDIENTE}) y la visita tampoco: "
+                                                "completa los ejes en el plano (confirmación del diseño). No se adivinan.", c)
+                return fin({"estado": "espera"})
             if ejes is None:
                 espera(f"cruce:{pagina}:ejes", f"El elemento de diseño {c['id_elemento']} no trae ejes y el elemento "
                                                f"'{etiqueta}' de la visita tampoco ({PENDIENTE}): indica el cruce (§4.2).", c)
@@ -829,6 +848,11 @@ class ProcesoVisita:
             for campo, texto in faltas:
                 espera(campo, texto, c)
             return fin({"estado": "espera"})
+        if ident.get("ejes_del_plano"):  # T13: la ficha y la auditoría dejan dicho de dónde salen los EJES
+            ficha["ejes_origen"] = EJES_DEL_PLANO
+            _con_conexion(lambda conn: _auditar(conn, "EJES_DEL_PLANO", ev["uid"], {
+                "visita_id": self.visita_id, "uid_diseno": c["uid"], "id_elemento": c["id_elemento"], "ejes": c["ejes"],
+                "motivo": NOTA_EJES_DEL_PLANO, "trabajo": self.trabajo_id}, self.usuario))
         for campo, texto in self.notas_ficha:  # T9: dudas que no bloquean; no se esperan (la ficha sigue)
             vigentes.add(campo)
             ya_resuelta = _con_conexion(lambda conn: conn.execute(
@@ -855,6 +879,11 @@ class ProcesoVisita:
             if ident.get("uid"):
                 filas = conn.execute("SELECT * FROM elementos_diseno WHERE proyecto_id = ? AND LOWER(uid) = ?",
                                      (proyecto_id, ident["uid"])).fetchall()
+            elif ident["id"].upper() == TOKEN_MURO_CONTENCION:
+                # T13: 'MC' (cualquier caja, sin número) es el ID de cualquier MURO DE CONTENCION del plano
+                filas = conn.execute("SELECT * FROM elementos_diseno WHERE proyecto_id = ? AND (tipo_elemento = ? OR "
+                                     "UPPER(id_elemento) = ?)", (proyecto_id, TIPO_MURO_CONTENCION,
+                                                                 TOKEN_MURO_CONTENCION)).fetchall()
             else:
                 filas = conn.execute("SELECT * FROM elementos_diseno WHERE proyecto_id = ? AND UPPER(id_elemento) = ?",
                                      (proyecto_id, ident["id"].upper())).fetchall()
@@ -867,6 +896,41 @@ class ProcesoVisita:
                 return filas
             return [f for f in filas if f["ejes"] == ident["ejes"] or f["ejes"] == PENDIENTE]
         return _con_conexion(leer)
+
+    def _muro_unico_sin_ejes(self, ev, pagina: str) -> Optional[Dict]:
+        """
+        T13 (Steven, 26/11/2026: los muros son únicos en el plano). Si el elemento de la visita es un muro (MURO H.A. o
+        MURO DE CONTENCION, o la etiqueta 'MC'), no trae ejes y su ID tiene UN solo elemento de diseño en ese nivel
+        (equivalencia aplicada), devuelve la identidad por el uid de ese elemento y cierra, con auditoría, la duda del
+        importador por ejes que faltan. Nunca elige entre varios, ni por cercanía; todo lo demás sigue como antes.
+        """
+        if _vacio(ev["nivel"]):
+            return None
+        id_ev = "" if _vacio(ev["id_elemento"]) else str(ev["id_elemento"]).upper()
+        if not id_ev and " ".join(str(ev["etiqueta_original"] or "").upper().split()) == TOKEN_MURO_CONTENCION:
+            id_ev = TOKEN_MURO_CONTENCION  # etiqueta 'MC' del lector: el ID es MC
+        if not id_ev:
+            return None
+        candidatos = self._candidatos(ev, {"id": id_ev, "ejes": None})
+        if len(candidatos) != 1 or candidatos[0]["tipo_elemento"] not in TIPOS_MURO:
+            return None
+        tipo_ev = ev["tipo_elemento"]
+        if not _vacio(tipo_ev) and tipo_ev != candidatos[0]["tipo_elemento"]:
+            return None  # la visita dice otro tipo que el plano: no se da por el mismo elemento
+        c = candidatos[0]
+
+        def cerrar(conn):
+            filas = conn.execute("""SELECT id FROM dudas_y_hallazgos WHERE visita_id = ? AND campo_afectado = ?
+                                    AND categoria = ? AND resuelta = 0""",
+                                 (self.visita_id, f"{PREFIJO_LECTOR}{pagina}", DUDA)).fetchall()
+            for f in filas:
+                conn.execute("UPDATE dudas_y_hallazgos SET resuelta = 1, respuesta_usuario = ?, resuelto_en = ? WHERE id = ?",
+                             (RESPUESTA_CIERRE, _ahora(), f["id"]))
+                _auditar(conn, "CERRAR_DUDA", str(f["id"]), {"visita_id": self.visita_id, "campo": f"{PREFIJO_LECTOR}{pagina}",
+                                                             "motivo": NOTA_EJES_DEL_PLANO, "uid_diseno": c["uid"],
+                                                             "trabajo": self.trabajo_id}, self.usuario)
+        _con_conexion(cerrar)
+        return {"uid": c["uid"].lower(), "id": c["id_elemento"], "ejes_del_plano": True}
 
     def _duda_de_equivalencia(self, ev, ident: Dict) -> Optional[str]:
         """
