@@ -23,8 +23,8 @@ Suite tras T13–T16: 1323 pasan, 3 omitidas y solo las 2 fallas conocidas de Dr
 
 T13 a T16: aprobadas por el Director en la Evaluación 10.
 
-| T17 (valores del proyecto con cita) | hecha, falta la auditoría del Director | `4905c4c`. `valores_proyecto_confirmados.json` y `valores_proyecto.py`; el origen queda en `ficha.origen_filas` |
-| T18 (C14, C16, regla 11, mapeo confirmado) | hecha, falta la auditoría del Director | `07ad64c`. `mapeo_stp.json` con `confirmado: true` |
+| T17 (valores del proyecto con cita) | hecha, aprobada por el Director (Evaluación 13) | `4905c4c`. `valores_proyecto_confirmados.json` y `valores_proyecto.py`; el origen queda en `ficha.origen_filas` |
+| T18 (C14, C16, regla 11, mapeo confirmado) | hecha, aprobada por el Director (Evaluación 13) | `07ad64c`, corregida en `4e18603` (Evaluación 11) y `37bb78c` (Evaluación 12: C14 exige el mismo acero en OBRA que en el plano). `mapeo_stp.json` con `confirmado: true` |
 
 Evaluación 11 (Director): T17 y T18 quedaron BLOQUEADAS por C14. En obra, la fila «o» es una descripción del empalme y nunca coincide con el plano, así que 2.p salía vacía y sin duda. Corrección del Líder:
 - C14 usa el mismo criterio que las discrepancias del generador: solo cuentan las filas dimensionales y que no falte ninguna fila de OBRA obligatoria.
@@ -86,3 +86,11 @@ Ver la lista al final de `PLANES/etapa-7-mapeo-stp.md`. Incluye:
 - la longitud de los muros en L (MH2).
 
 Además quedan las 3 decisiones del Líder de arriba y reemplazar Campo en uso por la copia v11.
+
+**En espera (25/11/2026, Evaluación 13):**
+- T17 y T18 están aprobadas. Suite: 1405 pasan, 3 omitidas y solo las 2 fallas conocidas de Dropbox.
+- En la corrida en seco t5n del Director, el STP sale sin «CON DUDAS», sin «BORRADOR» y sin dudas abiertas. C1 tiene 2.p = 0.0203 y C3 tiene 2.p = 0.0225.
+- No hay tareas abiertas. Queda esperando a Steven:
+  - las preguntas 29 a 31: el 2.95 en la torre, si todo MC es perimetral y si las filas de texto cuentan como discrepancia;
+  - su confirmación en el visor.
+- Nada de push: Steven lo hace al volver.
