@@ -83,6 +83,35 @@ CON_CUANTIA = {"viga", "col"}
 # la de OBRA, estas filas deben traer en OBRA el mismo texto (normalizado) que en PLANOS. Estribos, empalme y solapes
 # (f, g, h, o, n de viga) no entran en As_total y no cuentan.
 FILAS_AS = {"col": ("i", "j", "k", "m", "n"), "viga": ("i", "j", "k", "m")}
+# T19 (Steven, 25/11/2026, pregunta 31: «Sí, que lo marque»): filas de ACERO cuya OBRA se compara con PLANOS. Distintas
+# = discrepancia, igual que las dimensionales. Las descriptivas (a, o) y las de valores del proyecto no se comparan.
+FILAS_ACERO_COMPARADAS = {"col": tuple("fghijkmn"), "viga": tuple("fghijkm"), "muro": tuple("hijk")}
+_RE_COMILLAS = re.compile(r"''|[\"″”“]")
+_RE_EST = re.compile(r"\bEST\.")
+_D = r"([∅Øø])\s?(\d+(?:/\d+)?)\""
+_FORMAS_ACERO = (  # forma reconocible -> clave de contenido (sin símbolo); lo que no cuadra no se compara (duda)
+    ("estribos", re.compile(rf"^(\d+) ?EST ?{_D}(?: ?@ ?(\d*[.,]\d+))?$"), lambda m: (int(m[1]), m[3], m[4])),
+    ("espaciamiento", re.compile(rf"^{_D} ?@ ?(\d*[.,]\d+)$"), lambda m: (m[2], m[3])),
+    ("barras", re.compile(rf"^(\d+) ?-? ?{_D}$"), lambda m: (int(m[1]), m[3])),
+    ("diametro", re.compile(rf"^{_D}$"), lambda m: (m[2],)),
+    ("entero", re.compile(r"^(\d+)$"), lambda m: (int(m[1]),)),
+    ("ninguno", re.compile(r"^-$"), lambda m: ()),
+)
+
+
+def _norm_acero(texto) -> str:
+    """Normalización de T19, y solo esta: espacios, mayúsculas, el punto de «EST.» y comillas/pulgadas (″ ” “ " '')."""
+    t = _RE_COMILLAS.sub('"', " ".join(str(texto or "").split()).upper())
+    return " ".join(_RE_EST.sub("EST", t).split())
+
+
+def _forma_acero(normalizado: str):
+    """(forma, contenido) del texto de acero normalizado, o None si no tiene una forma reconocible."""
+    for nombre, rx, clave in _FORMAS_ACERO:
+        m = rx.match(normalizado)
+        if m:
+            return nombre, clave(m)
+    return None
 TIPOS_NO_SOPORTADOS = "perfil o conexión metálica, zapata, platea u otro"
 
 
@@ -265,6 +294,27 @@ def _filas_de_ficha(ficha: Dict, tipo_txt: str, kind: str, tolerancia) -> Tuple[
         if letra in obra and not obra[letra] and letra not in DIMENSIONALES[kind] and plano.get(letra):
             obra[letra] = plano[letra]
 
+    # T19: el acero de OBRA distinto del de PLANOS es una discrepancia (mismo tratamiento que las dimensionales). Vacío en
+    # OBRA = conforme (regla de Steven), no se compara. Si no se puede leer la forma, o solo difiere en lo que no se
+    # normaliza (p. ej. el símbolo de diámetro), se abre una duda y no se inventa una discrepancia.
+    rotulo_de = dict(ROTULOS[kind])
+    for letra in FILAS_ACERO_COMPARADAS.get(kind, ()):
+        en_obra, en_plano = obra.get(letra) or "", plano.get(letra) or ""
+        if not en_obra.strip() or not en_plano.strip():
+            continue
+        n_obra, n_plano = _norm_acero(en_obra), _norm_acero(en_plano)
+        if n_obra == n_plano:
+            continue
+        f_obra, f_plano = _forma_acero(n_obra), _forma_acero(n_plano)
+        if f_obra is None or f_plano is None or f_obra == f_plano:
+            duda(f"obra.{letra}.forma", f"La fila '{letra}' ({rotulo_de.get(letra) or letra}) de {id_el} trae en OBRA "
+                                        f"'{en_obra}' y en PLANOS '{en_plano}': no se pueden comparar sin adivinar; "
+                                        f"indica si es conforme ({PENDIENTE}).", bloquea=False)
+            continue
+        discrepancias.append(f"{id_el}: {(rotulo_de.get(letra) or letra).rstrip(' :')} en obra {en_obra}, "
+                             f"en planos {en_plano}")
+        filas_discrepantes.append(letra)
+
     # C14 (aprobado por Steven 26/11/2026): en un elemento CONFORME la cuantía de OBRA (p) es la del plano. Conforme se
     # decide con el MISMO criterio que las discrepancias de este generador: ninguna discrepancia en las filas
     # dimensionales (las únicas que se comparan con el plano, §4.5) y ninguna fila de OBRA que la visita debía traer
@@ -275,7 +325,7 @@ def _filas_de_ficha(ficha: Dict, tipo_txt: str, kind: str, tolerancia) -> Tuple[
     if kind in CON_CUANTIA and not ficha.get("barras_obra") and plano.get("p"):
         sin_dato = sorted(l for l in (OBLIGATORIAS[kind] | OBRA_EXTRA.get(kind, set())) - {"p", "q"} if not obra.get(l))
         acero_distinto = [l for l in FILAS_AS.get(kind, ()) if l not in sin_dato
-                          and " ".join(str(obra.get(l) or "").split()).upper() != " ".join(str(plano.get(l) or "").split()).upper()]
+                          and _norm_acero(obra.get(l)) != _norm_acero(plano.get(l))]
         if not discrepancias and not sin_dato and not acero_distinto:
             obra["p"] = plano["p"]
             origen_obra["p"] = "plano (C14: elemento conforme)"

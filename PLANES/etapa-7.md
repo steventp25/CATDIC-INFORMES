@@ -326,6 +326,25 @@ carpeta de pruebas. Al volver Steven, solo faltan sus confirmaciones (datos del 
   - Las pruebas y las corridas en seco nunca escriben en Dropbox: usan carpetas temporales o `CATDIC_SALIDA_PRUEBAS`.
 - **Observación 1 de la Evaluación 10:** la auditoría `CERRAR_DUDA` de `_muro_unico_sin_ejes` guarda también el texto de la duda cerrada.
 
+### T19 — Acero de obra distinto del plano = discrepancia (pregunta 31)
+- Steven, 25/11/2026. El Director le preguntó: «Si en obra hay menos barras o estribos que en el plano, ¿el STP lo marca como discrepancia?». Respuesta: «Sí, que lo marque».
+- **Cambio en `generators/stp_mived.py`:** se compara la OBRA con PLANOS en las filas de acero:
+  - columna: f, g, h, i, j, k, m y n;
+  - viga: f, g, h, i, j, k y m;
+  - muro: h, i, j y k.
+- **No se comparan:** las filas descriptivas (o, a) ni las que vienen de los valores del proyecto.
+- **Si difieren:** es una discrepancia, igual que en las filas dimensionales. Sale en el STP, el elemento deja de ser conforme, C14 deja 2.p vacía y la visita no lleva «ACORDE A PLANOS».
+- **Normalización antes de comparar:** solo espacios, mayúsculas, el punto de «EST.» y las comillas o pulgadas (″ ” “ " '').
+- **Forma ilegible:** si después de normalizar los textos difieren y alguno no tiene una forma de acero reconocible, se abre la duda `obra.<letra>.forma` sin bloquear y no se marca discrepancia. Lo mismo pasa si solo difieren en lo que no se normaliza (por ejemplo, el símbolo de diámetro): duda, no discrepancia.
+- **Vacío en obra:** sigue siendo conforme (regla de Steven).
+- C14 usa la misma normalización.
+- **Pruebas:**
+  - «8 EST. ∅3/8"» frente a «9 EST. ∅3/8"» marca discrepancia en h;
+  - k 34 frente a 36 marca discrepancia en k;
+  - «9 EST ∅3/8″» frente a «9 EST. ∅3/8"» queda conforme;
+  - una fila vacía en obra queda conforme;
+  - una forma ilegible abre duda, no discrepancia.
+
 ## Paralelismo
 - T1, T2 y T3 a la vez (no comparten archivos). T4 espera a T1. T5 al final.
 - T6 y T8 a la vez; T7 después de T6 (comparten `database.py` y `main.py`).

@@ -94,3 +94,10 @@ Además quedan las 3 decisiones del Líder de arriba y reemplazar Campo en uso p
   - las preguntas 29 a 31: el 2.95 en la torre, si todo MC es perimetral y si las filas de texto cuentan como discrepancia;
   - su confirmación en el visor.
 - Nada de push: Steven lo hace al volver.
+
+**T19 (25/11/2026, pregunta 31 respondida por Steven: «Sí, que lo marque»):** hecha, falta la auditoría del Director.
+- En el STP, el acero de OBRA distinto del de PLANOS ahora es una discrepancia. Se comparan col f–n (menos la l), viga f–m y muro h–k.
+- La normalización es solo la del contrato.
+- Si la forma es ilegible, o si solo cambia el símbolo de diámetro, se abre la duda `obra.<letra>.forma` y no se marca discrepancia.
+- Un vacío en OBRA sigue siendo conforme.
+- Suite: 1420 pasan, 3 omitidas y solo las 2 fallas conocidas de Dropbox.

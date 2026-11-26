@@ -59,12 +59,12 @@ def test_c14_la_fila_o_de_obra_distinta_no_rompe_la_conformidad():
     assert not any(d["campo_afectado"] == "obra.p" for d in dudas)
 
 
-def test_c14_estribos_distintos_con_el_acero_igual_dan_la_cuantia_del_plano():
-    """Evaluación 12: h (estribos) no entra en As; con i, j, k, m, n iguales al plano, 2.p = la cuantía del plano."""
+def test_c14_estribos_distintos_ya_son_discrepancia_y_dejan_la_cuantia_vacia():
+    """T19 (Steven, pregunta 31): h distinta en obra es discrepancia; el elemento no es conforme y 2.p queda vacía."""
     ficha = _col(conforme_por_omision=list("bcdefgijkmno"), obra={"h": "8 EST. Ø3/8\""})
     filas, dudas, _ = _filas(ficha)
-    assert filas["discrepancias"] == [] and filas["obra"]["p"] == "0.0203"
-    assert not any(d["campo_afectado"] == "obra.p" for d in dudas)
+    assert len(filas["discrepancias"]) == 1 and filas["obra"]["p"] == ""
+    assert any(d["campo_afectado"] == "obra.p" and "discrepancia en h" in d["descripcion_pregunta"] for d in dudas)
 
 
 def test_c14_total_de_barras_distinto_en_obra_deja_la_cuantia_vacia_con_duda():
