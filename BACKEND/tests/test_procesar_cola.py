@@ -653,9 +653,9 @@ def test_t4_carga_del_json_valido_roto_y_ausente(tmp_path):
         assert pc.cargar_mapeo_stp(ruta) == ({}, False)
 
 
-def test_t4_el_json_entregado_es_propuesta_sin_confirmar():
+def test_t4_el_json_entregado_esta_confirmado_por_steven():
     mapeo, confirmado = pc.cargar_mapeo_stp()
-    assert confirmado is False
+    assert confirmado is True  # T18: Steven confirmó el mapeo (26/11/2026)
     assert mapeo["col"]["filas"] == {} and mapeo["col"]["medidas"] == {"c": "b_m", "d": "h_m"}
     assert mapeo["col"]["barras"] == "acero_longitudinal"
     assert mapeo["col"]["derivaciones"] == {  # T9: propuesta, confirmado sigue en false
@@ -672,7 +672,8 @@ def test_t4_el_json_entregado_es_propuesta_sin_confirmar():
         "j": {"campo": "barras_cara_y", "regla": "barras_por_cara",
               "apoyo": {"par": "barras_cara_x", "acero": "acero_longitudinal"}}}
     assert mapeo["muro"]["medidas"] == {"b": "espesor"}
-    assert mapeo["muro"]["filas"] == {"c": "longitud", "h": "alma.ASV", "i": "alma.ASV", "j": "alma.ASH", "k": "alma.ASH"}
+    assert mapeo["muro"]["filas"] == {"h": "alma.ASV", "i": "alma.ASV", "j": "alma.ASH", "k": "alma.ASH"}
+    assert mapeo["muro"]["derivaciones"] == {"c": {"campo": "longitud", "regla": "longitud_muro_suma_alas"}}  # T18 (C16)
     assert "viga" not in mapeo and "losa" not in mapeo  # fuera de alcance: siguen con la duda de mapeo
 
 
@@ -877,38 +878,22 @@ def test_t9_c1_y_c3_llenan_f_g_h_m_n_y_la_cuantia_no_se_copia(entorno, monkeypat
     assert not [d for d in _abiertas() if "derivacion." in d["campo_afectado"]]
 
 
-def test_t9_la_duda_f_igual_g_no_bloquea_y_es_una_por_ficha(entorno, monkeypatch):
+def test_t9_f_igual_g_y_m_igual_n_ya_no_abren_duda_y_guardan_su_origen(entorno, monkeypatch):
+    # T18 (C11, aprobado por Steven 26/11/2026): antes abrían diseno:pNNN:derivacion_igual; ahora solo queda el origen
     _mapeo_real(monkeypatch)
     capturado = _capturar_fichas(monkeypatch)
     _elemento_visita(entorno, 1, "C1 D4", "C1", "EJE D-4")
     _diseno(id_elemento="C1", ejes="EJE D-4", tipo="COLUMNA",  # SINTÉTICO
             campos={"b_m": "0.60", "h_m": "1.50", "acero_longitudinal": '36Ø1"', "estribos": '9 EST. Ø3/8" @0.10'})
     _procesar()
-    assert capturado["fichas"]  # la ficha sigue: la duda no bloquea
-    d = [d for d in _abiertas() if d["campo_afectado"] == "diseno:p001:derivacion_igual"]
-    assert len(d) == 1
-    assert "f = g" in d[0]["descripcion_pregunta"] and "m = n" in d[0]["descripcion_pregunta"]
-    assert "PROPUESTA" in d[0]["descripcion_pregunta"] and "no bloquea" in d[0]["descripcion_pregunta"]
-    _procesar()  # otra corrida no la duplica
-    assert len([d for d in _abiertas() if d["campo_afectado"] == "diseno:p001:derivacion_igual"]) == 1
-
-
-def test_t9_la_duda_igual_no_se_repite_si_steven_ya_la_resolvio_ni_con_mapeo_confirmado(entorno, monkeypatch):
-    _mapeo_real(monkeypatch)
-    _capturar_fichas(monkeypatch)
-    _elemento_visita(entorno, 1, "C1 D4", "C1", "EJE D-4")
-    _diseno(id_elemento="C1", ejes="EJE D-4", tipo="COLUMNA",  # SINTÉTICO
-            campos={"b_m": "0.60", "h_m": "1.50", "acero_longitudinal": '36Ø1"', "estribos": '9 EST. Ø3/8" @0.10'})
-    _procesar()
-    with _bd() as conn:
-        conn.execute("UPDATE dudas_y_hallazgos SET resuelta = 1, respuesta_usuario = 'f = g, de acuerdo' "
-                     "WHERE campo_afectado = 'diseno:p001:derivacion_igual'")
-    _procesar()
+    assert capturado["fichas"]
     assert "diseno:p001:derivacion_igual" not in {d["campo_afectado"] for d in _abiertas()}
-    with _bd() as conn:
-        conn.execute("DELETE FROM dudas_y_hallazgos WHERE campo_afectado = 'diseno:p001:derivacion_igual'")
-    monkeypatch.setattr(pc, "MAPEO_CONFIRMADO", True)  # confirmado el mapeo, Steven ya decidió
-    _procesar()
+    origen = capturado["fichas"][0]["origen_filas"]
+    for letra, par in (("f", "f = g"), ("g", "f = g"), ("m", "m = n"), ("n", "m = n")):
+        assert origen[letra]["regla"] == par and origen[letra]["confirmado_por"] == "Steven"
+        assert origen[letra]["fecha"] == "2026-11-26" and origen[letra]["campo_plano"] in ("estribos", "acero_longitudinal")
+    assert origen["f"]["valor"] == origen["g"]["valor"] == 'Ø3/8"@0.10' and origen["m"]["valor"] == 'Ø1"'
+    _procesar()  # otra corrida tampoco abre nada
     assert "diseno:p001:derivacion_igual" not in {d["campo_afectado"] for d in _abiertas()}
 
 
@@ -939,9 +924,10 @@ def test_t9_una_fila_mapeada_directo_manda_sobre_la_derivacion(entorno, monkeypa
     _procesar()
     plano = capturado["fichas"][0]["plano"]
     assert plano["f"] == "0.075" and plano["g"] == 'Ø3/8"@0.10' and plano["h"] == '9 EST. Ø3/8"'
-    # f no se derivó, así que ya no hay par f = g: la nota solo cubre m = n
-    d = next(d for d in _abiertas() if d["campo_afectado"] == "diseno:p001:derivacion_igual")
-    assert "m = n" in d["descripcion_pregunta"] and "f = g" not in d["descripcion_pregunta"]
+    # f no se derivó, así que ya no hay par f = g: el origen solo cubre m = n (C11 aprobado: sin duda)
+    origen = capturado["fichas"][0]["origen_filas"]
+    assert "f" not in origen and "g" not in origen and origen["m"]["regla"] == "m = n"
+    assert "diseno:p001:derivacion_igual" not in {d["campo_afectado"] for d in _abiertas()}
 
 
 def test_t9_campo_vacio_no_abre_duda_de_derivacion(entorno, monkeypatch):

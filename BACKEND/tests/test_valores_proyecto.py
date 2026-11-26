@@ -97,7 +97,8 @@ def test_las_demas_filas_no_cambian(entorno, monkeypatch, valores):
 def test_la_auditoria_guarda_el_origen_de_las_filas(entorno, monkeypatch, valores):
     _fichas(entorno, monkeypatch, [("C1", "EJE D-4", "COLUMNA", COL)])
     a = _auditoria("ORIGEN_FILAS")
-    assert len(a) == 1 and a[0]["id_elemento"] == "C1" and set(a[0]["origen_filas"]) == {"e", "o"}
+    assert len(a) == 1 and a[0]["id_elemento"] == "C1" and {"e", "o"} <= set(a[0]["origen_filas"])
+    assert a[0]["origen_filas"]["e"]["cita"] == "CITA SINT col.e"
 
 
 # ---------- El 240 solo con la marca de perimetral ----------
@@ -142,7 +143,7 @@ def test_altura_igual_o_sin_dato_legible_usa_2_95_sin_calcular(entorno, monkeypa
 def test_archivo_ausente_no_llena_nada_ni_deriva_la_altura(entorno, monkeypatch, tmp_path):
     monkeypatch.setattr(vp, "RUTA_CONFIGURACION", tmp_path / "no_existe.json")
     f = _fichas(entorno, monkeypatch, [("C1", "EJE D-4", "COLUMNA", {**COL, "altura_m": "3.00"})])["COLUMNA-C1-EJE D-4"]
-    assert "e" not in f["plano"] and "o" not in f["plano"] and f["origen_filas"] == {}
+    assert "e" not in f["plano"] and "o" not in f["plano"] and not (set(f["origen_filas"]) & {"e", "o"})
 
 
 @pytest.mark.parametrize("contenido", ["{no es json", "[]", '{"valores": "x"}'])
@@ -151,7 +152,7 @@ def test_archivo_roto_no_llena_nada(entorno, monkeypatch, tmp_path, contenido):
     ruta.write_text(contenido, encoding="utf-8")
     monkeypatch.setattr(vp, "RUTA_CONFIGURACION", ruta)
     f = _fichas(entorno, monkeypatch, [("C1", "EJE D-4", "COLUMNA", COL)])["COLUMNA-C1-EJE D-4"]
-    assert "e" not in f["plano"] and "o" not in f["plano"] and f["origen_filas"] == {}
+    assert "e" not in f["plano"] and "o" not in f["plano"] and not (set(f["origen_filas"]) & {"e", "o"})
     assert vp.cargar_valores(ruta)[0] == [] and vp.cargar_valores(ruta)[1]  # con aviso
 
 
@@ -169,7 +170,7 @@ def test_otro_proyecto_no_recibe_los_valores(entorno, monkeypatch, tmp_path):
     ruta.write_text(json.dumps({"valores": [{**v, "proyecto_id": "otra-obra"} for v in VALORES]}), encoding="utf-8")
     monkeypatch.setattr(vp, "RUTA_CONFIGURACION", ruta)
     f = _fichas(entorno, monkeypatch, [("C1", "EJE D-4", "COLUMNA", COL)])["COLUMNA-C1-EJE D-4"]
-    assert "e" not in f["plano"] and f["origen_filas"] == {}
+    assert "e" not in f["plano"] and not (set(f["origen_filas"]) & {"e", "o"})
 
 
 # ---------- El archivo real versionado ----------

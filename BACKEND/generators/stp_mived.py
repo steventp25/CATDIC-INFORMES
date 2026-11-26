@@ -259,6 +259,16 @@ def _filas_de_ficha(ficha: Dict, tipo_txt: str, kind: str, tolerancia) -> Tuple[
         if letra in obra and not obra[letra] and letra not in DIMENSIONALES[kind] and plano.get(letra):
             obra[letra] = plano[letra]
 
+    # C14 (aprobado por Steven 26/11/2026): en un elemento CONFORME la cuantía de OBRA (p) es la del plano. Conforme = todas
+    # las filas con valor en PLANOS tienen el mismo texto en OBRA (iguales al plano o conformes por omisión) y ninguna
+    # discrepancia abierta. Si hay barras medidas en obra se calcula con ellas; en cualquier otro caso queda como hoy (vacía).
+    origen_obra: Dict[str, str] = {}
+    if kind in CON_CUANTIA and not ficha.get("barras_obra") and plano.get("p") and not discrepancias:
+        comparables = [l for l, _ in ROTULOS[kind] if l not in ("p", "q") and plano.get(l)]
+        if comparables and all(" ".join(obra.get(l, "").split()) == " ".join(plano[l].split()) for l in comparables):
+            obra["p"] = plano["p"]
+            origen_obra["p"] = "plano (C14: elemento conforme)"
+
     # OBRA vacío en filas que debe traer la visita: queda vacío y se crea una duda (no bloquea)
     for letra in sorted(OBLIGATORIAS[kind] | OBRA_EXTRA.get(kind, set())):
         if letra in DIMENSIONALES[kind] and letra in medidas:
@@ -266,7 +276,7 @@ def _filas_de_ficha(ficha: Dict, tipo_txt: str, kind: str, tolerancia) -> Tuple[
         if not obra.get(letra):
             duda(f"obra.{letra}", f"La fila '{letra}' de OBRA de {id_el} no tiene dato de la visita: queda vacía "
                                   f"({PENDIENTE}).", bloquea=False)
-    return {"plano": plano, "obra": obra, "discrepancias": discrepancias}, dudas, aud
+    return {"plano": plano, "obra": obra, "discrepancias": discrepancias, "origen_obra": origen_obra}, dudas, aud
 
 
 def _fmt_rec(valor: float) -> str:

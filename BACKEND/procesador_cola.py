@@ -170,15 +170,39 @@ def _barras_total_unico(texto) -> Optional[str]:
     return str(int(m.group(1))) if m and int(m.group(1)) > 0 else None
 
 
-REGLAS_DERIVACION = {"estribos_cantidad_diametro": _estribos_cantidad_diametro,
+# T18 (C16, aprobado por Steven 26/11/2026): en un muro en L la longitud X es la suma de las alas (MH2: 3.80 + 3.85 = 7.65).
+# Solo si el texto ENTERO es de números en metros separados por «+»; un número solo se copia tal cual; otra forma -> None.
+_NUM_M = r"\d+(?:[.,]\d+)?"
+_RE_UN_NUMERO = re.compile(rf"^\s*{_NUM_M}\s*$")
+_RE_SUMA_ALAS = re.compile(rf"^\s*{_NUM_M}(?:\s*\+\s*{_NUM_M})+\s*$")
+
+
+def _longitud_muro_suma_alas(texto) -> Optional[str]:
+    """'3.80 + 3.85' -> '7.65' (fila c de muro). '1.80' -> '1.80' (como hoy). Unidades, texto o cualquier otra forma -> None."""
+    if not isinstance(texto, str):
+        return None
+    if _RE_UN_NUMERO.match(texto):
+        return texto
+    if not _RE_SUMA_ALAS.match(texto):
+        return None
+    terminos = [t.strip().replace(",", ".") for t in texto.split("+")]
+    if any(Decimal(t) <= 0 for t in terminos):
+        return None
+    decimales = max(len(t.partition(".")[2]) for t in terminos)
+    return f"{sum(Decimal(t) for t in terminos):.{decimales}f}"
+
+
+REGLAS_DERIVACION = {"longitud_muro_suma_alas": _longitud_muro_suma_alas,
+                     "estribos_cantidad_diametro": _estribos_cantidad_diametro,
                      "barras_total_unico": _barras_total_unico,
                      "estribos_espaciamiento_unico": _estribos_espaciamiento_unico,
                      "barras_diametro_unico": _barras_diametro_unico,
                      "fc_kgcm2": _fc_kgcm2,
                      "metros_impresos": _metros_impresos,
                      "barras_por_cara": _barras_por_cara}
+REGLAS_QUE_EXIGEN_DATO = {"longitud_muro_suma_alas"}  # si el plano no trae el dato, la fila queda vacía CON su duda
 REGLAS_CON_APOYO = {"barras_por_cara"}  # reciben además los campos de apoyo {nombre: texto impreso}
-# Pares que salen del MISMO valor único del plano: que sean iguales lo decide Steven (duda que no bloquea por ficha).
+# Pares que salen del MISMO valor único del plano (f = g, m = n): aprobados por Steven (C11, 26/11/2026); solo se guarda su origen.
 PARES_IGUALES = (("f", "g", "espaciamiento"), ("m", "n", "diámetro"))
 
 
@@ -864,7 +888,7 @@ class ProcesoVisita:
             ya_resuelta = _con_conexion(lambda conn: conn.execute(
                 "SELECT 1 FROM dudas_y_hallazgos WHERE visita_id = ? AND campo_afectado = ? AND resuelta = 1 "
                 "AND respuesta_usuario <> ?", (self.visita_id, campo, RESPUESTA_CIERRE)).fetchone())
-            if not MAPEO_CONFIRMADO and not ya_resuelta:  # confirmado el mapeo, o ya decidida por Steven, no se repite
+            if not ya_resuelta:  # ya decidida por Steven, no se repite
                 self.duda(campo, c["id_elemento"], texto, self._refs(ev, c))
         _evento(self.trabajo_id, "elemento_listo", {"visita_id": self.visita_id, "titulo": ficha["titulo"],
                                                     **self._refs(ev, c)})
@@ -926,14 +950,15 @@ class ProcesoVisita:
         c = candidatos[0]
 
         def cerrar(conn):
-            filas = conn.execute("""SELECT id FROM dudas_y_hallazgos WHERE visita_id = ? AND campo_afectado = ?
-                                    AND categoria = ? AND resuelta = 0""",
+            filas = conn.execute("""SELECT id, descripcion_pregunta FROM dudas_y_hallazgos WHERE visita_id = ?
+                                    AND campo_afectado = ? AND categoria = ? AND resuelta = 0""",
                                  (self.visita_id, f"{PREFIJO_LECTOR}{pagina}", DUDA)).fetchall()
             for f in filas:
                 conn.execute("UPDATE dudas_y_hallazgos SET resuelta = 1, respuesta_usuario = ?, resuelto_en = ? WHERE id = ?",
                              (RESPUESTA_CIERRE, _ahora(), f["id"]))
                 _auditar(conn, "CERRAR_DUDA", str(f["id"]), {"visita_id": self.visita_id, "campo": f"{PREFIJO_LECTOR}{pagina}",
                                                              "motivo": NOTA_EJES_DEL_PLANO, "uid_diseno": c["uid"],
+                                                             "texto_duda": f["descripcion_pregunta"],
                                                              "trabajo": self.trabajo_id}, self.usuario)
         _con_conexion(cerrar)
         return {"uid": c["uid"].lower(), "id": c["id_elemento"], "ejes_del_plano": True}
@@ -1080,6 +1105,12 @@ class ProcesoVisita:
                         continue
                     impreso = datos.get(d["campo"])
                     if _vacio(impreso):
+                        if d["regla"] in REGLAS_QUE_EXIGEN_DATO:  # T18 (C16): el generador no pide esta fila; no queda en silencio
+                            self.notas_ficha.append((
+                                f"diseno:{pagina}:derivacion.{letra}",
+                                f"La fila {letra} de {c['id_elemento']} sale de '{d['campo']}' (en un muro en L, la suma de las "
+                                f"alas) y el diseño no trae ese dato legible ('{'' if impreso is None else impreso}'): la fila "
+                                f"queda vacía ({PENDIENTE}). No bloquea la ficha. Indica la longitud (o las alas)."))
                         continue  # el generador pide la fila que falte con su duda
                     textos_apoyo = {k: datos.get(v) for k, v in (d.get("apoyo") or {}).items()}
                     valor = (REGLAS_DERIVACION[d["regla"]](impreso, textos_apoyo) if d["regla"] in REGLAS_CON_APOYO
@@ -1093,14 +1124,15 @@ class ProcesoVisita:
                                        f"Indica el valor de la fila {letra}."))
                     else:
                         ficha["plano"][letra] = derivadas[letra] = valor
-                igualadas = [f"{a} = {b} ({nombre} {derivadas[a]})" for a, b, nombre in PARES_IGUALES
-                             if a in derivadas and b in derivadas and derivadas[a] == derivadas[b]
-                             and mapeo["derivaciones"][a]["campo"] == mapeo["derivaciones"][b]["campo"]]
-                if igualadas:
-                    self.notas_ficha.append((
-                        f"diseno:{pagina}:derivacion_igual",
-                        f"{c['id_elemento']}: el plano trae un solo valor ({'; '.join(igualadas)}); que las dos filas sean "
-                        "iguales es una PROPUESTA y no bloquea la ficha. Steven confirma."))
+                # T18 (C11, aprobado por Steven 26/11/2026): f = g y m = n ya no abren duda; solo se guarda su origen
+                for a, b, nombre in PARES_IGUALES:
+                    if (a in derivadas and b in derivadas and derivadas[a] == derivadas[b]
+                            and mapeo["derivaciones"][a]["campo"] == mapeo["derivaciones"][b]["campo"]):
+                        for letra_i in (a, b):
+                            ficha["origen_filas"][letra_i] = {
+                                "regla": f"{a} = {b}", "valor": derivadas[letra_i], "campo_plano": mapeo["derivaciones"][a]["campo"],
+                                "confirmado_por": "Steven", "fecha": "2026-11-26",
+                                "referencia": f"C11: {a} = {b} cuando el plano trae un solo valor ({nombre}): aprobado"}
 
         # M3 / M4: recuadros confirmados en el visor (T5n) sobre el plano vigente
         plano = self.contexto["plano"]
