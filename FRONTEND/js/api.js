@@ -64,7 +64,10 @@
       if (cancelada) { var c = error(0, 'La petición se canceló.', null); c.cancelada = true; return c; }
       return agotado ? error(0, 'El servidor local tardó demasiado en responder.', null) : error(0, 'No se pudo conectar con el servidor local.', null);
     }
-    var init = { method: metodo, signal: control.signal, headers: { 'Accept': 'application/json' } };
+    // Fundación F2: la sesión va en la cookie (mismo origen) y toda petición que cambia algo lleva el encabezado propio
+    // que exige la guardia del servidor contra peticiones de otras páginas.
+    var init = { method: metodo, signal: control.signal, credentials: 'same-origin', headers: { 'Accept': 'application/json' } };
+    if (metodo !== 'GET' && metodo !== 'HEAD') init.headers['X-CATDIC-Peticion'] = '1';
     if (o.formulario) {
       init.body = o.formulario; // el navegador pone el boundary del multipart
     } else if (o.cuerpo !== undefined) {
@@ -72,6 +75,9 @@
       init.body = JSON.stringify(o.cuerpo);
     }
     return fetch(url(ruta, o.consulta), init).then(function (r) {
+      if (r.status === 401) { // sin sesión: a la página de entrada, y de vuelta aquí después
+        location.href = '/entrar.html?volver=' + encodeURIComponent(location.pathname + location.hash);
+      }
       if (!r.ok) {
         return r.text().then(function (txt) {
           var detalle = null;

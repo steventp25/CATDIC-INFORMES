@@ -417,3 +417,93 @@ def test_visita_inexistente_o_con_varios_pdf(entorno):
         lector_visita.cargar_visita("no-existe")
     with pytest.raises(ValueError, match="0 PDF"):
         lector_visita.cargar_visita(VISITA_ID)  # la visita sembrada no tiene archivos_json
+
+
+# ---------- Formato de varias fotos por página (Report & Run, visita REAL #3 'VERTICALES SOTANO -7') ----------
+
+def _pdf_dos_por_pagina(ruta, fotos):
+    """
+    fotos: lista de dicts {titulo, comentario, sin_creado}. Dos fotos por página, como en el PDF REAL de la
+    visita #3: a la DERECHA de cada foto, 'Creado:' + fecha, el título y 'Comentarios'. Cabecera con
+    'Creado:' arriba (no cuenta) y logo en el pie. Todo SINTÉTICO.
+    """
+    doc = pymupdf.open()
+    for k in range(0, len(fotos), 2):
+        hoja = doc.new_page(width=612, height=792)
+        hoja.insert_text((139, 50), "Creado:", fontname="hebo", fontsize=8.5)  # cabecera del documento
+        hoja.insert_text((227, 50), "mie 18 mar 09:36 2026", fontname="hebo", fontsize=8.5)
+        hoja.insert_image(pymupdf.Rect(57, 741, 77, 761), stream=_jpeg((5, 5, 5), (64, 64)))  # logo del pie
+        for j, f in enumerate(fotos[k:k + 2]):
+            y0 = 108 if j == 0 else 413
+            hoja.insert_image(pymupdf.Rect(225, y0, 356, y0 + 279), stream=_jpeg())
+            y = y0 + 10
+            if not f.get("sin_creado"):
+                hoja.insert_text((367, y), "Creado:", fontname="hebo", fontsize=9.9)
+                hoja.insert_text((406, y), f"mie 18 mar 09:{k + j:02d} 2026", fontname="hebo", fontsize=9.9)
+            if f.get("titulo"):
+                hoja.insert_text((367, y + 17), f["titulo"], fontname="hebo", fontsize=9.9)
+            hoja.insert_text((367, y + 38), "Comentarios", fontname="hebo", fontsize=9.9)
+            if f.get("comentario"):
+                hoja.insert_text((367, y + 55), f["comentario"], fontname="hebo", fontsize=9.9)
+            hoja.insert_text((211, y0 + 140), f"({k + j + 1})", fontname="hebo", fontsize=7)
+    doc.save(str(ruta))
+    doc.close()
+    return ruta
+
+
+FOTOS_3 = [  # títulos literales de la #3 REAL (solo el texto)
+    {"titulo": "Cisterna"}, {}, {"titulo": "L=3.85"}, {"comentario": "texto libre"}, {"titulo": "Muro perimetral parcial"},
+]
+
+
+def test_varias_fotos_por_pagina_lee_cada_foto_en_orden(entorno):
+    p = lector_visita.leer_pdf_visita(_pdf_dos_por_pagina(entorno / "v.pdf", FOTOS_3))
+    assert [(x["orden"], x["pagina"]) for x in p] == [(1, 1), (2, 1), (3, 2), (4, 2), (5, 3)]
+    assert [x["etiqueta"] for x in p] == ["Cisterna", "", "L=3.85", "", "Muro perimetral parcial"]  # literal
+    assert p[3]["nota"] == "texto libre" and p[0]["nota"] == ""
+    assert p[0]["hora"] == "mie 18 mar 09:00 2026" and p[1]["hora"] == "mie 18 mar 09:01 2026"  # no la cabecera
+    assert p[1]["foto_bbox"][1] > 400  # la segunda foto de la página, no el logo del pie
+
+
+def test_varias_fotos_por_pagina_una_foto_sin_creado_rechaza_el_pdf(entorno):
+    pdf = _pdf_dos_por_pagina(entorno / "v.pdf", [{"titulo": "Cisterna"}, {"sin_creado": True}])
+    with pytest.raises(ValueError, match="no tiene la estructura de una visita"):
+        lector_visita.leer_pdf_visita(pdf)
+
+
+def test_varias_fotos_por_pagina_carga_por_numero_de_foto_sin_adivinar(entorno):
+    pdf = _pdf_dos_por_pagina(entorno / "v.pdf", FOTOS_3)
+    r = lector_visita.cargar_visita(VISITA_ID, ruta_pdf=pdf)
+    filas = _filas()
+    assert [(f["orden_en_log"], f["etiqueta_original"]) for f in filas] == [
+        (1, "Cisterna"), (3, "L=3.85"), (5, "Muro perimetral parcial")]
+    assert all(f["id_elemento"] == PENDIENTE and f["ejes"] == PENDIENTE for f in filas)  # nada se deduce
+    fotos = json.loads(filas[1]["fotos_json"])
+    assert [(f["foto"], f["pagina"]) for f in fotos] == [(3, 2), (4, 2)]
+    assert fotos[1]["cache"] == f"terra-living/{VISITA_ID}/p004.jpg"
+    assert (entorno / "cache" / "terra-living" / VISITA_ID / "p004.jpg").exists()
+    dudas = _dudas()
+    assert len(dudas) == 3 and dudas[1]["campo_afectado"] == "elemento_visita:p003"
+    assert dudas[1]["descripcion_pregunta"].startswith("Fotos 3 a 4 (pág. 2) con el título literal 'L=3.85'")
+    assert "medida/nota del anterior" in dudas[1]["descripcion_pregunta"]
+    assert dudas[0]["descripcion_pregunta"].startswith("Fotos 1 a 2 (pág. 1) con el título literal 'Cisterna'")
+    assert dudas[2]["descripcion_pregunta"].startswith("Foto 5 (pág. 3) con el título literal 'Muro perimetral parcial'")
+    assert r["paginas"] == 5 and r["grupos"] == 3
+
+
+def test_la_duda_del_pdf_ilegible_se_cierra_al_leerlo_y_se_reabre_si_vuelve_a_fallar(entorno):
+    doc = pymupdf.open()
+    doc.new_page().insert_text((72, 72), "Plano estructural sintetico")
+    doc.save(str(entorno / "plano.pdf"))
+    doc.close()
+    with pytest.raises(ValueError):
+        lector_visita.cargar_visita(VISITA_ID, ruta_pdf=entorno / "plano.pdf")
+    assert [(d["campo_afectado"], d["resuelta"]) for d in _dudas()] == [("lector_visita", 0)]
+    r = lector_visita.cargar_visita(VISITA_ID, ruta_pdf=_pdf_dos_por_pagina(entorno / "v.pdf", FOTOS_3))
+    pdf = [d for d in _dudas() if d["campo_afectado"] == "lector_visita"]
+    assert pdf[0]["resuelta"] == 1 and pdf[0]["respuesta_usuario"] == lector_visita.RESPUESTA_PDF_LEIDO
+    assert r["dudas_pdf_cerradas"] == [pdf[0]["id"]]
+    with pytest.raises(ValueError):
+        lector_visita.cargar_visita(VISITA_ID, ruta_pdf=entorno / "plano.pdf")
+    pdf = [d for d in _dudas() if d["campo_afectado"] == "lector_visita"]
+    assert len(pdf) == 1 and pdf[0]["resuelta"] == 0  # la misma duda, reabierta; no una nueva

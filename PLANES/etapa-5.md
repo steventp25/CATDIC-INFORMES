@@ -1,6 +1,13 @@
 # Etapa 5 — Claude razona los planos (sin llave) + rediseño total del tablero
 Estado: **APROBADO** (Steven, 16/11/2026: "Apruebo con propuestas"). Sin llave de API, con su suscripción de Claude y sin ningún pago adicional.
 **v3 APROBADA (Steven, 19/11/2026: "Apruebo y súbelo"):** incorpora la instrucción de Steven publicada en el PR 31 (organización de la Fase B) y el resultado de A1, con las propuestas D10–D14. Se reanudan las fases A y B.
+**v4 APROBADA (Steven, 19/11/2026: "Apruebo y súbelo"):** incorpora el ajuste de alcance de Codex (PR 33, `PLANES/alcance-catdic-web-2026-11-19.md`) y las reglas de la memoria de la otra cuenta de Claude de Steven. Hay 4 cambios:
+1. El anclaje admite evidencias además del texto literal.
+2. El paquete de lectura sirve para la IA de cualquier compañero.
+3. Hay un piloto con un informe ya entregado (Zoetry H2).
+4. MIVED se genera solo al completar el entrepiso.
+
+A5 y A4b quedan en pausa hasta aprobar la v4; la Fase B sigue.
 
 Base del plan: `origin/main` en `b5f7d26` (no el checkout local, que está atrasado; ver "Puesta al día de git").
 Método: skill `gestion-proyectos` (Director → Líderes de fase → Ejecutores), integrada con este sistema de `PLANES/` y con `COLABORACION.md`. No se crea `.proyecto/`: el estado vive aquí.
@@ -21,7 +28,7 @@ Método: skill `gestion-proyectos` (Director → Líderes de fase → Ejecutores
 - 16/11/2026: "Apruebo con propuestas" → plan APROBADO con las propuestas del Director:
   - **D1:** puesta al día de git (respaldo → comparar → `main` al día). Hecha el 16/11; ver Bitácora.
   - **D4:** los planos escaneados quedan fuera de esta etapa.
-  - **D5:** frontend sin compilación, con Vue y Tailwind copiados localmente.
+  - **D5:** frontend sin compilación, con Vue y Tailwind copiados localmente. Ajuste del 19/11: solo Vue 3.5.13, cuya descarga autorizó Steven; Tailwind no hace falta porque el estilo Plano sellado usa variables CSS.
   - **D6:** sin referencia dada; B1 trae 2–3 maquetas.
   - **D7:** nadie más toca `FRONTEND/` durante la Fase B; T10b pasa a ser B3d.
   - **D8:** ejecutores "fresh" en esta etapa.
@@ -29,6 +36,20 @@ Método: skill `gestion-proyectos` (Director → Líderes de fase → Ejecutores
 - 16/11/2026: "Sí, Codex revisa" → **D7 completa:** Codex sigue revisando los PR.
 - 16–17/11/2026: CATDIC-WEB es el sistema principal y GPR su herramienta de escaneos; primero se completa GPR y la integración viene después (`PLANES/alcance-gpr.md`). La Etapa 5 se detuvo mientras tanto.
 - Instrucción publicada en el PR 31 (comentario de Steven): skills de diseño por momento, referencias oficiales (Procore, Autodesk, PlanRadar, Fieldwire) y **organización aprobada**. Se incorpora en la Fase B (abajo). Aclara que **no aprueba implementación ni fusión**.
+- 19/11/2026, ajuste de alcance (PR 33 de Codex, que recoge lo que Steven le dijo). Lo confirmado por Steven está en el §2 de ese documento:
+  - Claude ya le hace los informes completos y hay que llevar ese proceso a CATDIC-WEB.
+  - Los planos los interpreta una IA, no patrones rígidos; el programa genera los informes.
+  - En campo se usa Report and Run.
+  - La cuenta es Claude Pro, sin pago adicional.
+  - Los compañeros pueden usar su propia IA.
+  - El objetivo es multiusuario para compañeros y jefes.
+- 19/11/2026: "Sí, CATDIC-WEB" → CATDIC-WEB es el sistema principal. La nota de la otra cuenta que lo daba por cancelado está superada.
+- 19/11/2026 (respuestas en la sesión del Director):
+  - "Sí, ajusta a v4"
+  - "Sí, descarga Vue": Vue 3.5.13 local en `FRONTEND/vendor/vue/`.
+  - "Zoetry H2": informe de referencia del piloto.
+  - "MIVED solo al completar": el formulario MIVED se genera una vez, cuando el elemento del entrepiso está completo, con todas sus visitas; no hay formulario por parcial.
+  - Steven no eligió Arial: sigue `Aptos Narrow` de CLAUDE.md para CATDIC-STP.
   - **D6 sustituida:** ya hay referencia organizativa aprobada. Navegación: **Inicio · Mis obras · Bandeja de trabajo · Informes · Configuración**, con **Crear informe** siempre a mano. Dentro de cada obra: **Resumen · Visitas y trabajos · Planos y ficha · Avance · Informes · Cierre**. Las 3 maquetas del 16/11 fueron ilustrativas y con datos ficticios; el estilo visual se explora respetando esta organización.
 
 ## Objetivo (palabras de Steven)
@@ -66,6 +87,19 @@ El trabajo se parte en tres piezas. Solo la del medio es Claude; las otras dos s
 6. **Sin costo adicional:** no hay llave, ni `.env`, ni SDK de pago. El paso 2 consume cupo de la suscripción; A1 mide cuánto por hoja para que Steven sepa cuántas hojas caben en un día de trabajo. Se lee por lotes de hojas, nunca el PDF entero, y se puede retomar donde quedó.
 7. **El plano no se modifica:** se comprueba el sha256 del vectorial al preparar y al importar; si el plano cambió, la propuesta no se importa.
 
+**Ajustes v4 (PR 33), que sustituyen lo anterior donde choquen:**
+
+8. **Anclaje con evidencias, no solo con el texto literal.** La fuente sigue siendo obligatoria. Un valor entra si trae una de estas evidencias:
+   - (a) el texto citado tal cual (lo de hoy);
+   - (b) varios textos citados que juntos lo dan;
+   - (c) una zona o recorte de la hoja (cota dibujada, detalle), con su caja y la lectura propuesta;
+   - (d) una conversión o suma que hace **el programa**, no la IA, guardando la entrada y la regla (por ejemplo `1.5` → `1.50 m`).
+
+   Con (c), el valor queda pendiente y además abre una duda de revisión visual. Sin ninguna evidencia, no hay valor. **Que el número exista en la hoja no prueba que sea del elemento correcto**: la revisión mira identidad, nivel, ejes, detalle aplicable, unidades y contradicciones.
+9. **Cualquier IA, no solo Claude Code.** El paquete de una hoja (`hoja.png`, `textos.txt`, recortes, instrucciones de la skill y el formato de `propuesta.json`) debe poder usarlo la IA de un compañero desde su propia cuenta. La propuesta registra el modelo o proveedor que la hizo y quién la revisó. No se usa la cuenta de Steven como servicio para otros ni se reutilizan sus sesiones o tokens.
+10. **Leer una vez por revisión de plano:** lo revisado se reutiliza en todas las visitas, y solo se relee si cambia el sha256. Nunca se manda el plano entero a la IA en cada informe.
+11. **No se borra el extractor por posición** (`lector_plano.py`, `extractor.py`) hasta que el camino con IA lo sustituya con una prueba real revisada. `lector_plano` sigue siendo la fuente del texto que se da a la IA.
+
 ### Fase B — cómo se rehace el tablero
 1. **Primero inventario, luego diseño, luego código.** Nada del tablero actual se pierde: B0 lista cada pantalla, acción, ruta y gancho `data-*`, y esa lista es la prueba de paridad al final. Las necesidades nuevas (Inicio, Bandeja, Resumen de obra, Crear informe independiente) llevan sus propios criterios de aceptación, aparte de la paridad.
 2. **La organización ya está aprobada** (D6, arriba). Lo que Steven elige en B1 es el **estilo visual** sobre esa organización. El resultado se fija en `DESIGN.md`.
@@ -83,8 +117,9 @@ El trabajo se parte en tres piezas. Solo la del medio es Claude; las otras dos s
 | Fase | Alcance | Zona de archivos | Depende de | Modo | Estado |
 |---|---|---|---|---|---|
 | **0 · Cimientos** | git al día, ajuste de la especificación | `PLANES/`, `CLAUDE.md` + `AGENTS.md` | Aprobación de Steven | **directo** | T0.1 hecha · T0.2 no hace falta · T0.3 pendiente (no bloquea A ni B) |
-| **A · Claude razona los planos** | reconocimiento, preparar hojas, importar con anclaje, skill `extraer-plano`, rutas, prueba real | `BACKEND/plano/asistido/**` (nuevo), `.claude/skills/extraer-plano/` (nuevo), `BACKEND/tests/test_asistido_*.py` | Fase 0 | **líder** (Opus) | A1 y A2 hechas · puerta de A1 resuelta (D10–D13) · sigue A2-ajustes y A3 |
-| **B · Rediseño del tablero** | inventario, estilo visual sobre la organización aprobada, base, pantallas, movimiento, prueba de rotura | `FRONTEND/**`, `DESIGN.md` | Fase 0 | **líder** (Opus) | B0 hecha · B1 **se rehace** con la organización aprobada |
+| **P · Piloto con un informe entregado** | recorrer Zoetry H2 de punta a punta con el proceso actual de Claude como referencia y medir el camino nuevo contra su resultado | `PLANES/etapa-5-piloto.md` y carpeta local (nunca datos reales en git) | aprobación v4 | **directo** (Director, con Steven) | nueva (v4) |
+| **A · La IA razona los planos** | reconocimiento, preparar hojas, importar con anclaje, skill `extraer-plano`, rutas, prueba real | `BACKEND/plano/asistido/**` (nuevo), `.claude/skills/extraer-plano/` (nuevo), `BACKEND/tests/test_asistido_*.py` | Fase 0 | **líder** (Opus) | A1, A2, A3 (a, b, c) y A4a hechas y auditadas · **A5 y A4b en pausa** hasta aprobar la v4 · siguen A3d y A4-paquete |
+| **B · Rediseño del tablero** | inventario, estilo visual sobre la organización aprobada, base, pantallas, movimiento, prueba de rotura | `FRONTEND/**`, `DESIGN.md` | Fase 0 | **líder** (Opus) | B0 y B1 hechas · estilo **Plano sellado** (Steven, 19/11) · B2 en curso con Vue local, sin Tailwind |
 | **C · Integración** | pantalla "Lectura asistida" contra las rutas reales, auditoría de integración, prueba completa en el navegador | `FRONTEND/**` (solo esa pantalla), `PLANES/` | A5 y B3 | **directo** | pendiente |
 | **D · Datos nuevos del tablero** | lo que las pantallas nuevas necesitan del backend: bandeja común, indicadores, trabajos independientes | `BACKEND/tablero/**` (nuevo), pruebas | D-a: B1 elegida · D-b: D15 · D-c: B1 elegida | ejecutor-backend, coordinado por el Director | aprobada (D14); pendiente |
 
@@ -111,7 +146,28 @@ El trabajo se parte en tres piezas. Solo la del medio es Claude; las otras dos s
 
 #### T0.3 — Especificación
 - Ejecutor: Director (texto) · rama `claude/etapa5-spec`
-- Qué hacer: proponer a Steven el texto nuevo de `CLAUDE.md` y `AGENTS.md` (los dos iguales): sección "Lectura de planos asistida por Claude" con las decisiones A1–A7 y la regla de que no se usan servicios de pago. Se aplica solo con su visto bueno.
+- Qué hacer: proponer a Steven el texto nuevo de `CLAUDE.md` y `AGENTS.md` (los dos iguales). Se aplica solo con su visto bueno. Incluye:
+  - Una sección "Lectura de planos asistida por IA" con las decisiones 1–11 y la regla de que no se usan servicios de pago.
+  - **v4, MIVED:** el formato 3 y el error 18 cambian a «un formulario por nivel y tipo, generado una sola vez cuando el elemento del entrepiso está completo, listando todas sus visitas; no hay formulario por parcial». Cada nivel usa su propio formulario en blanco (MIVED aprueba por nivel), nunca el de otro nivel.
+  - **v4, reglas de la otra cuenta, a proponer una por una (D19):**
+    - Licencia MIVED obligatoria en todo proyecto STP.
+    - Carpetas `3.INFORME EN REVISION` y `4.INFORME LISTO`.
+    - En las fichas, los valores como dicen los planos.
+    - Muros de bloques: sin acero horizontal, bastones según el escáner y viga de amarre 2Ø3/8".
+    - Un escaneo de columna de más de 1,50 m pasa a ficha de muro de bloques.
+    - Las conclusiones HV solo con discrepancias.
+
+#### T0.4 — Ajuste del generador FI a «MIVED solo al completar» (v4)
+- Ejecutor: ejecutor-generadores (Sonnet) · `BACKEND/generators/` (FI) y sus pruebas, en una rama propia salida de `main`, fuera de las zonas de A y B.
+- Qué hacer: el procesador no genera ni actualiza el FI con una visita parcial. Lo genera cuando Steven marca el elemento del entrepiso como completo, listando todas sus visitas en Observaciones. Se mantiene: nunca sobrescribir, `v2`/`v3` si ya existe, y los «Sí» obligatorios sin mampostería.
+- Antes: el Director lee el generador actual y le propone a Steven el cambio exacto. Arranca solo con su sí.
+
+#### T0.5 — Repasar las tareas de las Etapas 2–4 afectadas por el PR 33 (v4)
+- Ejecutor: Director. Una tabla breve en este archivo con cada tarea abierta de las Etapas 2–4, su estado, su dependencia y si cambia. Por ejemplo:
+  - extracción por patrones → camino IA;
+  - Etapa 4 HV → medida en el piloto;
+  - informes de cierre STP e informe semanal de avance → funciones nuevas pedidas, sin etapa todavía.
+- Sin documentos largos (§10 del PR 33).
 
 ### Fase A — Claude razona los planos (líder)
 
@@ -146,7 +202,30 @@ El trabajo se parte en tres piezas. Solo la del medio es Claude; las otras dos s
 - Qué hacer: el procedimiento paso a paso para la sesión lectora: qué archivos abrir, cómo citar, qué hacer ante duda (marcarla, nunca rellenar), las reglas de §4.2–§4.4 y el formato exacto de salida. Un apartado por tipo, en el orden que decida Steven en D10. Propuesta tras A1: **A4a** columnas · **A4b** losas · **A4c** muros · **A4d** pórticos por tramo (§4.3, con el control cruzado `S + losa = Hv`) · fundaciones al final y según D12.
 - Hecho cuando (cada apartado): una sesión nueva, solo con la skill, lee las hojas de A1 de ese tipo y al importar quedan 0 valores sin ancla guardados; el Director contrasta una muestra contra el plano.
 
-#### A5 — Rutas
+#### Estado de A2–A4a (19/11, auditado por el Director)
+- A2 unida a la rama de fase (`df7cb9a`).
+- A3a: `60b3510` extractor con `origen` opcional y `831a10d` esquema.
+- A3b: `184db80` importar.
+- A3c: `f9df117`, la losa con nivel escrito distinto no se duplica y nada se descarta en silencio.
+- A4a: `fccf736`, skill de columnas.
+- Todo con 0 `confirmado` y sin tocar la BD real.
+
+#### A3d — Anclaje con evidencias (v4, decisión 8)
+- Ejecutor: ejecutor-backend (Sonnet), en la rama de fase. Archivos: `esquema.py`, `importar.py` y sus pruebas.
+- Qué hacer: aceptar las evidencias (b), (c) y (d) de la decisión 8.
+  - (c) guarda la zona como fuente y abre una duda `IA: revisión visual`.
+  - (d) la hace el programa con una regla declarada y probada, nunca la IA.
+  - El literal (a) se mantiene igual.
+- Hecho cuando: pruebas `# SINTÉTICO` de cada tipo de evidencia, sin evidencia → pendiente, 0 `confirmado`, y las pruebas actuales pasan.
+
+#### A4-paquete — El paquete sirve para cualquier IA (v4, decisión 9)
+- Ejecutor: Líder A. Qué hacer:
+  - Un `INSTRUCCIONES.md` autocontenido por lote, con lo esencial de la skill y del formato, que un compañero pueda pegar en su propia IA junto con las imágenes.
+  - El campo `lector` de la propuesta registra modelo o proveedor.
+  - Medir con una IA distinta de Claude Code solo si Steven lo pide y con una cuenta autorizada.
+- Hecho cuando: una sesión nueva, solo con el paquete, produce una propuesta que pasa `revisar.py`.
+
+#### A5 — Rutas (EN PAUSA hasta aprobar la v4; después, sin cambios de contrato)
 - Ejecutor: ejecutor-backend (Sonnet) · Archivos: `BACKEND/plano/asistido/rutas.py`, pruebas.
 - Contrato (se fija en T0.2):
   - `GET /api/proyectos/{id}/lectura-asistida` → estado por hoja: sin preparar / preparada / propuesta lista / importada / plano cambiado
@@ -160,6 +239,24 @@ El trabajo se parte en tres piezas. Solo la del medio es Claude; las otras dos s
 
 #### A7 — (Opcional, por verificar) Botón que lanza a Claude desde el tablero
 - Averiguar si Claude Code puede arrancarse desde el backend con la suscripción, sin llave y sin costo adicional, para que el paso 2 también sea un botón. Si no se puede garantizar que no cobra, **no se hace** y el paso 2 se sigue pidiendo a una sesión.
+
+### Fase P — Piloto Zoetry H2 (v4; directo, Director con Steven)
+Es lo que pide el §10 del PR 33: llevar a CATDIC-WEB el proceso con el que Claude ya entrega informes, partiendo de un caso que salió bien. Nada de sus archivos reales entra en git.
+- **P1 · Reunir el caso:**
+  - Steven indica dónde están el informe final de H2, los planos y su revisión, los reportes de visita (Report and Run), los escaneos y las instrucciones o chats de la otra cuenta («ensamble de informes»).
+  - El Director arma un índice local, en solo lectura.
+  - Hecho cuando: el índice dice qué hay y qué falta, y lo que falte queda «pendiente de verificar».
+- **P2 · Recorrido en 1 página:** paso a paso, qué hizo la IA y qué el programa o Steven, qué salida mínima guarda datos con sus fuentes, y qué del informe H2 no puede generar hoy CATDIC-WEB.
+  - Los formatos HV y la teoría Word son de la Etapa 4. El piloto los **mide**, no los construye.
+- **P3 · Primer intercambio medido:** preparar → IA → importar → revisar, sobre un lote pequeño de H2. Se compara con el informe entregado:
+  - omisiones;
+  - datos mal asociados;
+  - dudas omitidas;
+  - esfuerzo y tiempo.
+
+  No se presenta como aprobado ni como generalizable.
+- **P4 · Visitas difíciles:** contrastar las visitas #17, #18 y #20 de Terra Living (contexto entre etiquetas, fotos sin rótulo, orden no cronológico, contradicciones) antes de generalizar la lectura de visitas con IA. Es solo medición; leer visitas sigue fuera de esta etapa.
+- **Riesgo conocido:** H2 es un levantamiento de una edificación existente, con datos del escáner además de los planos. P1 debe decir qué parte del informe viene de planos (Fase A) y cuál del campo (Capa 2 y GPR).
 
 ### Fase B — Rediseño del tablero (líder)
 
@@ -260,6 +357,11 @@ Resueltas: D1 (git al día, hecha), D2, D3, D4 (escaneados fuera), D5 (sin compi
 - **D12 · Fundaciones con *drops*:** propuesta: en esta etapa solo el espesor de la platea y la tabla de f'c; los *drops* van a la Mesa de Dudas.
 - **D13 · Cupo:** propuesta: la prueba real (A6) por lotes a lo largo de varios días, para no frenar la Fase B ni a GPR.
 - **D14 · Fase D (datos nuevos del tablero):** ¿entra en la Etapa 5? Propuesta: **sí la bandeja común** (solo lee registros que ya existen); **los indicadores, solo cuando definas D15**; **los trabajos independientes, en la maqueta B1 ahora y en el backend después de que elijas el estilo**, porque necesitan tablas nuevas.
+- **D16 · Piloto (resuelta, Steven 19/11):** Zoetry H2.
+- **D17 · MIVED (resuelta, Steven 19/11):** el formulario se genera solo al completar el elemento del entrepiso (T0.3, T0.4).
+- **D18 · Letra (resuelta, Steven 19/11):** no se cambia a Arial; sigue CLAUDE.md.
+- **D19 · Reglas de la otra cuenta** (abierta): T0.3 las propone una por una para que Steven diga cuáles pasan a CLAUDE.md. Ninguna se aplica sin su sí.
+- **D20 · Report and Run** (abierta, del PR 33): comprobar qué versión y qué exportaciones usa CATDIC (PDF u otra) antes de exigir campos nuevos. Se mira en P1 con los archivos de H2.
 - **D15 · Definiciones de los indicadores** (las marcaste tú como pendientes; no se inventan): qué evidencia permite contar un entrepiso como ejecutado, qué es el cierre documental y cómo se definen y ponderan las unidades documentales. No bloquean B1: allí salen «pendiente de verificar».
 
 ## Verificación
@@ -272,11 +374,19 @@ Resueltas: D1 (git al día, hecha), D2, D3, D4 (escaneados fuera), D5 (sin compi
 - Cualquier llave de API o servicio de pago (Claude, Gemini u otro).
 - Etapa 4 (formatos HV) y CATDIC-STP (T9, aplazada).
 - La integración de GPR (sus resultados revisados entran por los formatos HV de la Etapa 4; ver `PLANES/alcance-gpr.md`).
-- Que Claude lea visitas a obra o fotos de campo (Capa 2).
-- Usuarios y roles.
+- Que la IA lea visitas a obra o fotos de campo (Capa 2). En el piloto (P4) solo se mide.
+- Usuarios y roles, alojamiento y despliegue (issue 32). El objetivo multiusuario está confirmado, pero no se construye en esta etapa.
+- Un conector MCP o una IA central por API (PR 33 §6): son propuestas posteriores y no están autorizadas.
 - Cambios en los generadores de PDF.
 
 ## Bitácora (lo más nuevo arriba)
+- 19/11/2026 · Steven: "Apruebo y súbelo" → v4 aprobada.
+- 19/11/2026 · Director: plan v4 en borrador.
+  - Incorpora el PR 33 (Codex) y la memoria de la otra cuenta de Steven (`G:\My Drive\claude-memory-2026-11-18`).
+  - Pausa A5 y A4b.
+  - Abre la Fase P (piloto Zoetry H2), A3d, A4-paquete, T0.4 y T0.5.
+  - Fase B: estilo Plano sellado elegido y Vue autorizado.
+  - Ramas reducidas a main + plan + fase A + fase B, con respaldo en bundle `C:\Users\Steve\CATDIC-RESPALDOS\ramas-2026-11-19.bundle`.
 - 19/11/2026 · Steven: "Apruebo y súbelo" → v3 aprobada con D10–D14; se reanudan las fases A y B.
 - 19/11/2026 · Director: plan v3. Incorpora la instrucción de Steven del PR 31 (organización aprobada, pantallas de B1, indicadores, skills por momento, referencias, criterios de aceptación) y el resultado de A1. Nueva Fase D para los datos que el tablero nuevo necesita del backend. Abre D10–D15. Las fases A y B siguen detenidas hasta que Steven apruebe esta versión.
 - 17/11/2026 · Steven: prioridad total a GPR; los frentes de CATDIC-WEB quedan detenidos.
