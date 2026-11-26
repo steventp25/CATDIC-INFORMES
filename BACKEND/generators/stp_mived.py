@@ -79,6 +79,10 @@ OBRA_EXTRA = {"losa": set("efg"), "muro": set("efg")}
 # Filas dimensionales (se comparan plano vs. acero medido con evaluar_medida_acero_obra, §4.5)
 DIMENSIONALES = {"viga": "cd", "col": "cd", "losa": "b", "muro": "b"}
 CON_CUANTIA = {"viga", "col"}
+# C14 (Evaluación 12): filas que determinan el acero longitudinal (As) de la cuantía. Para dar la cuantía del plano como
+# la de OBRA, estas filas deben traer en OBRA el mismo texto (normalizado) que en PLANOS. Estribos, empalme y solapes
+# (f, g, h, o, n de viga) no entran en As_total y no cuentan.
+FILAS_AS = {"col": ("i", "j", "k", "m", "n"), "viga": ("i", "j", "k", "m")}
 TIPOS_NO_SOPORTADOS = "perfil o conexión metálica, zapata, platea u otro"
 
 
@@ -264,16 +268,26 @@ def _filas_de_ficha(ficha: Dict, tipo_txt: str, kind: str, tolerancia) -> Tuple[
     # C14 (aprobado por Steven 26/11/2026): en un elemento CONFORME la cuantía de OBRA (p) es la del plano. Conforme se
     # decide con el MISMO criterio que las discrepancias de este generador: ninguna discrepancia en las filas
     # dimensionales (las únicas que se comparan con el plano, §4.5) y ninguna fila de OBRA que la visita debía traer
-    # vacía (nadie la comprobó). Las filas de texto que el generador no compara (p. ej. la «o», que en obra es una
-    # descripción del empalme) no la rompen. Con barras medidas en obra se calcula con ellas (arriba).
+    # vacía (nadie la comprobó); además, las filas de As (FILAS_AS) deben traer en OBRA el mismo texto que en PLANOS
+    # (Evaluación 12: con k = 34 en obra la cuantía del plano sería falsa). Estribos y empalme (f, g, h, o) no cuentan:
+    # la «o» de obra es una descripción del empalme. Con barras medidas en obra se calcula con ellas (arriba).
     origen_obra: Dict[str, str] = {}
     if kind in CON_CUANTIA and not ficha.get("barras_obra") and plano.get("p"):
         sin_dato = sorted(l for l in (OBLIGATORIAS[kind] | OBRA_EXTRA.get(kind, set())) - {"p", "q"} if not obra.get(l))
-        if not discrepancias and not sin_dato:
+        acero_distinto = [l for l in FILAS_AS.get(kind, ()) if l not in sin_dato
+                          and " ".join(str(obra.get(l) or "").split()).upper() != " ".join(str(plano.get(l) or "").split()).upper()]
+        if not discrepancias and not sin_dato and not acero_distinto:
             obra["p"] = plano["p"]
             origen_obra["p"] = "plano (C14: elemento conforme)"
         else:
-            motivos = ([f"discrepancia en {', '.join(sorted(filas_discrepantes))}"] if discrepancias else []) +                       ([f"OBRA sin dato en {', '.join(sin_dato)}"] if sin_dato else [])
+            motivos = []
+            if discrepancias:
+                motivos.append(f"discrepancia en {', '.join(sorted(filas_discrepantes))}")
+            if sin_dato:
+                motivos.append(f"OBRA sin dato en {', '.join(sin_dato)}")
+            if acero_distinto:
+                motivos.append("acero de OBRA distinto del plano en " + ", ".join(
+                    f"{l} (obra {obra.get(l) or 'vacía'}, plano {plano.get(l) or 'vacío'})" for l in acero_distinto))
             duda("obra.p", f"La cuantía de OBRA (fila p) de {id_el} queda vacía: el elemento no es conforme "
                            f"({'; '.join(motivos)}) y no hay barras medidas en obra ({PENDIENTE}).", bloquea=False)
 

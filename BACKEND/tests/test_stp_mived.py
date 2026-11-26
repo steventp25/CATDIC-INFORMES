@@ -67,7 +67,7 @@ class Mundo:
              "plano": {"b": "350", "e": "3.17", "f": 'Ø3/8"@0.10', "g": 'Ø3/8"@0.20', "h": 'Ø3/8"', "i": '3-Ø3/4"',
                        "j": '3-Ø3/4"', "k": "-", "m": "-"},
              "obra": {"b": "350", "e": "3.17", "f": 'Ø3/8"@0.10', "g": 'Ø3/8"@0.20', "h": 'Ø3/8"', "i": '3-Ø3/4"',
-                      "j": '3-Ø3/4"'},
+                      "j": '3-Ø3/4"', "k": "-", "m": "-"},  # C14: el acero de OBRA igual al del plano (sin adicionales)
              "medidas": {"c": {"valor_plano_m": 0.40, "medida_acero_campo_m": 0.32},
                          "d": {"valor_plano_m": 0.60, "medida_acero_campo_m": 0.52}},
              "barras": [(3, '3/4"'), (3, '3/4"')],

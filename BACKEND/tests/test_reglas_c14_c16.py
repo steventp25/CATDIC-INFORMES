@@ -59,11 +59,36 @@ def test_c14_la_fila_o_de_obra_distinta_no_rompe_la_conformidad():
     assert not any(d["campo_afectado"] == "obra.p" for d in dudas)
 
 
-def test_c14_una_fila_de_texto_distinta_sigue_el_criterio_del_generador():
-    """Mismo criterio que las discrepancias del generador: solo las filas dimensionales se comparan con el plano."""
+def test_c14_estribos_distintos_con_el_acero_igual_dan_la_cuantia_del_plano():
+    """Evaluación 12: h (estribos) no entra en As; con i, j, k, m, n iguales al plano, 2.p = la cuantía del plano."""
     ficha = _col(conforme_por_omision=list("bcdefgijkmno"), obra={"h": "8 EST. Ø3/8\""})
-    filas, _, _ = _filas(ficha)
+    filas, dudas, _ = _filas(ficha)
     assert filas["discrepancias"] == [] and filas["obra"]["p"] == "0.0203"
+    assert not any(d["campo_afectado"] == "obra.p" for d in dudas)
+
+
+def test_c14_total_de_barras_distinto_en_obra_deja_la_cuantia_vacia_con_duda():
+    """Evaluación 12: k = 34 en obra frente a 36 del plano. La cuantía del plano sería falsa: 2.p vacía y obra.p."""
+    ficha = _col(conforme_por_omision=list("bcdefghijmno"), obra={"k": "34"})
+    filas, dudas, _ = _filas(ficha)
+    assert filas["obra"]["p"] == "" and filas["origen_obra"] == {}
+    duda_p = [d for d in dudas if d["campo_afectado"] == "obra.p"]
+    assert len(duda_p) == 1 and not duda_p[0]["bloquea"]
+    assert "acero de OBRA distinto del plano en k (obra 34, plano 36)" in duda_p[0]["descripcion_pregunta"]
+
+
+@pytest.mark.parametrize("letra,valor", [("i", '5-Ø1"'), ("j", '13-Ø1"'), ("m", 'Ø3/4"'), ("n", 'Ø3/4"')])
+def test_c14_cualquier_fila_de_as_distinta_deja_la_cuantia_vacia(letra, valor):
+    ficha = _col(conforme_por_omision=[l for l in "bcdefghijkmno" if l != letra], obra={letra: valor})
+    filas, dudas, _ = _filas(ficha)
+    assert filas["obra"]["p"] == ""
+    assert any(d["campo_afectado"] == "obra.p" and f"en {letra} (obra" in d["descripcion_pregunta"] for d in dudas)
+
+
+def test_c14_el_acero_igual_escrito_con_otros_espacios_o_mayusculas_sigue_conforme():
+    ficha = _col(conforme_por_omision=list("bcdefghjkmno"), obra={"i": ' 6-ø1" '.replace("ø", "Ø")})
+    filas, _, _ = _filas(ficha)
+    assert filas["obra"]["p"] == "0.0203"
 
 
 def test_c14_una_fila_sin_dato_de_obra_ni_omision_deja_la_cuantia_vacia():
