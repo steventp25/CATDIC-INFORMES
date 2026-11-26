@@ -990,7 +990,8 @@ class ProcesoVisita:
                 f"{', '.join(repr(r) for r in equivalencia)} no corresponden a ningún rango de {ident['id']} en el plano "
                 f"({lista}). Corrígelas en {donde}.")
 
-    def _valores_del_proyecto(self, c, fila: str, pagina: str, datos: Dict, ficha: Dict, faltas: List) -> set:
+    def _valores_del_proyecto(self, c, fila: str, pagina: str, datos: Dict, ficha: Dict, faltas: List,
+                              nivel_visita=None) -> set:
         """
         T17: filas que salen de `valores_proyecto_confirmados.json` (valor, cita y quién lo confirmó). Devuelve las letras
         que esa configuración cubre para este tipo de elemento (aunque la fila quede vacía por una duda): la derivación
@@ -1005,6 +1006,14 @@ class ProcesoVisita:
             if letra in ficha["plano"]:
                 continue  # una fila mapeada directo desde el plano manda
             aplican = [v for v in lista if valores_proyecto.cumple_marca(v, c, datos)]
+            fuera = [v for v in aplican if not valores_proyecto.cumple_nivel(v, nivel_visita)]
+            if fuera and len(fuera) == len(aplican):  # T20: p. ej. el 2.95 solo vale en sótanos (Steven, 26/11/2026)
+                faltas.append((f"diseno:{pagina}:valor.{letra}",
+                               f"La fila {letra} de {c['id_elemento']} ({tipo}): el valor confirmado por Steven "
+                               f"({', '.join(v['valor'] for v in fuera)}) solo vale en sótanos y el nivel de la visita "
+                               f"es '{nivel_visita}'. La fila queda vacía ({PENDIENTE}). Indica el valor de la fila {letra}."))
+                continue
+            aplican = [v for v in aplican if v not in fuera]
             if len(aplican) != 1:
                 if not aplican:
                     pedidos = "; ".join(
@@ -1099,7 +1108,8 @@ class ProcesoVisita:
 
                 # Derivaciones (T9, propuesta): una fila mapeada directo en `filas` manda; la derivación solo llena lo vacío
                 derivadas: Dict[str, str] = {}
-                de_proyecto = self._valores_del_proyecto(c, fila, pagina, datos, ficha, faltas)  # T17
+                de_proyecto = self._valores_del_proyecto(c, fila, pagina, datos, ficha, faltas,  # T17
+                                                         nivel_visita=ev["nivel"])
                 for letra, d in (mapeo.get("derivaciones") or {}).items():
                     if letra in mapeo.get("filas", {}) or letra in ficha["plano"] or letra in de_proyecto:
                         continue

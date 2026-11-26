@@ -101,3 +101,8 @@ Además quedan las 3 decisiones del Líder de arriba y reemplazar Campo en uso p
 - Si la forma es ilegible, o si solo cambia el símbolo de diámetro, se abre la duda `obra.<letra>.forma` y no se marca discrepancia.
 - Un vacío en OBRA sigue siendo conforme.
 - Suite: 1420 pasan, 3 omitidas y solo las 2 fallas conocidas de Dropbox.
+
+**T20 (26/11/2026, preguntas 29 y 30):** hecha, falta la auditoría del Director.
+- La altura 2.95 solo aplica si el nivel de la visita es un sótano; en otro nivel se abre `valor.<letra>`.
+- El 240 aplica a todo MURO DE CONTENCION.
+- Suite: 1439 pasan, 3 omitidas y solo las 2 fallas conocidas de Dropbox.

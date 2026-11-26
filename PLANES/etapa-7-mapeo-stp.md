@@ -150,3 +150,9 @@ Numeración de `PENDIENTES-STEVEN.md` (C10–C16), con su equivalente en la list
 - C1 y C3 en `FUNDACIONES @ E-3` traen `altura_m` = 3.00 en el diseño. Hoy eso abre `diseno:pNNN:altura` y deja vacía la fila e. ¿Es un dato del plano o un error de lectura?
 - ¿Todo MURO DE CONTENCION es el perimetral, o solo el que el plano rotula así? Un ID «MC» sin la palabra abre `valor.a`.
 - MH2 y el muro de contención tienen `longitud` «pendiente de verificar». Las alas de MH2 no están en ningún campo legible, así que la fila c queda vacía con una duda que no bloquea.
+
+**Respondidas (25 y 26/11/2026):**
+- La altura 3.00 de C1 y C3 era una altura de prueba de la simulación t5k, no un dato del plano.
+- Todo MC = 240 («Sí, todos 240», T20).
+- El 2.95 vale solo en sótanos («Solo sótanos», T20).
+- El acero de obra distinto del plano es discrepancia («Sí, que lo marque», T19).

@@ -345,6 +345,21 @@ carpeta de pruebas. Al volver Steven, solo faltan sus confirmaciones (datos del 
   - una fila vacía en obra queda conforme;
   - una forma ilegible abre duda, no discrepancia.
 
+### T20 — La altura 2.95 solo en sótanos y todo MC = 240 (preguntas 29 y 30)
+- Steven, 26/11/2026:
+  - pregunta 29, si el 2.95 vale también en la torre: «Solo sótanos»;
+  - pregunta 30, si todo MC es el perimetral con 240: «Sí, todos 240».
+- **`valores_proyecto_confirmados.json`:**
+  - Los valores de altura (col e y muro d) llevan `solo_nivel_visita: "sotano"` y la cita nueva.
+  - El 240 de muro a aplica a todo MURO DE CONTENCION: se quita el `solo_si` PERIMETRAL y se agrega la cita. El 350 sigue solo para MURO H.A.
+- **Qué cuenta como sótano:** se mira el nivel de la VISITA, no el rango impreso del plano (E-n). Vale S-n (también lo que `clave_nivel_visita` da como S-n) y «SOTANO -n» o «SÓTANO S-n».
+- **En otro nivel:** la fila queda vacía y se abre `diseno:pNNN:valor.<letra>` diciendo que el valor solo vale en sótanos.
+- **Pruebas:**
+  - S-4 y «SOTANO -7» dan 2.95;
+  - «NIVEL 5» deja la fila vacía y abre la duda;
+  - «MC» y «MURO DE CONTENCION» dan 240 sin duda;
+  - MURO H.A. da 350.
+
 ## Paralelismo
 - T1, T2 y T3 a la vez (no comparten archivos). T4 espera a T1. T5 al final.
 - T6 y T8 a la vez; T7 después de T6 (comparten `database.py` y `main.py`).

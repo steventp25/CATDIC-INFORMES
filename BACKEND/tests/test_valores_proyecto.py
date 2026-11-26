@@ -183,8 +183,14 @@ def test_el_archivo_real_trae_los_seis_valores_completos_con_cita():
     for v in valores:
         assert v["proyecto_id"] == "terra-living" and v["confirmado_por"] == "Steven" and v["fecha"] == "2026-11-26"
         assert v["cita"].strip() and v["origen"] == "informes STP entregados"
-    perimetral = next(v for v in valores if v["valor"] == "240")
-    assert perimetral["aplica_a"] == ["MURO DE CONTENCION"] and perimetral["solo_si"]["contiene_palabra"] == "PERIMETRAL"
+    contencion = next(v for v in valores if v["valor"] == "240")
+    # T20 (pregunta 30, «Sí, todos 240»): aplica a todo MURO DE CONTENCION, sin marca de perimetral
+    assert contencion["aplica_a"] == ["MURO DE CONTENCION"] and "solo_si" not in contencion
+    assert "Sí, todos 240" in contencion["cita"]
+    # T20 (pregunta 29, «Solo sótanos»): la altura 2.95 solo vale si el nivel de la visita es un sótano
+    for v in valores:
+        if v["valor"] == "2.95":
+            assert v["solo_nivel_visita"] == "sotano" and "Solo sótanos" in v["cita"]
     assert next(v for v in valores if v["valor"] == "350")["aplica_a"] == ["MURO H.A."]
 
 
@@ -201,3 +207,81 @@ def test_marca_de_perimetral_palabra_completa_sin_importar_mayusculas():
 def test_el_mapeo_real_no_deriva_la_altura_del_plano():
     mapeo, _ = pc.cargar_mapeo_stp()
     assert "e" not in mapeo["col"]["derivaciones"] and "d" not in mapeo["muro"].get("derivaciones", {})
+
+
+# ---------- T20: la altura 2.95 solo en sótanos y todo MC = 240 (Steven, 26/11/2026, preguntas 29 y 30) ----------
+
+VALORES_T20 = [
+    _v("col", "e", "2.95", ["COLUMNA"], contraste_campos=["altura_m"], solo_nivel_visita="sotano"),
+    _v("muro", "a", "350", ["MURO H.A."]),
+    _v("muro", "a", "240", ["MURO DE CONTENCION"]),
+    _v("muro", "d", "2.95", ["MURO H.A.", "MURO DE CONTENCION"], contraste_campos=["altura_m"],
+       solo_nivel_visita="sotano"),
+]
+
+
+@pytest.fixture
+def valores_t20(tmp_path, monkeypatch):
+    ruta = tmp_path / "valores_t20.json"
+    ruta.write_text(json.dumps({"version": 1, "valores": VALORES_T20}), encoding="utf-8")
+    monkeypatch.setattr(vp, "RUTA_CONFIGURACION", ruta)
+    return ruta
+
+
+def _ficha_en_nivel(entorno, monkeypatch, nivel_visita, nivel_diseno, id_el, ejes, tipo, campos):
+    mapeo, _ = pc.cargar_mapeo_stp()
+    monkeypatch.setattr(pc, "MAPEO_DISENO_A_STP", mapeo)
+    monkeypatch.setattr(pc, "MAPEO_CONFIRMADO", False)
+    capturado = _capturar_fichas(monkeypatch)
+    _elemento_visita(entorno, 1, f"{id_el} X", id_el, ejes, nivel=nivel_visita)
+    _diseno(uid="ed-0001", id_elemento=id_el, ejes=ejes, tipo=tipo, campos=campos, nivel=nivel_diseno)
+    _procesar()
+    return capturado.get("fichas", [])
+
+
+@pytest.mark.parametrize("nivel_visita,nivel_diseno", [("S-4", "SOTANO S4"), ("SOTANO -7", "SOTANO -7")])
+def test_t20_en_un_sotano_la_columna_lleva_2_95(entorno, monkeypatch, valores_t20, nivel_visita, nivel_diseno):
+    fichas = _ficha_en_nivel(entorno, monkeypatch, nivel_visita, nivel_diseno, "C1", "EJE D-4", "COLUMNA", COL)
+    assert len(fichas) == 1 and fichas[0]["plano"]["e"] == "2.95"
+    assert "diseno:p001:valor.e" not in _campos_abiertos()
+
+
+def test_t20_en_un_nivel_de_la_torre_la_altura_queda_vacia_con_duda(entorno, monkeypatch, valores_t20):
+    fichas = _ficha_en_nivel(entorno, monkeypatch, "NIVEL 5", "NIVEL 5", "C1", "EJE D-4", "COLUMNA", COL)
+    assert fichas == []  # la ficha espera la duda; no se pone ningún valor
+    d = [d for d in _abiertas() if d["campo_afectado"] == "diseno:p001:valor.e"]
+    assert len(d) == 1 and "solo vale en sótanos" in d[0]["descripcion_pregunta"]
+    assert "NIVEL 5" in d[0]["descripcion_pregunta"]
+
+
+def test_t20_muro_fuera_de_sotano_deja_d_vacia_con_duda(entorno, monkeypatch, valores_t20):
+    _ficha_en_nivel(entorno, monkeypatch, "NIVEL 5", "NIVEL 5", "MH3", "EJE C ENTRE 2-3", "MURO H.A.", MURO)
+    assert "diseno:p001:valor.d" in _campos_abiertos() and "diseno:p001:valor.a" not in _campos_abiertos()
+
+
+@pytest.mark.parametrize("id_elemento", ["MC", "MURO DE CONTENCION"])
+def test_t20_todo_muro_de_contencion_lleva_240_sin_duda(entorno, monkeypatch, valores_t20, id_elemento):
+    fichas = _ficha_en_nivel(entorno, monkeypatch, "S-4", "SOTANO S4", id_elemento, "EJE 4 ENTRE A-D",
+                             "MURO DE CONTENCION", MURO)
+    assert len(fichas) == 1 and fichas[0]["plano"]["a"] == "240" and fichas[0]["plano"]["d"] == "2.95"
+    assert "diseno:p001:valor.a" not in _campos_abiertos()
+
+
+def test_t20_muro_ha_lleva_350(entorno, monkeypatch, valores_t20):
+    fichas = _ficha_en_nivel(entorno, monkeypatch, "S-4", "SOTANO S4", "MH3", "EJE C ENTRE 2-3", "MURO H.A.", MURO)
+    assert len(fichas) == 1 and fichas[0]["plano"]["a"] == "350"
+
+
+@pytest.mark.parametrize("nivel,esperado", [("S-2", True), ("S2", True), ("SOTANO -7", True), ("Sótano -7", True),
+                                            ("SÓTANO S-3", True), ("NIVEL 5", False), ("E-5", False), ("PISO 2", False),
+                                            ("S-2A", False), ("", False), (None, False)])
+def test_t20_reconoce_el_sotano_por_el_nivel_de_la_visita(nivel, esperado):
+    assert vp.es_sotano_visita(nivel) is esperado
+
+
+def test_t20_un_nivel_de_visita_desconocido_invalida_el_valor(tmp_path):
+    ruta = tmp_path / "v.json"
+    ruta.write_text(json.dumps({"version": 1, "valores": [{**VALORES_T20[0], "solo_nivel_visita": "torre"}]}),
+                    encoding="utf-8")
+    valores, avisos = vp.cargar_valores(ruta)
+    assert valores == [] and avisos
