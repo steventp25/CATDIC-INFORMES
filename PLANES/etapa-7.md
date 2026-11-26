@@ -248,6 +248,41 @@ carpeta de pruebas. Al volver Steven, solo faltan sus confirmaciones (datos del 
   - [ ] Prueba en seco sobre una copia de la BD de la corrida 6 (hoja 24, S-2): imagen de LOCALIZACIÓN de C1 enviada al Director.
   - [ ] Suite verde; la BD real y Dropbox, sin tocar (Dropbox solo se lee).
 
+## Respuestas de Steven del 26/11/2026 (las transmitió el Director, palabras textuales)
+- (4) «SEGUN PLANOS, PARECE SER UN ERROR DE CAMPO» → C3 LY = 1.50, porque manda el plano. No requiere código; se comprueba en el STP.
+- (5) «S-2 SIGNIFICA SOTANO -2. PERTENECE A FUNDACIONES A @ E-1» → S-2 queda entre FUNDACIONES y E-1, así que cae en todo rango que empiece por FUNDACIONES.
+- (6) «QUIERO ARREGLARLO DENTRO DE LA APP… SI, ES ASI MISMO» → la cabecera actual es correcta y debe poder editarse en la app.
+- (8) «LOS MUROS SON UNICOS EN EL PLANO, ESTO ES UN PATRON QUE HACEMOS EN CAMPO, SI SOLO HAY 1 MH1, PUES NO TIENES QUE VOLVER A DESCRIBIRLO».
+- (9) «TODOS LOS MUROS DE CONTENCION SIMPLEMENTE UNO LO LLAMA MC Y YA».
+- Reglas del mapeo 10 a 16 aprobadas (la 15 solo si la malla es simétrica: si el plano trae caras distintas, manda el plano). `confirmado` sigue en false hasta que respondan la 17 y la 18.
+- Siguen abiertas: el área de ∅1" (5.10 o 5.07), la altura de columna, la 17 y la 18.
+
+### T13 — Ejes de muros desde el plano y «MC» como ID
+- Ejecutor: ejecutor-backend (junto con T14). Archivos: `BACKEND/procesador_cola.py` (`_candidatos` y el cruce), `BACKEND/sync/lector_visita.py` (solo si hace falta para «MC») y sus pruebas.
+- **Muro con ID único:** si la visita no trae los ejes de un muro (MURO H.A. o MURO DE CONTENCION) y su ID es único en ese nivel del plano, ya con la equivalencia aplicada, los EJES se toman de `elementos_diseno`. No se abre duda de obra, y la auditoría y la ficha registran que los ejes vienen del plano.
+- **Plano sin ejes:** si el diseño tampoco trae ejes, quedan «pendiente de verificar» y la duda es de **diseño** (`diseno:pNNN:ejes`), no de obra.
+- **MC:** una etiqueta «MC» (mayúsculas o minúsculas, sin número) es un ID válido de MURO DE CONTENCION.
+  - Si hay un solo MC en ese nivel, se toma ese.
+  - Si hay varios y la visita no trae ejes que los distingan, hay duda; nunca se elige por cercanía.
+- **Pruebas:** MH2 y MH3 de la visita 24 (ejes desde el plano), el MC del eje 4', un ID repetido en el nivel (duda) y un plano sin ejes (duda de diseño).
+
+### T14 — Equivalencia S-2 confirmada por Steven
+- Ejecutor: ejecutor-backend (junto con T13). Archivos: `BACKEND/equivalencias_nivel.py`, un archivo de configuración nuevo con la respuesta de Steven y sus pruebas.
+- **Configuración en git:** por proyecto, `S-2` → todo rango impreso del diseño que empiece por `FUNDACIONES @`, con la cita literal de Steven, la fecha 26/11/2026 y «confirmado_por: Steven».
+- **Cruce:** `equivalencias_de` suma las filas de la BD y las de la configuración, expandidas contra los rangos del diseño de ese proyecto.
+- **Listado:** el endpoint marca cada fila con su origen (`bd` o `configuracion_confirmada`).
+- **Escritura:** nada se escribe en la BD real. En una **copia** de la BD de la corrida 6, las filas de hipótesis se reemplazan con auditoría.
+
+### T15 — Cabecera del proyecto editable en la app
+- Ejecutor: ejecutor-frontend (backend pequeño más tablero). Archivos: un router nuevo `BACKEND/cabecera_proyecto.py` registrado en `main.py`, `FRONTEND/index.html` y sus pruebas.
+- **Campos:** solicitud, licencia, dirección, provincia, sector, residente y CODIA, con las columnas reales de `proyectos`.
+- **Endpoints:** `GET` y `PUT /api/proyectos/{id}/cabecera`.
+  - Cada campo que cambia queda en `auditoria` con su valor anterior y el nuevo.
+  - Sin cambios, no se escribe nada.
+  - Solo se aceptan textos (se les quitan los espacios de los extremos); un campo vacío se guarda vacío, también con auditoría.
+- **Duda de la cabecera:** guardar resuelve, con auditoría, la duda de proyecto `proyecto.cabecera_propuesta` si estaba abierta.
+- **Tablero:** una tarjeta «Cabecera del proyecto» en la vista del proyecto, para ver y editar. Muestra la propuesta de T7 al lado si existe. Se mantiene el tablero clásico.
+
 ## Paralelismo
 - T1, T2 y T3 a la vez (no comparten archivos). T4 espera a T1. T5 al final.
 - T6 y T8 a la vez; T7 después de T6 (comparten `database.py` y `main.py`).
