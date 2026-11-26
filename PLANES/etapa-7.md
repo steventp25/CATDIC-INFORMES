@@ -291,6 +291,41 @@ carpeta de pruebas. Al volver Steven, solo faltan sus confirmaciones (datos del 
   - Se ajustan las que dependían del 5.10.
   - Una nueva con C1: 36∅1" en 0.60 × 1.50 da 0.0203 (36 × 5.07 / 9000 = 0.02028).
 
+### T17 — Valores del proyecto confirmados por Steven, con su cita
+- Steven, 26/11/2026 (respuestas 2 y 17, de su otra cuenta, hechas suyas):
+  - (2) «Altura de la columna: 2.95 m… Hay que usar 2.95 en todos y no calcularla de nuevo».
+  - (17) Columna o = «ZONA CENTRAL / 1.08». Muro a = 350 en muros H.A. y 240 en el perimetral. Muro d = 2.95. Muro e = «SI», valor fijo de stp_lib.
+- **Archivo nuevo** `BACKEND/valores_proyecto_confirmados.json`, versionado, con la misma forma que `equivalencias_confirmadas.json`. No van como constantes en el generador.
+  - Cada valor lleva: `proyecto_id` «terra-living», `fila_stp`, `letra`, `valor`, `aplica_a`, `confirmado_por` «Steven», `fecha` 2026-11-26, `cita` y `origen` «informes STP entregados».
+  - El `aplica_a` del 350 es el tipo MURO H.A.
+  - El 240 solo aplica a un muro identificado como perimetral en su dato de diseño. No se deduce por el tipo ni por la cercanía.
+  - El Ejecutor documenta qué marca lo identifica como perimetral, según lo que traiga el dato real.
+  - Sin esa marca, se abre la duda `diseno:pNNN:valor.a` y la fila queda vacía.
+- **Procesador:** el mapeo usa estos valores como fuente de col e y o, y de muro a, d y e.
+  - Las demás filas no cambian.
+  - La ficha guarda el origen de cada fila en `ficha["origen_filas"][letra]`, con el archivo, la cita, quién lo confirmó y la fecha.
+- **Altura (col e y muro d):**
+  - Si el diseño trae un dato legible distinto de 2.95, se abre `diseno:pNNN:altura` con los textos literales y la fila queda vacía. Ese dato puede ser `altura_m`, o las NPT de la hoja, cuya diferencia se calcula.
+  - Si no hay dato legible, se usa 2.95 y no se calcula nada.
+- **Pruebas** con datos sintéticos:
+  - cada valor llega a su fila con su origen;
+  - el 240 sin la marca de perimetral abre la duda;
+  - una altura legible distinta abre la duda;
+  - un archivo roto o ausente no llena nada.
+
+### T18 — Reglas aprobadas que faltan y mapeo confirmado
+- **C14:** si el elemento es conforme, la cuantía de OBRA (2.p) es la del plano.
+  - Conforme quiere decir que todas sus filas de OBRA son conformes (iguales al plano o conformes por omisión) y que no hay ninguna discrepancia abierta.
+  - En cualquier otro caso se sigue como hoy.
+- **C16:** en un muro en L, la fila c es la suma de las alas (MH2: 3.80 + 3.85 = 7.65).
+  - Se aplica solo si el texto impreso es exactamente de números en metros separados por «+».
+  - Cualquier otra forma abre la duda `diseno:pNNN:derivacion.c`.
+  - Un número solo se copia como hoy.
+- **Regla 11 (C11):** f = g y m = n ya están aprobadas. Ya no se abre la duda `derivacion_igual`; solo se guarda su origen en `ficha["origen_filas"]`.
+- **Mapeo confirmado:** `generators/mapeo_stp.json` pasa a `confirmado: true` y su nota se actualiza. Con eso, el STP deja de salir como BORRADOR.
+  - Las pruebas y las corridas en seco nunca escriben en Dropbox: usan carpetas temporales o `CATDIC_SALIDA_PRUEBAS`.
+- **Observación 1 de la Evaluación 10:** la auditoría `CERRAR_DUDA` de `_muro_unico_sin_ejes` guarda también el texto de la duda cerrada.
+
 ## Paralelismo
 - T1, T2 y T3 a la vez (no comparten archivos). T4 espera a T1. T5 al final.
 - T6 y T8 a la vez; T7 después de T6 (comparten `database.py` y `main.py`).
