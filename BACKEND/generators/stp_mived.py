@@ -79,6 +79,39 @@ OBRA_EXTRA = {"losa": set("efg"), "muro": set("efg")}
 # Filas dimensionales (se comparan plano vs. acero medido con evaluar_medida_acero_obra, §4.5)
 DIMENSIONALES = {"viga": "cd", "col": "cd", "losa": "b", "muro": "b"}
 CON_CUANTIA = {"viga", "col"}
+# C14 (Evaluación 12): filas que determinan el acero longitudinal (As) de la cuantía. Para dar la cuantía del plano como
+# la de OBRA, estas filas deben traer en OBRA el mismo texto (normalizado) que en PLANOS. Estribos, empalme y solapes
+# (f, g, h, o, n de viga) no entran en As_total y no cuentan.
+FILAS_AS = {"col": ("i", "j", "k", "m", "n"), "viga": ("i", "j", "k", "m")}
+# T19 (Steven, 25/11/2026, pregunta 31: «Sí, que lo marque»): filas de ACERO cuya OBRA se compara con PLANOS. Distintas
+# = discrepancia, igual que las dimensionales. Las descriptivas (a, o) y las de valores del proyecto no se comparan.
+FILAS_ACERO_COMPARADAS = {"col": tuple("fghijkmn"), "viga": tuple("fghijkm"), "muro": tuple("hijk")}
+_RE_COMILLAS = re.compile(r"''|[\"″”“]")
+_RE_EST = re.compile(r"\bEST\.")
+_D = r"([∅Øø])\s?(\d+(?:/\d+)?)\""
+_FORMAS_ACERO = (  # forma reconocible -> clave de contenido (sin símbolo); lo que no cuadra no se compara (duda)
+    ("estribos", re.compile(rf"^(\d+) ?EST ?{_D}(?: ?@ ?(\d*[.,]\d+))?$"), lambda m: (int(m[1]), m[3], m[4])),
+    ("espaciamiento", re.compile(rf"^{_D} ?@ ?(\d*[.,]\d+)$"), lambda m: (m[2], m[3])),
+    ("barras", re.compile(rf"^(\d+) ?-? ?{_D}$"), lambda m: (int(m[1]), m[3])),
+    ("diametro", re.compile(rf"^{_D}$"), lambda m: (m[2],)),
+    ("entero", re.compile(r"^(\d+)$"), lambda m: (int(m[1]),)),
+    ("ninguno", re.compile(r"^-$"), lambda m: ()),
+)
+
+
+def _norm_acero(texto) -> str:
+    """Normalización de T19, y solo esta: espacios, mayúsculas, el punto de «EST.» y comillas/pulgadas (″ ” “ " '')."""
+    t = _RE_COMILLAS.sub('"', " ".join(str(texto or "").split()).upper())
+    return " ".join(_RE_EST.sub("EST", t).split())
+
+
+def _forma_acero(normalizado: str):
+    """(forma, contenido) del texto de acero normalizado, o None si no tiene una forma reconocible."""
+    for nombre, rx, clave in _FORMAS_ACERO:
+        m = rx.match(normalizado)
+        if m:
+            return nombre, clave(m)
+    return None
 TIPOS_NO_SOPORTADOS = "perfil o conexión metálica, zapata, platea u otro"
 
 
@@ -148,22 +181,25 @@ def _filas_de_ficha(ficha: Dict, tipo_txt: str, kind: str, tolerancia) -> Tuple[
     dudas, plano_in = [], dict(ficha.get("plano") or {})
     obra_in = dict(ficha.get("obra") or {})
     medidas = dict(ficha.get("medidas") or {})
+    # Letras que Campo dejó vacías: conformes por omisión (decisión de Steven 23/11/2026, paquete v2).
+    conformes = {str(l) for l in (ficha.get("conforme_por_omision") or [])}
     plano: Dict[str, str] = {}
     obra: Dict[str, str] = {}
     medidas_aud: List[Dict] = []
     discrepancias: List[str] = []
+    filas_discrepantes: List[str] = []  # letras dimensionales con discrepancia (C14 las nombra en la duda obra.p)
 
     def duda(campo, texto, bloquea=True):
         dudas.append({"id_elemento": id_el, "campo_afectado": campo, "descripcion_pregunta": texto,
                       "bloquea": bloquea})
 
     # Valores del plano (Capa 1): lo obligatorio no puede faltar
-    for letra in OBLIGATORIAS[kind]:
+    for letra in sorted(OBLIGATORIAS[kind]):  # orden fijo: el set no tiene orden y la lista de dudas debe ser estable
         if letra in DIMENSIONALES[kind] and letra in medidas:
             continue  # la fila sale de la medida del plano
         if _vacio(plano_in.get(letra)):
             duda(f"plano.{letra}", f"Falta en el plano el valor de la fila '{letra}' de {tipo_txt}: {PENDIENTE}.")
-    for letra in DIMENSIONALES[kind]:
+    for letra in sorted(DIMENSIONALES[kind]):
         if letra not in medidas and (kind in CON_CUANTIA or letra in OBLIGATORIAS[kind]):
             duda(f"medidas.{letra}", f"Falta la dimensión '{letra}' del plano de {tipo_txt}: {PENDIENTE}.")
     if any(d["bloquea"] for d in dudas):
@@ -207,6 +243,10 @@ def _filas_de_ficha(ficha: Dict, tipo_txt: str, kind: str, tolerancia) -> Tuple[
             duda(f"medidas.{letra}", f"No se pudo evaluar la medida '{letra}' de {tipo_txt}: {exc}")
             return None, dudas, {}
         plano[letra] = _fmt_m(m["valor_plano_m"])
+        if m.get("medida_acero_campo_m") is None and letra in conformes:
+            # Casilla vacía en Campo = conforme: en OBRA va el valor del plano (§4.5), sin duda de "OBRA vacía"
+            obra[letra] = plano[letra]
+            continue
         if m.get("medida_acero_campo_m") is None:
             # Sin medida de campo nadie midió nada: OBRA queda VACÍA (no se copia el valor del plano)
             obra[letra] = ""
@@ -219,6 +259,7 @@ def _filas_de_ficha(ficha: Dict, tipo_txt: str, kind: str, tolerancia) -> Tuple[
                             "valor_obra_m": ev["valor_columna_obra_m"]})
         if not ev["conforme"]:
             discrepancias.append(f"{id_el}: {ev['hallazgo_interno']}")
+            filas_discrepantes.append(letra)
 
     # Cuantía (decimal, §4.6): siempre calculada, nunca copiada
     aud = {"tipo_elemento": tipo_txt, "ejes": ficha.get("ejes"), "medidas_obra": medidas_aud,
@@ -248,6 +289,58 @@ def _filas_de_ficha(ficha: Dict, tipo_txt: str, kind: str, tolerancia) -> Tuple[
         # que ya son obligatorias en PLANOS; por eso nunca se inventa un valor. No se imprime en las hojas.
         aud["observaciones_texto"] = (f"ESTRIBOS {plano['h']} {plano['f']} NODOS / {plano['g']} CENTRO")
 
+    # Filas de texto vacías en Campo = conformes: OBRA repite el texto del plano (si el plano no lo trae, sigue vacía)
+    for letra in conformes:
+        if letra in obra and not obra[letra] and letra not in DIMENSIONALES[kind] and plano.get(letra):
+            obra[letra] = plano[letra]
+
+    # T19: el acero de OBRA distinto del de PLANOS es una discrepancia (mismo tratamiento que las dimensionales). Vacío en
+    # OBRA = conforme (regla de Steven), no se compara. Si no se puede leer la forma, o solo difiere en lo que no se
+    # normaliza (p. ej. el símbolo de diámetro), se abre una duda y no se inventa una discrepancia.
+    rotulo_de = dict(ROTULOS[kind])
+    for letra in FILAS_ACERO_COMPARADAS.get(kind, ()):
+        en_obra, en_plano = obra.get(letra) or "", plano.get(letra) or ""
+        if not en_obra.strip() or not en_plano.strip():
+            continue
+        n_obra, n_plano = _norm_acero(en_obra), _norm_acero(en_plano)
+        if n_obra == n_plano:
+            continue
+        f_obra, f_plano = _forma_acero(n_obra), _forma_acero(n_plano)
+        if f_obra is None or f_plano is None or f_obra == f_plano:
+            duda(f"obra.{letra}.forma", f"La fila '{letra}' ({rotulo_de.get(letra) or letra}) de {id_el} trae en OBRA "
+                                        f"'{en_obra}' y en PLANOS '{en_plano}': no se pueden comparar sin adivinar; "
+                                        f"indica si es conforme ({PENDIENTE}).", bloquea=False)
+            continue
+        discrepancias.append(f"{id_el}: {(rotulo_de.get(letra) or letra).rstrip(' :')} en obra {en_obra}, "
+                             f"en planos {en_plano}")
+        filas_discrepantes.append(letra)
+
+    # C14 (aprobado por Steven 26/11/2026): en un elemento CONFORME la cuantía de OBRA (p) es la del plano. Conforme se
+    # decide con el MISMO criterio que las discrepancias de este generador: ninguna discrepancia en las filas
+    # dimensionales (las únicas que se comparan con el plano, §4.5) y ninguna fila de OBRA que la visita debía traer
+    # vacía (nadie la comprobó); además, las filas de As (FILAS_AS) deben traer en OBRA el mismo texto que en PLANOS
+    # (Evaluación 12: con k = 34 en obra la cuantía del plano sería falsa). Estribos y empalme (f, g, h, o) no cuentan:
+    # la «o» de obra es una descripción del empalme. Con barras medidas en obra se calcula con ellas (arriba).
+    origen_obra: Dict[str, str] = {}
+    if kind in CON_CUANTIA and not ficha.get("barras_obra") and plano.get("p"):
+        sin_dato = sorted(l for l in (OBLIGATORIAS[kind] | OBRA_EXTRA.get(kind, set())) - {"p", "q"} if not obra.get(l))
+        acero_distinto = [l for l in FILAS_AS.get(kind, ()) if l not in sin_dato
+                          and _norm_acero(obra.get(l)) != _norm_acero(plano.get(l))]
+        if not discrepancias and not sin_dato and not acero_distinto:
+            obra["p"] = plano["p"]
+            origen_obra["p"] = "plano (C14: elemento conforme)"
+        else:
+            motivos = []
+            if discrepancias:
+                motivos.append(f"discrepancia en {', '.join(sorted(filas_discrepantes))}")
+            if sin_dato:
+                motivos.append(f"OBRA sin dato en {', '.join(sin_dato)}")
+            if acero_distinto:
+                motivos.append("acero de OBRA distinto del plano en " + ", ".join(
+                    f"{l} (obra {obra.get(l) or 'vacía'}, plano {plano.get(l) or 'vacío'})" for l in acero_distinto))
+            duda("obra.p", f"La cuantía de OBRA (fila p) de {id_el} queda vacía: el elemento no es conforme "
+                           f"({'; '.join(motivos)}) y no hay barras medidas en obra ({PENDIENTE}).", bloquea=False)
+
     # OBRA vacío en filas que debe traer la visita: queda vacío y se crea una duda (no bloquea)
     for letra in sorted(OBLIGATORIAS[kind] | OBRA_EXTRA.get(kind, set())):
         if letra in DIMENSIONALES[kind] and letra in medidas:
@@ -255,7 +348,7 @@ def _filas_de_ficha(ficha: Dict, tipo_txt: str, kind: str, tolerancia) -> Tuple[
         if not obra.get(letra):
             duda(f"obra.{letra}", f"La fila '{letra}' de OBRA de {id_el} no tiene dato de la visita: queda vacía "
                                   f"({PENDIENTE}).", bloquea=False)
-    return {"plano": plano, "obra": obra, "discrepancias": discrepancias}, dudas, aud
+    return {"plano": plano, "obra": obra, "discrepancias": discrepancias, "origen_obra": origen_obra}, dudas, aud
 
 
 def _fmt_rec(valor: float) -> str:
@@ -307,8 +400,10 @@ def _pagina_fot(proy, ficha, num, loc_img, det_img, fotos_img) -> str:
             f'<div class=foot><span>{_esc(proy["nombre"].upper())}</span><span>{num}</span></div></div>')
 
 
-def _portada(proy, visita) -> str:
-    return ('<div class=pg><div class=cover>'
+def _portada(proy, visita, marca_borrador=None) -> str:
+    marca = (f'<div style="color:#c00000;font-weight:bold;font-size:14pt;text-align:center">{_esc(marca_borrador)}</div>'
+             if marca_borrador else "")
+    return ('<div class=pg><div class=cover>' + marca +
             f'<div class=k style="margin-top:0.85in">Proyecto</div><div class=v>{_esc(proy["nombre"].upper())}</div>'
             f'<div class=k>Licencia No.</div><div class=v style="font-weight:bold;font-size:13pt">{_esc(proy["no_licencia"])}</div>'
             f'<div class=k>Elementos</div><div class=v style="font-weight:bold;font-size:13pt">{_esc(visita["elementos_txt"])}</div>'
@@ -438,7 +533,7 @@ def _unir_visitas(visitas: List[Dict]) -> Tuple[Optional[Dict], List[str]]:
 
 
 def generar_stp_mived(proyecto: Dict, visita, fichas: List[Dict], carpeta_salida=None,
-                      usuario: Optional[str] = None) -> Dict:
+                      usuario: Optional[str] = None, marca_borrador: Optional[str] = None) -> Dict:
     """
     Genera el STP-MIVED de una visita o, (T7b), de varias visitas del mismo nivel: `visita` es un dict o una lista
     de dicts (con 'id' y 'nivel') y cada ficha trae 'visita_id' con la visita de la que sale.
@@ -522,14 +617,15 @@ def generar_stp_mived(proyecto: Dict, visita, fichas: List[Dict], carpeta_salida
     pendientes = sum(1 for d in dudas if d.get("bloquea") is False and not d.get("excluido"))
 
     # Imágenes (M1, M3, M4 de T6) y páginas
-    paginas, num = [_portada(proyecto, visita), _inspeccion(proyecto, visita, _texto_observaciones(visita, discrepancias, pendientes, resultado["excluidos"]))], 1
+    paginas, num = [_portada(proyecto, visita, marca_borrador), _inspeccion(proyecto, visita, _texto_observaciones(visita, discrepancias, pendientes, resultado["excluidos"]))], 1
     carpeta_planos = proyecto["carpeta_planos"]
     try:
         for ficha, kind, filas, fecha_ficha in armadas:
             prep = [m1_fotos.preparar_foto(p) for p in m1_fotos.seleccionar_para_stp(list(ficha["fotos"]))]
             loc = ficha["localizacion"]
             _exigir_en_planos(loc["pdf"], carpeta_planos, "LOCALIZACION")
-            loc_img = m3_localizacion.generar_localizacion(loc["pdf"], loc["pagina"], tuple(loc["caja"]), *CELDA_LOC_PX)
+            loc_img = m3_localizacion.generar_localizacion(loc["pdf"], loc["pagina"], tuple(loc["caja"]), *CELDA_LOC_PX,
+                                                          zona=tuple(loc["zona"]) if loc.get("zona") else None)
             det = ficha["detalle"]
             det_img = m4_detalle.recortar_detalle(det["pdf"], det["pagina"], tuple(det["region"]), carpeta_planos)
             loc_b64 = _b64(_acotar(loc_img, 1000))

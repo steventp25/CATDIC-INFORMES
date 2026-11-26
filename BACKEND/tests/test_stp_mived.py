@@ -17,6 +17,7 @@ from generators import stp_mived
 from generators.comun import salida  # noqa: F401  (se importa para que falle claro si falta T6)
 from reglas_ingenieria import PENDIENTE, calcular_cuantia_elemento
 
+ZONA_PX = (0, 0, 1700, 2200)  # SINTÉTICO: la hoja de 612×792 pt a 200 dpi (T12: LOCALIZACION sale de una zona)
 RAIZ_GENERADORES = Path(stp_mived.__file__).resolve().parent
 
 
@@ -66,12 +67,12 @@ class Mundo:
              "plano": {"b": "350", "e": "3.17", "f": 'Ø3/8"@0.10', "g": 'Ø3/8"@0.20', "h": 'Ø3/8"', "i": '3-Ø3/4"',
                        "j": '3-Ø3/4"', "k": "-", "m": "-"},
              "obra": {"b": "350", "e": "3.17", "f": 'Ø3/8"@0.10', "g": 'Ø3/8"@0.20', "h": 'Ø3/8"', "i": '3-Ø3/4"',
-                      "j": '3-Ø3/4"'},
+                      "j": '3-Ø3/4"', "k": "-", "m": "-"},  # C14: el acero de OBRA igual al del plano (sin adicionales)
              "medidas": {"c": {"valor_plano_m": 0.40, "medida_acero_campo_m": 0.32},
                          "d": {"valor_plano_m": 0.60, "medida_acero_campo_m": 0.52}},
              "barras": [(3, '3/4"'), (3, '3/4"')],
              "fotos": self.fotos[:2],
-             "localizacion": {"pdf": str(self.pdf_plano), "pagina": 0, "caja": (100, 100, 600, 500)},
+             "localizacion": {"pdf": str(self.pdf_plano), "pagina": 0, "caja": (100, 100, 600, 500), "zona": ZONA_PX},
              "detalle": {"pdf": str(self.pdf_plano), "pagina": 0, "region": (0, 0, 300, 200)}}
         f.update(cambios)
         return f
@@ -83,14 +84,14 @@ class Mundo:
                       "n": '2-Ø1/2"'},
              "medidas": {"b": {"valor_plano_m": 0.25, "medida_acero_campo_m": 0.20}},
              "fotos": self.fotos[:3],
-             "localizacion": {"pdf": str(self.pdf_plano), "pagina": 0, "caja": (100, 100, 600, 500)},
+             "localizacion": {"pdf": str(self.pdf_plano), "pagina": 0, "caja": (100, 100, 600, 500), "zona": ZONA_PX},
              "detalle": {"pdf": str(self.pdf_plano), "pagina": 0, "region": (0, 0, 300, 200)}}
         f.update(cambios)
         return f
 
     def _comunes(self):
         return {"fotos": self.fotos[:2],
-                "localizacion": {"pdf": str(self.pdf_plano), "pagina": 0, "caja": (100, 100, 600, 500)},
+                "localizacion": {"pdf": str(self.pdf_plano), "pagina": 0, "caja": (100, 100, 600, 500), "zona": ZONA_PX},
                 "detalle": {"pdf": str(self.pdf_plano), "pagina": 0, "region": (0, 0, 300, 200)}}
 
     def ficha_col(self, **cambios) -> dict:
@@ -360,7 +361,7 @@ def test_b3_la_conformidad_exige_cero_datos_de_obra_pendientes(mundo, entorno):
     ficha["medidas"]["d"]["medida_acero_campo_m"] = None
     r = _generar(mundo, entorno, [ficha])
     insp = _textos(r["ruta"])[1]
-    assert "ACORDE A PLANOS APROBADOS" not in insp and "CELDAS O MEDIDAS DE OBRA PENDIENTES DE VERIFICAR: 2" in " ".join(insp.split())
+    assert "ACORDE A PLANOS APROBADOS" not in insp and "CELDAS O MEDIDAS DE OBRA PENDIENTES DE VERIFICAR: 3" in " ".join(insp.split())  # + la cuantía de OBRA (C14: duda obra.p)
     # una fila de OBRA sin dato tampoco permite la conformidad
     ficha2 = mundo.ficha_viga()
     del ficha2["obra"]["i"]
@@ -445,7 +446,7 @@ def test_una_viga_y_una_zapata_la_hoja_de_inspeccion_nombra_la_zapata_y_separa_l
     assert r["ok"] and r["excluidos"] == ["ZAPATA-Z1"]
     insp = " ".join(_textos(r["ruta"])[1].split())
     assert "ELEMENTOS NO INCLUIDOS EN ESTE INFORME (pendientes de verificar): ZAPATA-Z1" in insp
-    assert "CELDAS O MEDIDAS DE OBRA PENDIENTES DE VERIFICAR: 1" in insp  # solo la celda; la zapata no se mezcla
+    assert "CELDAS O MEDIDAS DE OBRA PENDIENTES DE VERIFICAR: 2" in insp  # la celda y la cuantía de OBRA (C14); la zapata no se mezcla
     assert "ACORDE A PLANOS APROBADOS" not in insp
     assert len(_textos(r["ruta"])) == 4  # la zapata no tiene hojas: solo se nombra en la inspección
 
@@ -529,3 +530,45 @@ def test_t7b_una_sola_visita_queda_igual_en_dict_o_en_lista(mundo, entorno):
     r2 = _generar(mundo, entorno, visita=[_visita()])
     assert r2["ok"] and r2["ruta"].name.replace(" v2", "") == r1["ruta"].name
     assert [t for t in _textos(r1["ruta"])[:2]] == [t for t in _textos(r2["ruta"])[:2]]
+
+
+# ---------- Paquete v2 de Campo: casilla vacía = conforme (Etapa 7, T3) ----------
+
+def test_t3_letra_conforme_por_omision_pone_en_obra_el_valor_del_plano(mundo, entorno):
+    ficha = mundo.ficha_viga()
+    ficha["medidas"]["c"] = {"valor_plano_m": 0.40, "medida_acero_campo_m": None}  # casilla dimensional vacía
+    del ficha["obra"]["i"]                                                           # fila de texto vacía
+    ficha["conforme_por_omision"] = ["c", "i"]
+    r = _generar(mundo, entorno, [ficha])
+    assert r["ok"], r
+    campos = {d["campo_afectado"] for d in r["dudas"]}
+    assert "medidas.c" not in campos and "obra.i" not in campos  # sin la duda de "OBRA vacía"
+    assert "0.40" in _celdas_a_la_derecha(r["ruta"], 2, "2.c. Ancho Viga (m):", 320)  # OBRA = plano (§4.5)
+    assert '3-Ø3/4"' in " ".join(_celdas_a_la_derecha(r["ruta"], 2, "2.i. Barras Top:", 320))
+
+
+def test_t3_sin_conforme_por_omision_la_obra_vacia_sigue_con_su_duda(mundo, entorno):
+    ficha = mundo.ficha_viga()
+    ficha["medidas"]["c"] = {"valor_plano_m": 0.40, "medida_acero_campo_m": None}
+    del ficha["obra"]["i"]
+    ficha["conforme_por_omision"] = ["j"]  # otra letra: no cubre c ni i
+    r = _generar(mundo, entorno, [ficha])
+    campos = {d["campo_afectado"] for d in r["dudas"]}
+    assert {"medidas.c", "obra.i"} <= campos
+    assert _celdas_a_la_derecha(r["ruta"], 2, "2.c. Ancho Viga (m):", 320) == []
+
+
+def test_t3_conforme_por_omision_no_inventa_si_el_plano_no_trae_el_valor(mundo, entorno):
+    ficha = mundo.ficha_viga()
+    del ficha["plano"]["m"]  # el plano no trae la fila m: no hay valor que copiar
+    ficha["conforme_por_omision"] = ["m"]
+    r = _generar(mundo, entorno, [ficha])
+    assert _celdas_a_la_derecha(r["ruta"], 2, "2.m. Adic Bot:", 320) == []  # nada que copiar: sigue vacía
+
+
+def test_t11b_las_dudas_de_filas_faltantes_salen_en_orden_alfabetico_fijo():
+    _, dudas, _ = stp_mived._filas_de_ficha({"titulo": "C1", "plano": {}, "medidas": {}}, "COLUMNA", "col", None)
+    campos = [d["campo_afectado"] for d in dudas]
+    planos = [c for c in campos if c.startswith("plano.")]
+    assert planos == sorted(planos) and len(planos) == len(set(planos)) and "plano.k" in planos
+    assert campos[len(planos):] == ["medidas.c", "medidas.d"]

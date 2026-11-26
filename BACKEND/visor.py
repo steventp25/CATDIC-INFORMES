@@ -26,7 +26,7 @@ from database import get_connection
 from generators.comun import detalle as m4_detalle
 from generators.comun import localizacion as m3_localizacion
 from obras import ErrorObra, _auditar, _proyecto, _transaccion, _usuario, _ahora
-from plano import lector_plano
+from plano import lector_plano, zona_planta
 from reglas_ingenieria import PENDIENTE
 
 router = APIRouter()
@@ -339,8 +339,35 @@ def guardar_recuadro(proyecto_id: str, uid: str, tipo: str, pagina: int, rect: L
 
 # ---------- Vista previa con los generadores de la Etapa 3 ----------
 
-def vista_previa(proyecto_id: str, tipo: str, pagina: int, rect: List[float]) -> bytes:
-    """PNG tal como lo usarán los informes: LOCALIZACION (planta completa + recuadro rojo) o DETALLE (recorte nítido)."""
+def _zona_guardada(proyecto_id: str, plano_id: int, pagina: int) -> Optional[List[float]]:
+    """Rect (pt) de la zona de la hoja si ya hay una guardada (propuesta o confirmada); solo para la vista previa."""
+    conn = get_connection()
+    try:
+        fila = zona_planta._fila(conn, plano_id, pagina)
+    finally:
+        conn.close()
+    return json.loads(fila["rect_json"]) if fila is not None and fila["rect_json"] else None
+
+
+def _franja_sin_zona(imagen):
+    """Marca la vista previa que sale de la hoja entera porque no hay zona: solo es vista previa, no sale en informes."""
+    from PIL import Image, ImageDraw
+    base = imagen.convert("RGBA")
+    capa = Image.new("RGBA", base.size, (0, 0, 0, 0))
+    alto = max(20, base.height // 50)
+    d = ImageDraw.Draw(capa)
+    d.rectangle([0, 0, base.width, alto], fill=(255, 140, 0, 215))
+    d.text((12, max(2, alto // 2 - 6)), "SIN ZONA DE PLANTA - vista previa de la hoja entera (el informe no la usa)", fill=(0, 0, 0, 255))
+    return Image.alpha_composite(base, capa).convert("RGB")
+
+
+def vista_previa(proyecto_id: str, tipo: str, pagina: int, rect: List[float],
+                 zona: Optional[List[float]] = None) -> bytes:
+    """
+    PNG tal como lo usarán los informes: LOCALIZACION (planta recortada a su zona + recuadro rojo) o DETALLE (recorte
+    nítido). `zona` (pt) es opcional; si no viene se usa la guardada de esa hoja. Sin ninguna, la vista previa muestra
+    la hoja entera con la franja «SIN ZONA DE PLANTA» (solo vista previa: el informe nunca usa la hoja entera).
+    """
     if tipo not in TIPOS_RECUADRO:
         raise ErrorObra("El tipo de recuadro debe ser 'localizacion' o 'detalle'.")
     conn = get_connection()
@@ -353,7 +380,19 @@ def vista_previa(proyecto_id: str, tipo: str, pagina: int, rect: List[float]) ->
     try:
         if tipo == "localizacion":
             dpi = m3_localizacion.DPI_PLANTA
-            imagen = m3_localizacion.generar_localizacion(ruta, pagina - 1, tuple(rect_pt_a_px(rect, dpi)), *CELDA_VISTA_PREVIA, dpi=dpi)
+            if zona is not None:
+                zona = _validar_rect(plano, pagina, zona)
+            else:
+                zona = _zona_guardada(proyecto_id, plano["id"], pagina)
+            sin_zona = zona is None
+            if sin_zona:
+                with pymupdf.Document(plano["vectorial_ruta"]) as doc:
+                    r = doc[pagina - 1].rect
+                zona = [r.x0, r.y0, r.x1, r.y1]
+            imagen = m3_localizacion.generar_localizacion(ruta, pagina - 1, tuple(rect_pt_a_px(rect, dpi)), *CELDA_VISTA_PREVIA,
+                                                          dpi=dpi, zona=tuple(rect_pt_a_px(zona, dpi)))
+            if sin_zona:
+                imagen = _franja_sin_zona(imagen)
         else:
             imagen = m4_detalle.recortar_detalle(ruta, pagina - 1, tuple(rect), ruta.parent.parent)
     except ValueError as exc:
@@ -376,6 +415,11 @@ class CuerpoRecuadro(BaseModel):
 class CuerpoVistaPrevia(BaseModel):
     tipo: str
     pagina: int
+    rect: List[float]
+    zona: Optional[List[float]] = None   # pt; opcional (T12): si falta, la zona guardada de la hoja
+
+
+class CuerpoZona(BaseModel):
     rect: List[float]
 
 
@@ -434,6 +478,32 @@ def api_guardar_recuadro(proyecto_id: str, uid: str, cuerpo: CuerpoRecuadro):
 @router.post("/api/proyectos/{proyecto_id}/visor/vista-previa")
 def api_vista_previa(proyecto_id: str, cuerpo: CuerpoVistaPrevia):
     try:
-        return Response(content=vista_previa(proyecto_id, cuerpo.tipo, cuerpo.pagina, cuerpo.rect), media_type="image/png")
+        return Response(content=vista_previa(proyecto_id, cuerpo.tipo, cuerpo.pagina, cuerpo.rect, cuerpo.zona), media_type="image/png")
+    except ErrorObra as exc:
+        raise _http(exc)
+
+
+# ---------- Zona de planta (Etapa 7 · T12) ----------
+
+@router.get("/api/proyectos/{proyecto_id}/visor/hojas/{pagina}/zona-planta")
+def api_zona_get(proyecto_id: str, pagina: int):
+    try:
+        return zona_planta.obtener_zona(proyecto_id, pagina)
+    except ErrorObra as exc:
+        raise _http(exc)
+
+
+@router.post("/api/proyectos/{proyecto_id}/visor/hojas/{pagina}/zona-planta/propuesta")
+def api_zona_propuesta(proyecto_id: str, pagina: int):
+    try:
+        return zona_planta.proponer_zona(proyecto_id, pagina)
+    except ErrorObra as exc:
+        raise _http(exc)
+
+
+@router.put("/api/proyectos/{proyecto_id}/visor/hojas/{pagina}/zona-planta")
+def api_zona_put(proyecto_id: str, pagina: int, cuerpo: CuerpoZona):
+    try:
+        return zona_planta.guardar_zona(proyecto_id, pagina, cuerpo.rect)
     except ErrorObra as exc:
         raise _http(exc)

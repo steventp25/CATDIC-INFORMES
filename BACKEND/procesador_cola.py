@@ -22,16 +22,21 @@ import contextvars
 import threading
 import uuid
 from datetime import datetime
+from decimal import Decimal
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
 import config
 import pymupdf
+import valores_proyecto
 from database import _respaldar_bd, get_connection, usuario_auditoria
+from equivalencias_nivel import clave_nivel_visita, equivalencias_de, normalizar_nivel
 from generators import fi_mived, stp_mived
 from generators.comun import localizacion as m3_localizacion
+from plano import zona_planta
 from generators.comun import salida
-from reglas_ingenieria import PENDIENTE, auditar_archivo_pdf_generado, obtener_ruta_salida_sin_sobrescribir
+from reglas_ingenieria import (PENDIENTE, TOKEN_MURO_CONTENCION, auditar_archivo_pdf_generado,
+                               obtener_ruta_salida_sin_sobrescribir)
 from sync import lector_visita, paquete_visita
 from sync.escaner_dropbox import SUBRUTA_INFORMES_PROCESADOS, _escanear_informes
 from sync.parser_visitas import CLASE_COMPLETIVO, CLASE_PARCIAL, interpretar_nombre_carpeta_visita
@@ -58,6 +63,11 @@ CARPETA_DE_PASO = "_en_proceso"           # dentro de la salida de pruebas; se v
 SUFIJO_CON_DUDAS = " - CON DUDAS"
 RESPUESTA_CIERRE = "resuelta por el procesador: la causa ya no existe"
 RESPUESTA_ANTERIOR = "PERTENECE AL ANTERIOR"
+# T13 (Steven, 26/11/2026): un muro es único en el plano; un ID único en el nivel da sus EJES desde el diseño.
+TIPOS_MURO = ("MURO H.A.", "MURO DE CONTENCION")
+TIPO_MURO_CONTENCION = "MURO DE CONTENCION"
+EJES_DEL_PLANO = "plano (ID único en el nivel)"
+NOTA_EJES_DEL_PLANO = "ejes tomados del plano (ID único en el nivel)"
 
 FORMATO_STP, FORMATO_CATDIC = "STP-MIVED", "CATDIC-STP"
 FORMATOS_FI = {"MIVED FI", "MIVED FI-01/02/03", "FI-01/02/03", "FORMULARIOS MIVED", "FI-01", "FI-02", "FI-03"}
@@ -81,11 +91,164 @@ def campo_de_elemento(campo: str) -> Optional[Tuple[str, str]]:
 def es_propia_de_visita(campo: str) -> bool:
     return campo_de_elemento(campo) is None and (campo or "").startswith(PREFIJOS_PROPIOS_VISITA)
 
-# De qué dato de diseño (datos_diseno_json) sale cada fila del STP-MIVED. PENDIENTE DE STEVEN: hoy NO hay ninguna
-# correspondencia aprobada (p. ej. si "DIR. X" de la tabla de acero en losa es la fila h "Barras Top X-X" o la i
-# "Barras Bot X-X"), así que el procesador no la deduce: el elemento queda en espera con una duda `diseno:pNNN:mapeo`.
+# De qué dato de diseño (datos_diseno_json) sale cada fila del STP-MIVED. Vive en generators/mapeo_stp.json (T4, Etapa 7):
+# solo correspondencias DIRECTAS con evidencia; mientras "confirmado" sea false es una PROPUESTA para Steven y el STP
+# solo se escribe como BORRADOR en la carpeta de pruebas. JSON ausente o roto = mapeo vacío (nunca se adivina).
 # Forma: {fila_stp: {"filas": {letra: campo}, "medidas": {letra: campo en metros}, "barras": campo | None}}.
-MAPEO_DISENO_A_STP: Dict[str, Dict] = {}
+RUTA_MAPEO_STP = Path(__file__).resolve().parent / "generators" / "mapeo_stp.json"
+
+
+# ---------- Derivaciones de filas (T9, PROPUESTA): una regex EXACTA sobre el texto ENTERO impreso en el plano ----------
+# El símbolo de diámetro (Ø ∅ ø) y la comilla se copian tal como vienen impresos; nunca se normalizan. Un texto que no
+# cuadra (varios grupos, +GAN., espaciamiento en otro texto) devuelve None y el procesador abre la duda con el texto.
+_SIMBOLO, _COMILLA = "[∅Øø]", "[\"″”“]"
+_RE_ESTRIBOS = re.compile(rf"^\s*(\d+)\s*EST\.\s*({_SIMBOLO})\s*(\d+(?:/\d+)?)({_COMILLA})\s*@\s*(\d*[.,]\d+)\s*$")
+_RE_BARRAS_UNICO = re.compile(rf"^\s*(\d+)\s*({_SIMBOLO})\s*(\d+(?:/\d+)?)({_COMILLA})\s*$")
+
+
+def _estribos_cantidad_diametro(texto) -> Optional[str]:
+    """'9 EST. Ø3/8" @0.10' -> '9 EST. Ø3/8"' (fila h)."""
+    m = _RE_ESTRIBOS.match(texto) if isinstance(texto, str) else None
+    return f"{int(m.group(1))} EST. {m.group(2)}{m.group(3)}{m.group(4)}" if m and int(m.group(1)) > 0 else None
+
+
+def _estribos_espaciamiento_unico(texto) -> Optional[str]:
+    """'10 EST. Ø3/8"@0.10' -> 'Ø3/8"@0.10' (filas f y g)."""
+    m = _RE_ESTRIBOS.match(texto) if isinstance(texto, str) else None
+    return f"{m.group(2)}{m.group(3)}{m.group(4)}@{m.group(5)}" if m and int(m.group(1)) > 0 else None
+
+
+def _barras_diametro_unico(texto) -> Optional[str]:
+    """'36Ø1"' -> 'Ø1"' (filas m y n); solo con UN grupo cantidad+diámetro."""
+    m = _RE_BARRAS_UNICO.match(texto) if isinstance(texto, str) else None
+    return f"{m.group(2)}{m.group(3)}{m.group(4)}" if m and int(m.group(1)) > 0 else None
+
+
+# ---------- T11 (PROPUESTA): filas b, e, i, j de COLUMNA. Sin conversión de unidades: lo que no cuadra va a duda ----------
+_RE_ENTERO_POSITIVO = re.compile(r"^[1-9]\d*$")
+_RE_FC_SOLO_NUMERO = re.compile(r"^\s*([1-9]\d*)\s*$")
+_RE_FC_CON_UNIDAD = re.compile(r"^\s*(?:f\s*['’´]?\s*c\s*=\s*)?([1-9]\d*)\s*kg\s*/\s*cm\s*[2²]\s*$", re.IGNORECASE)
+_RE_METROS = re.compile(r"^\s*(\d+(?:[.,]\d+)?)\s*m?\s*$", re.IGNORECASE)
+
+
+def _fc_kgcm2(texto) -> Optional[str]:
+    """'350', '350 Kg/cm2', "f'c = 350 kg/cm²" -> '350' (fila b). MPa, psi, decimales, rangos y texto -> None."""
+    if not isinstance(texto, str):
+        return None
+    m = _RE_FC_SOLO_NUMERO.match(texto) or _RE_FC_CON_UNIDAD.match(texto)
+    return str(int(m.group(1))) if m else None
+
+
+def _metros_impresos(texto) -> Optional[str]:
+    """'2.95', '2,95', '2.95 m' -> '2.95' (fila e); >0 y <=30. cm, cotas, restas y texto -> None."""
+    m = _RE_METROS.match(texto) if isinstance(texto, str) else None
+    if not m:
+        return None
+    valor = m.group(1).replace(",", ".")
+    return valor if 0 < float(valor) <= 30 else None
+
+
+def _barras_por_cara(texto, apoyo=None) -> Optional[str]:
+    """'6' con acero '36∅1"' -> '6-∅1"' (filas i y j). Si la otra cara también está, 2*(x+y)-4 debe ser el total del acero."""
+    apoyo = apoyo or {}
+    if not isinstance(texto, str) or not _RE_ENTERO_POSITIVO.match(texto.strip()):
+        return None
+    acero = _RE_BARRAS_UNICO.match(apoyo["acero"]) if isinstance(apoyo.get("acero"), str) else None
+    if not acero or int(acero.group(1)) <= 0:
+        return None
+    par = apoyo.get("par")
+    if not _vacio(par):
+        if not isinstance(par, str) or not _RE_ENTERO_POSITIVO.match(par.strip()):
+            return None
+        if 2 * (int(texto.strip()) + int(par.strip())) - 4 != int(acero.group(1)):
+            return None  # las esquinas cuentan en las dos caras: el total no cuadra, no se adivina
+    return f"{int(texto.strip())}-{acero.group(2)}{acero.group(3)}{acero.group(4)}"
+
+
+def _barras_total_unico(texto) -> Optional[str]:
+    """'36∅1"' -> '36' (fila k, Total barras); solo con UN grupo cantidad+diámetro. Varios grupos, +GAN., 0 o texto -> None."""
+    m = _RE_BARRAS_UNICO.match(texto) if isinstance(texto, str) else None
+    return str(int(m.group(1))) if m and int(m.group(1)) > 0 else None
+
+
+# T18 (C16, aprobado por Steven 26/11/2026): en un muro en L la longitud X es la suma de las alas (MH2: 3.80 + 3.85 = 7.65).
+# Solo si el texto ENTERO es de números en metros separados por «+»; un número solo se copia tal cual; otra forma -> None.
+_NUM_M = r"\d+(?:[.,]\d+)?"
+_RE_UN_NUMERO = re.compile(rf"^\s*{_NUM_M}\s*$")
+_RE_SUMA_ALAS = re.compile(rf"^\s*{_NUM_M}(?:\s*\+\s*{_NUM_M})+\s*$")
+
+
+def _longitud_muro_suma_alas(texto) -> Optional[str]:
+    """'3.80 + 3.85' -> '7.65' (fila c de muro). '1.80' -> '1.80' (como hoy). Unidades, texto o cualquier otra forma -> None."""
+    if not isinstance(texto, str):
+        return None
+    if _RE_UN_NUMERO.match(texto):
+        return texto
+    if not _RE_SUMA_ALAS.match(texto):
+        return None
+    terminos = [t.strip().replace(",", ".") for t in texto.split("+")]
+    if any(Decimal(t) <= 0 for t in terminos):
+        return None
+    decimales = max(len(t.partition(".")[2]) for t in terminos)
+    return f"{sum(Decimal(t) for t in terminos):.{decimales}f}"
+
+
+REGLAS_DERIVACION = {"longitud_muro_suma_alas": _longitud_muro_suma_alas,
+                     "estribos_cantidad_diametro": _estribos_cantidad_diametro,
+                     "barras_total_unico": _barras_total_unico,
+                     "estribos_espaciamiento_unico": _estribos_espaciamiento_unico,
+                     "barras_diametro_unico": _barras_diametro_unico,
+                     "fc_kgcm2": _fc_kgcm2,
+                     "metros_impresos": _metros_impresos,
+                     "barras_por_cara": _barras_por_cara}
+REGLAS_QUE_EXIGEN_DATO = {"longitud_muro_suma_alas"}  # si el plano no trae el dato, la fila queda vacía CON su duda
+REGLAS_CON_APOYO = {"barras_por_cara"}  # reciben además los campos de apoyo {nombre: texto impreso}
+# Pares que salen del MISMO valor único del plano (f = g, m = n): aprobados por Steven (C11, 26/11/2026); solo se guarda su origen.
+PARES_IGUALES = (("f", "g", "espaciamiento"), ("m", "n", "diámetro"))
+
+
+def cargar_mapeo_stp(ruta: Optional[Path] = None) -> Tuple[Dict[str, Dict], bool]:
+    """(mapeo, confirmado). Ausente, roto o con otra forma: ({}, False). Solo `confirmado: true` exacto confirma."""
+    try:
+        crudo = json.loads(Path(ruta or RUTA_MAPEO_STP).read_text(encoding="utf-8"))
+        filas_stp = crudo["filas_stp"]
+        if not isinstance(filas_stp, dict):
+            raise ValueError("filas_stp")
+        mapeo: Dict[str, Dict] = {}
+        for fila, m in filas_stp.items():
+            if not isinstance(m, dict):
+                raise ValueError(fila)
+            filas, medidas, barras = m.get("filas") or {}, m.get("medidas") or {}, m.get("barras")
+            derivaciones = m.get("derivaciones") or {}
+            if not isinstance(filas, dict) or not isinstance(medidas, dict) or not (barras is None or isinstance(barras, str)):
+                raise ValueError(fila)
+            if not isinstance(derivaciones, dict) or not all(
+                    isinstance(d, dict) and isinstance(d.get("campo"), str) and d.get("regla") in REGLAS_DERIVACION
+                    and (d.get("apoyo") is None or (isinstance(d["apoyo"], dict) and all(
+                        isinstance(k, str) and isinstance(v, str) for k, v in d["apoyo"].items())))
+                    and (d["regla"] not in REGLAS_CON_APOYO or isinstance(d.get("apoyo"), dict))
+                    for d in derivaciones.values()):  # regla desconocida = mapeo roto (nunca se adivina)
+                raise ValueError(fila)
+            mapeo[str(fila)] = {"filas": dict(filas), "medidas": dict(medidas), "barras": barras,
+                                "derivaciones": {str(l): {"campo": d["campo"], "regla": d["regla"],
+                                                          **({"apoyo": dict(d["apoyo"])} if d.get("apoyo") else {})}
+                                                 for l, d in derivaciones.items()}}
+        return mapeo, crudo.get("confirmado") is True
+    except (OSError, ValueError, KeyError, TypeError, AttributeError):
+        return {}, False
+
+
+MAPEO_DISENO_A_STP, MAPEO_CONFIRMADO = cargar_mapeo_stp()
+_RE_BARRAS = re.compile(r"^\s*(\d+)\s*[∅Øø]\s*(\d+(?:/\d+)?)\s*[\"″”“]\s*$")
+
+
+def convertir_barras(texto) -> Optional[List[list]]:
+    """'36∅1"' -> [[36, '1"']]. Solo el texto ENTERO con un único grupo cantidad+diámetro; otra cosa -> None (duda)."""
+    m = _RE_BARRAS.match(str(texto)) if isinstance(texto, str) else None
+    return [[int(m.group(1)), f'{m.group(2)}"']] if m and int(m.group(1)) > 0 else None
+
+
+MARCA_BORRADOR = "BORRADOR — mapeo sin confirmar"
 
 _cerrojo = threading.Lock()
 _hilos: Dict[str, threading.Thread] = {}
@@ -362,7 +525,7 @@ def interpretar_respuesta(texto: str) -> Optional[Dict]:
     datos = lector_visita.interpretar_etiqueta(t)
     if datos["id_elemento"] != PENDIENTE and datos["ejes"] != PENDIENTE:
         return {"id": datos["id_elemento"], "ejes": datos["ejes"]}
-    if len(tokens) == 1 and _RE_ID.fullmatch(tokens[0]):
+    if len(tokens) == 1 and (_RE_ID.fullmatch(tokens[0]) or tokens[0] == TOKEN_MURO_CONTENCION):
         return {"id": tokens[0], "ejes": None}
     return None
 
@@ -376,6 +539,7 @@ class ProcesoVisita:
         self.campos: set = set()            # campos de esas dudas: lo que no se vuelva a señalar se cierra solo
         self.pdf: List[Dict] = []
         self.avisos: List[str] = []
+        self.notas_ficha: List[Tuple[str, str]] = []
 
     # --- BD ---
     def _visita(self, conn=None):
@@ -387,13 +551,22 @@ class ProcesoVisita:
         return conn.execute("""SELECT * FROM dudas_y_hallazgos WHERE visita_id = ? AND categoria = ? AND resuelta = 0
                                ORDER BY id""", (self.visita_id, DUDA)).fetchall()
 
-    def duda(self, campo: str, id_elemento: str, texto: str, refs: Optional[Dict] = None) -> int:
-        """Abre una DUDA_BLOQUEANTE si no hay una ABIERTA del mismo campo; emite el evento `duda` en los dos casos."""
+    def duda(self, campo: str, id_elemento: str, texto: str, refs: Optional[Dict] = None, actualizar: bool = False) -> int:
+        """
+        Abre una DUDA_BLOQUEANTE si no hay una ABIERTA del mismo campo; emite el evento `duda` en los dos casos.
+        actualizar=True: si la abierta tiene otro texto, lo reemplaza (auditado como ACTUALIZAR_DUDA) en vez de dejar el viejo.
+        """
         def abrir(conn):
             v = self._visita(conn)
-            fila = conn.execute("""SELECT id FROM dudas_y_hallazgos WHERE visita_id = ? AND campo_afectado = ?
-                                   AND categoria = ? AND resuelta = 0""", (self.visita_id, campo, DUDA)).fetchone()
+            fila = conn.execute("""SELECT id, descripcion_pregunta FROM dudas_y_hallazgos WHERE visita_id = ?
+                                   AND campo_afectado = ? AND categoria = ? AND resuelta = 0""",
+                                (self.visita_id, campo, DUDA)).fetchone()
             if fila:
+                if actualizar and fila["descripcion_pregunta"] != texto:
+                    conn.execute("UPDATE dudas_y_hallazgos SET descripcion_pregunta = ? WHERE id = ?", (texto, fila["id"]))
+                    _auditar(conn, "ACTUALIZAR_DUDA", str(fila["id"]),
+                             {"visita_id": self.visita_id, "campo": campo, "pregunta_anterior": fila["descripcion_pregunta"],
+                              "pregunta": texto, "trabajo": self.trabajo_id}, self.usuario)
                 return fila["id"], False
             cur = conn.execute("""INSERT INTO dudas_y_hallazgos (proyecto_id, visita_id, id_elemento, categoria,
                                   campo_afectado, descripcion_pregunta, creado) VALUES (?, ?, ?, ?, ?, ?, ?)""",
@@ -606,6 +779,11 @@ class ProcesoVisita:
                 resultado["esperando"] = esperando
             return resultado
 
+        # T13: muro con ID único en el nivel y sin ejes en la visita: los EJES salen del diseño. Gana la respuesta de Steven.
+        muro = None
+        if _vacio(ev["ejes"]) and _con_conexion(lambda c: self._respuesta_vigente(c, pagina)) is None:
+            muro = self._muro_unico_sin_ejes(ev, pagina)
+
         # Identificación: lo que dio el lector sin interpretar, o la respuesta de Steven (O4); nunca la etiqueta
         abiertas_lector = _con_conexion(lambda c: c.execute(
             """SELECT id FROM dudas_y_hallazgos WHERE visita_id = ? AND campo_afectado = ? AND categoria = ?
@@ -619,7 +797,9 @@ class ProcesoVisita:
             return fin({"estado": "espera"})
 
         ident = None
-        if ev["id_elemento"] != PENDIENTE and ev["ejes"] != PENDIENTE:
+        if muro is not None:
+            ident = muro
+        elif ev["id_elemento"] != PENDIENTE and ev["ejes"] != PENDIENTE:
             ident = {"id": ev["id_elemento"], "ejes": ev["ejes"]}
         else:
             respuesta = _con_conexion(lambda c: self._respuesta_vigente(c, pagina))
@@ -653,11 +833,29 @@ class ProcesoVisita:
                          f"{ev['nivel']} ({', '.join(c['uid'] + ' ' + c['ejes'] for c in candidatos)}). Indica el uid "
                          "del que corresponde; no se elige uno solo.")
             else:
+                equivalencia = self._duda_de_equivalencia(ev, ident)
+                if equivalencia:  # D11: diseño sin EJES y nivel de la visita sin equivalencia (T6)
+                    espera(f"cruce:{pagina}:equivalencia", equivalencia)
+                    return fin({"estado": "espera"})
                 texto = (f"Elemento '{etiqueta}': ningún elemento de diseño con {que} en el nivel {ev['nivel']} "
                          "(ID + Nivel + Ejes, §4.2). Revisa el plano o indica el elemento.")
             espera(f"cruce:{pagina}", texto, candidatos[0] if len(candidatos) > 0 else None)
             return fin({"estado": "espera"})
-        c = candidatos[0]
+        c = dict(candidatos[0])
+        if c["ejes"] == PENDIENTE:
+            # Diseño sin EJES (D11): los EJES de la ficha son los de la visita (o los de la respuesta de Steven)
+            ejes = ident.get("ejes") or (ev["ejes"] if not _vacio(ev["ejes"]) else None)
+            if ejes is None and ident.get("ejes_del_plano"):
+                # T13: ni la visita ni el diseño traen los ejes: es un dato que falta en el DISEÑO (no de obra ni de cruce)
+                espera(f"diseno:{pagina}:ejes", f"El muro {c['id_elemento']} ({c['nivel_rango']}, {c['uid']}) es único en el "
+                                                f"nivel, pero el diseño no trae sus ejes ({PENDIENTE}) y la visita tampoco: "
+                                                "completa los ejes en el plano (confirmación del diseño). No se adivinan.", c)
+                return fin({"estado": "espera"})
+            if ejes is None:
+                espera(f"cruce:{pagina}:ejes", f"El elemento de diseño {c['id_elemento']} no trae ejes y el elemento "
+                                               f"'{etiqueta}' de la visita tampoco ({PENDIENTE}): indica el cruce (§4.2).", c)
+                return fin({"estado": "espera"})
+            c["ejes"] = ejes
         if ident.get("ejes") is None and not ident.get("uid") and c["ejes"] != EJE_LOSA:
             espera(f"cruce:{pagina}", f"Elemento '{etiqueta}': la respuesta da solo el ID '{ident['id']}' y el elemento "
                                       f"de diseño tiene ejes '{c['ejes']}': indica también el cruce (§4.2).", c)
@@ -679,42 +877,203 @@ class ProcesoVisita:
             for campo, texto in faltas:
                 espera(campo, texto, c)
             return fin({"estado": "espera"})
+        if ident.get("ejes_del_plano"):  # T13: la ficha y la auditoría dejan dicho de dónde salen los EJES
+            ficha["ejes_origen"] = EJES_DEL_PLANO
+            _con_conexion(lambda conn: _auditar(conn, "EJES_DEL_PLANO", ev["uid"], {
+                "visita_id": self.visita_id, "uid_diseno": c["uid"], "id_elemento": c["id_elemento"], "ejes": c["ejes"],
+                "motivo": NOTA_EJES_DEL_PLANO, "trabajo": self.trabajo_id}, self.usuario))
+        if ficha.get("origen_filas"):  # T17: de dónde salió cada fila que no viene del dibujo del plano
+            _con_conexion(lambda conn: _auditar(conn, "ORIGEN_FILAS", ev["uid"], {
+                "visita_id": self.visita_id, "uid_diseno": c["uid"], "id_elemento": c["id_elemento"],
+                "origen_filas": ficha["origen_filas"], "trabajo": self.trabajo_id}, self.usuario))
+        for campo, texto in self.notas_ficha:  # T9: dudas que no bloquean; no se esperan (la ficha sigue)
+            vigentes.add(campo)
+            ya_resuelta = _con_conexion(lambda conn: conn.execute(
+                "SELECT 1 FROM dudas_y_hallazgos WHERE visita_id = ? AND campo_afectado = ? AND resuelta = 1 "
+                "AND respuesta_usuario <> ?", (self.visita_id, campo, RESPUESTA_CIERRE)).fetchone())
+            if not ya_resuelta:  # ya decidida por Steven, no se repite
+                self.duda(campo, c["id_elemento"], texto, self._refs(ev, c))
         _evento(self.trabajo_id, "elemento_listo", {"visita_id": self.visita_id, "titulo": ficha["titulo"],
                                                     **self._refs(ev, c)})
         return fin({"estado": "listo", "ficha": ficha, "uid_diseno": c["uid"]})
 
     def _candidatos(self, ev, ident: Dict) -> List:
+        """
+        Elementos de diseño que cruzan con el elemento de la visita (§4.2). El nivel se compara normalizado
+        (`normalizar_nivel`). Un candidato con EJES reales exige los mismos EJES. Uno con EJES "pendiente de
+        verificar" (el cuadro de columnas no da ejes, D11) se acepta por ID + nivel; además de la escritura literal
+        del nivel, solo ahí valen las equivalencias que el usuario definió (S-2 -> varios rangos impresos). Si dos tramos
+        del mismo ID caen en el conjunto, quedan dos candidatos y va la duda; nunca se elige uno. Nunca se deduce.
+        """
         proyecto_id = self.contexto["proyecto"]["id"]
-        niveles = niveles_de_diseno(ev["nivel"])
+        niveles = {normalizar_nivel(n) for n in niveles_de_diseno(ev["nivel"])}
 
         def leer(conn):
             if ident.get("uid"):
                 filas = conn.execute("SELECT * FROM elementos_diseno WHERE proyecto_id = ? AND LOWER(uid) = ?",
                                      (proyecto_id, ident["uid"])).fetchall()
+            elif ident["id"].upper() == TOKEN_MURO_CONTENCION:
+                # T13: 'MC' (cualquier caja, sin número) es el ID de cualquier MURO DE CONTENCION del plano
+                filas = conn.execute("SELECT * FROM elementos_diseno WHERE proyecto_id = ? AND (tipo_elemento = ? OR "
+                                     "UPPER(id_elemento) = ?)", (proyecto_id, TIPO_MURO_CONTENCION,
+                                                                 TOKEN_MURO_CONTENCION)).fetchall()
             else:
                 filas = conn.execute("SELECT * FROM elementos_diseno WHERE proyecto_id = ? AND UPPER(id_elemento) = ?",
                                      (proyecto_id, ident["id"].upper())).fetchall()
-            filas = [f for f in filas if " ".join(f["nivel_rango"].upper().split()) in niveles]
+            traducidos = {normalizar_nivel(r) for r in equivalencias_de(conn, proyecto_id, ev["nivel"])}
+            filas = [f for f in filas if normalizar_nivel(f["nivel_rango"]) in niveles
+                     or (f["ejes"] == PENDIENTE and normalizar_nivel(f["nivel_rango"]) in traducidos)]
             if ident.get("uid"):
                 return filas
             if ident.get("ejes") is None:  # solo el ID: _elemento exige que el único candidato sea de ejes '—'
                 return filas
-            return [f for f in filas if f["ejes"] == ident["ejes"]]
+            return [f for f in filas if f["ejes"] == ident["ejes"] or f["ejes"] == PENDIENTE]
         return _con_conexion(leer)
+
+    def _muro_unico_sin_ejes(self, ev, pagina: str) -> Optional[Dict]:
+        """
+        T13 (Steven, 26/11/2026: los muros son únicos en el plano). Si el elemento de la visita es un muro (MURO H.A. o
+        MURO DE CONTENCION, o la etiqueta 'MC'), no trae ejes y su ID tiene UN solo elemento de diseño en ese nivel
+        (equivalencia aplicada), devuelve la identidad por el uid de ese elemento y cierra, con auditoría, la duda del
+        importador por ejes que faltan. Nunca elige entre varios, ni por cercanía; todo lo demás sigue como antes.
+        """
+        if _vacio(ev["nivel"]):
+            return None
+        id_ev = "" if _vacio(ev["id_elemento"]) else str(ev["id_elemento"]).upper()
+        if not id_ev and " ".join(str(ev["etiqueta_original"] or "").upper().split()) == TOKEN_MURO_CONTENCION:
+            id_ev = TOKEN_MURO_CONTENCION  # etiqueta 'MC' del lector: el ID es MC
+        if not id_ev:
+            return None
+        candidatos = self._candidatos(ev, {"id": id_ev, "ejes": None})
+        if len(candidatos) != 1 or candidatos[0]["tipo_elemento"] not in TIPOS_MURO:
+            return None
+        tipo_ev = ev["tipo_elemento"]
+        if not _vacio(tipo_ev) and tipo_ev != candidatos[0]["tipo_elemento"]:
+            return None  # la visita dice otro tipo que el plano: no se da por el mismo elemento
+        c = candidatos[0]
+
+        def cerrar(conn):
+            filas = conn.execute("""SELECT id, descripcion_pregunta FROM dudas_y_hallazgos WHERE visita_id = ?
+                                    AND campo_afectado = ? AND categoria = ? AND resuelta = 0""",
+                                 (self.visita_id, f"{PREFIJO_LECTOR}{pagina}", DUDA)).fetchall()
+            for f in filas:
+                conn.execute("UPDATE dudas_y_hallazgos SET resuelta = 1, respuesta_usuario = ?, resuelto_en = ? WHERE id = ?",
+                             (RESPUESTA_CIERRE, _ahora(), f["id"]))
+                _auditar(conn, "CERRAR_DUDA", str(f["id"]), {"visita_id": self.visita_id, "campo": f"{PREFIJO_LECTOR}{pagina}",
+                                                             "motivo": NOTA_EJES_DEL_PLANO, "uid_diseno": c["uid"],
+                                                             "texto_duda": f["descripcion_pregunta"],
+                                                             "trabajo": self.trabajo_id}, self.usuario)
+        _con_conexion(cerrar)
+        return {"uid": c["uid"].lower(), "id": c["id_elemento"], "ejes_del_plano": True}
+
+    def _duda_de_equivalencia(self, ev, ident: Dict) -> Optional[str]:
+        """
+        Texto de la duda cuando no hay candidato y la causa es el nivel de un elemento de diseño sin EJES (D11):
+        falta la equivalencia del nivel de la visita, o la que hay no cae en ningún rango de ese ID. None si no aplica.
+        """
+        if ident.get("uid"):
+            return None
+        proyecto_id = self.contexto["proyecto"]["id"]
+
+        def leer(conn):
+            filas = conn.execute("SELECT nivel_rango FROM elementos_diseno WHERE proyecto_id = ? AND "
+                                 "UPPER(id_elemento) = ? AND ejes = ?", (proyecto_id, ident["id"].upper(), PENDIENTE)).fetchall()
+            return [f["nivel_rango"] for f in filas], equivalencias_de(conn, proyecto_id, ev["nivel"])
+        rangos, equivalencia = _con_conexion(leer)
+        if not rangos:
+            return None
+        clave = clave_nivel_visita(ev["nivel"])
+        donde = f"PUT /api/proyectos/{proyecto_id}/equivalencias-nivel"
+        lista = ", ".join(sorted(set(rangos)))
+        if not equivalencia:
+            return (f"Elemento '{ev['etiqueta_original']}': el plano trae {ident['id']} sin ejes (solo por rango de nivel: "
+                    f"{lista}) y no se puede cruzar con el nivel {clave} de la visita: falta la equivalencia {clave} → "
+                    f"rangos impresos de la obra. Defínela en {donde} (no se adivina).")
+        return (f"Elemento '{ev['etiqueta_original']}': las equivalencias definidas {clave} → "
+                f"{', '.join(repr(r) for r in equivalencia)} no corresponden a ningún rango de {ident['id']} en el plano "
+                f"({lista}). Corrígelas en {donde}.")
+
+    def _valores_del_proyecto(self, c, fila: str, pagina: str, datos: Dict, ficha: Dict, faltas: List,
+                              nivel_visita=None) -> set:
+        """
+        T17: filas que salen de `valores_proyecto_confirmados.json` (valor, cita y quién lo confirmó). Devuelve las letras
+        que esa configuración cubre para este tipo de elemento (aunque la fila quede vacía por una duda): la derivación
+        del plano no las llena. Un valor con `solo_si` que el diseño no marca abre `diseno:pNNN:valor.<letra>`; un dato
+        de altura legible y distinto abre `diseno:pNNN:altura`. Nunca se deduce ni se calcula.
+        """
+        tipo = c["tipo_elemento"]
+        por_letra: Dict[str, List[Dict]] = {}
+        for v in valores_proyecto.valores_de(self.contexto["proyecto"]["id"], fila, tipo):
+            por_letra.setdefault(v["letra"], []).append(v)
+        for letra, lista in sorted(por_letra.items()):
+            if letra in ficha["plano"]:
+                continue  # una fila mapeada directo desde el plano manda
+            aplican = [v for v in lista if valores_proyecto.cumple_marca(v, c, datos)]
+            fuera = [v for v in aplican if not valores_proyecto.cumple_nivel(v, nivel_visita)]
+            if fuera and len(fuera) == len(aplican):  # T20: p. ej. el 2.95 solo vale en sótanos (Steven, 26/11/2026)
+                faltas.append((f"diseno:{pagina}:valor.{letra}",
+                               f"La fila {letra} de {c['id_elemento']} ({tipo}): el valor confirmado por Steven "
+                               f"({', '.join(v['valor'] for v in fuera)}) solo vale en sótanos y el nivel de la visita "
+                               f"es '{nivel_visita}'. La fila queda vacía ({PENDIENTE}). Indica el valor de la fila {letra}."))
+                continue
+            aplican = [v for v in aplican if v not in fuera]
+            if len(aplican) != 1:
+                if not aplican:
+                    pedidos = "; ".join(
+                        f"{v['valor']} solo si {v['solo_si']['campo']} trae la palabra '{v['solo_si']['contiene_palabra']}'"
+                        for v in lista if v.get("solo_si"))
+                    faltas.append((f"diseno:{pagina}:valor.{letra}",
+                                   f"La fila {letra} de {c['id_elemento']} ({tipo}): el valor confirmado por Steven "
+                                   f"({pedidos}) no aplica porque el dato de diseño no lo marca; no se deduce por el tipo "
+                                   f"ni por la cercanía. La fila queda vacía ({PENDIENTE}). Indica el valor de la fila {letra}."))
+                else:
+                    faltas.append((f"diseno:{pagina}:valor.{letra}",
+                                   f"La fila {letra} de {c['id_elemento']} ({tipo}) tiene más de un valor confirmado que "
+                                   f"aplica ({', '.join(v['valor'] for v in aplican)}): no se elige ({PENDIENTE})."))
+                continue
+            v = aplican[0]
+            distinto = []
+            for campo in v.get("contraste_campos") or []:
+                impreso = datos.get(campo)
+                legible = _metros_impresos(impreso) if not _vacio(impreso) else None
+                if legible is not None and Decimal(legible) != Decimal(v["valor"]):
+                    distinto.append(f"{campo} = '{impreso}'")
+            if distinto:
+                faltas.append((f"diseno:{pagina}:altura",
+                               f"La altura de {c['id_elemento']} no cuadra: el diseño trae {'; '.join(distinto)} y Steven "
+                               f"confirmó {v['valor']} m para la fila {letra} ({v['cita']}). La fila queda vacía "
+                               f"({PENDIENTE}): confirma cuál vale; no se calcula ni se elige."))
+                continue
+            ficha["plano"][letra] = v["valor"]
+            ficha["origen_filas"][letra] = valores_proyecto.origen_de(v)
+        return set(por_letra)
 
     def _ficha(self, ev, c) -> Tuple[Optional[Dict], List[Tuple[str, str]]]:
         """Arma la ficha del generador (Capa 1 + Capa 2; la Capa 3 la calcula el generador). Devuelve (ficha, faltas)."""
         pagina = f"p{ev['orden_en_log']:03d}"
         faltas: List[Tuple[str, str]] = []
+        self.notas_ficha = []  # dudas que NO bloquean la ficha (se abren si la ficha queda lista)
         datos = _dict(c["datos_diseno_json"])
         tipo = c["tipo_elemento"]
         fila = stp_mived._tipo_de_fila(tipo)
         ficha = {"titulo": f"{tipo}-{c['id_elemento']}" + ("" if c["ejes"] == EJE_LOSA else f"-{c['ejes']}"),
                  "tipo_elemento": tipo, "ejes": c["ejes"], "visita_id": self.visita_id, "fila_stp": fila,
-                 "uid_diseno": c["uid"], "orden_en_log": ev["orden_en_log"], "plano": {}, "obra": {}, "medidas": {}}
+                 "uid_diseno": c["uid"], "orden_en_log": ev["orden_en_log"], "plano": {}, "obra": {}, "medidas": {},
+                 "origen_filas": {}}
+        # Paquete v2 (Etapa 7): estado "Pendiente" = elemento en revisión; no entra como conforme. La duda
+        # elemento_visita:pNNN:pendiente la abre el importador; mientras siga abierta (o no exista) no se procesa.
+        medidas_campo = _dict(ev["medidas_acero_campo_json"])
+        if medidas_campo.get("estado_campo") == "Pendiente":
+            campo_pend = f"elemento_visita:{pagina}:pendiente"
+            filas = _con_conexion(lambda conn: conn.execute(
+                "SELECT resuelta FROM dudas_y_hallazgos WHERE visita_id = ? AND campo_afectado = ?",
+                (self.visita_id, campo_pend)).fetchall())
+            if not filas or any(not f["resuelta"] for f in filas):
+                faltas.append((campo_pend, f"Elemento en revisión: el técnico lo dejó Pendiente en Campo ({c['id_elemento']}). "
+                                           "Resuelve esta duda para procesarlo."))
         if fila is not None:  # un tipo no soportado lo excluye el propio STP (con su duda)
             mapeo = MAPEO_DISENO_A_STP.get(fila)
-            if not mapeo:
+            if mapeo is None:  # sin entrada (viga, losa): duda de mapeo; una entrada vacía (muro) pide cada fila con su duda
                 faltas.append((f"diseno:{pagina}:mapeo",
                                f"No está definido de qué datos del plano sale cada fila del STP-MIVED para '{tipo}' "
                                f"(p. ej. si 'DIR. X' es la fila de barras arriba o abajo): decisión pendiente de Steven "
@@ -725,6 +1084,8 @@ class ProcesoVisita:
                 medidas_obra = _dict(ev["medidas_acero_campo_json"])
                 obra_txt = medidas_obra.get("obra") if isinstance(medidas_obra.get("obra"), dict) else {}
                 ficha["obra"] = {k: str(v) for k, v in obra_txt.items() if not _vacio(v)}
+                # Letras que Campo dejó vacías (paquete v2) = conformes: el generador pone en OBRA el valor del plano
+                ficha["conforme_por_omision"] = [str(l) for l in medidas_obra.get("conforme_por_omision") or []]
                 for letra, campo in mapeo.get("filas", {}).items():
                     if not _vacio(datos.get(campo)):
                         ficha["plano"][letra] = str(datos[campo])
@@ -739,11 +1100,52 @@ class ProcesoVisita:
                                                 and not isinstance(medida, bool) else None}
                 if mapeo.get("barras"):
                     barras = datos.get(mapeo["barras"])
-                    if isinstance(barras, list) and all(isinstance(b, list) and len(b) == 2 for b in barras):
+                    if isinstance(barras, str):  # texto impreso tipo 36∅1": conversión exacta o duda, nunca adivinar
+                        barras = convertir_barras(barras)
+                    if isinstance(barras, list) and barras and all(isinstance(b, list) and len(b) == 2 for b in barras):
                         ficha["barras"] = [(b[0], b[1]) for b in barras]
                     else:
-                        faltas.append((f"diseno:{pagina}:barras", f"Las barras de {c['id_elemento']} no están como "
-                                                                  f"lista [[n, diámetro], …] ({PENDIENTE})."))
+                        faltas.append((f"diseno:{pagina}:barras", f"Las barras de {c['id_elemento']} no se pueden leer "
+                                                                  f"como [[n, diámetro], …] (texto impreso: "
+                                                                  f"'{datos.get(mapeo['barras'])}'): {PENDIENTE}."))
+
+                # Derivaciones (T9, propuesta): una fila mapeada directo en `filas` manda; la derivación solo llena lo vacío
+                derivadas: Dict[str, str] = {}
+                de_proyecto = self._valores_del_proyecto(c, fila, pagina, datos, ficha, faltas,  # T17
+                                                         nivel_visita=ev["nivel"])
+                for letra, d in (mapeo.get("derivaciones") or {}).items():
+                    if letra in mapeo.get("filas", {}) or letra in ficha["plano"] or letra in de_proyecto:
+                        continue
+                    impreso = datos.get(d["campo"])
+                    if _vacio(impreso):
+                        if d["regla"] in REGLAS_QUE_EXIGEN_DATO:  # T18 (C16): el generador no pide esta fila; no queda en silencio
+                            self.notas_ficha.append((
+                                f"diseno:{pagina}:derivacion.{letra}",
+                                f"La fila {letra} de {c['id_elemento']} sale de '{d['campo']}' (en un muro en L, la suma de las "
+                                f"alas) y el diseño no trae ese dato legible ('{'' if impreso is None else impreso}'): la fila "
+                                f"queda vacía ({PENDIENTE}). No bloquea la ficha. Indica la longitud (o las alas)."))
+                        continue  # el generador pide la fila que falte con su duda
+                    textos_apoyo = {k: datos.get(v) for k, v in (d.get("apoyo") or {}).items()}
+                    valor = (REGLAS_DERIVACION[d["regla"]](impreso, textos_apoyo) if d["regla"] in REGLAS_CON_APOYO
+                             else REGLAS_DERIVACION[d["regla"]](impreso))
+                    if valor is None:
+                        cruce = "".join(f" Se comprobó contra '{(d['apoyo'])[k]}' = '{t}'." for k, t in textos_apoyo.items())
+                        faltas.append((f"diseno:{pagina}:derivacion.{letra}",
+                                       f"La fila {letra} de {c['id_elemento']} se deriva de '{d['campo']}' pero el texto impreso "
+                                       f"'{impreso}' no cuadra con la regla '{d['regla']}' (un solo grupo, sin +GAN. ni texto "
+                                       f"extra; sin conversión de unidades).{cruce} No se adivina ({PENDIENTE}). "
+                                       f"Indica el valor de la fila {letra}."))
+                    else:
+                        ficha["plano"][letra] = derivadas[letra] = valor
+                # T18 (C11, aprobado por Steven 26/11/2026): f = g y m = n ya no abren duda; solo se guarda su origen
+                for a, b, nombre in PARES_IGUALES:
+                    if (a in derivadas and b in derivadas and derivadas[a] == derivadas[b]
+                            and mapeo["derivaciones"][a]["campo"] == mapeo["derivaciones"][b]["campo"]):
+                        for letra_i in (a, b):
+                            ficha["origen_filas"][letra_i] = {
+                                "regla": f"{a} = {b}", "valor": derivadas[letra_i], "campo_plano": mapeo["derivaciones"][a]["campo"],
+                                "confirmado_por": "Steven", "fecha": "2026-11-26",
+                                "referencia": f"C11: {a} = {b} cuando el plano trae un solo valor ({nombre}): aprobado"}
 
         # M3 / M4: recuadros confirmados en el visor (T5n) sobre el plano vigente
         plano = self.contexto["plano"]
@@ -756,8 +1158,20 @@ class ProcesoVisita:
                 continue
             ruta = plano["vectorial_ruta"]
             if clave == "localizacion":
+                # T12: LOCALIZACION sale solo de la zona de planta confirmada de esa hoja del plano vigente
                 dpi = m3_localizacion.DPI_PLANTA
-                ficha[clave] = {"pdf": ruta, "pagina": r["pagina"] - 1, "caja": [v * dpi / 72.0 for v in r["rect"]]}
+                zona = _con_conexion(lambda conn: zona_planta.zona_confirmada(conn, plano["id"], r["pagina"]))
+                if zona is None:
+                    faltas.append((f"diseno:{pagina}:zona_planta",
+                                   f"La zona de planta de la hoja {r['pagina']} no está confirmada en el visor."))
+                elif not zona_planta.contiene(zona, list(r["rect"])):
+                    faltas.append((f"diseno:{pagina}:zona_planta_fuera",
+                                   f"El recuadro de LOCALIZACION de {c['id_elemento']} {list(r['rect'])} no cae entero dentro "
+                                   f"de la zona de planta confirmada de la hoja {r['pagina']} {zona}: ajusta la zona o el "
+                                   f"recuadro en el visor ({PENDIENTE})."))
+                else:
+                    ficha[clave] = {"pdf": ruta, "pagina": r["pagina"] - 1, "caja": [v * dpi / 72.0 for v in r["rect"]],
+                                    "zona": [v * dpi / 72.0 for v in zona]}
             else:
                 ficha[clave] = {"pdf": ruta, "pagina": r["pagina"] - 1, "region": list(r["rect"])}
 
@@ -878,12 +1292,19 @@ class ProcesoVisita:
         resultado = {"archivos": [], "limpio": True, "discrepancias": []}
         por_orden = {f["titulo"]: f["orden_en_log"] for f in fichas}
 
-        if FORMATO_STP in formatos:
+        if FORMATO_STP in formatos and not MAPEO_CONFIRMADO and not os.environ.get(config.ENV_SALIDA_PRUEBAS, "").strip():
+            # Mapeo sin confirmar: solo borrador y solo en la carpeta de pruebas elegida a propósito
+            self.duda("generacion:STP-MIVED", "(visita)", "STP-MIVED: mapeo sin confirmar: defina "
+                      f"{config.ENV_SALIDA_PRUEBAS} para generar el borrador ({PENDIENTE}).")
+            resultado["limpio"] = False
+        elif FORMATO_STP in formatos:
             proyecto = {**self.contexto["proyecto"],
                         "carpeta_planos": str(Path(self.contexto["plano"]["vectorial_ruta"]).parent.parent)}
-            r = stp_mived.generar_stp_mived(proyecto, datos_visita, fichas, carpeta_salida=paso, usuario=self.usuario)
+            r = stp_mived.generar_stp_mived(proyecto, datos_visita, fichas, carpeta_salida=paso, usuario=self.usuario,
+                                            marca_borrador=None if MAPEO_CONFIRMADO else MARCA_BORRADOR)
             resultado["discrepancias"] = list(r.get("discrepancias") or [])
             obra: Dict[int, List[str]] = {}
+            faltantes: Dict[int, List[Tuple[str, str]]] = {}
             for d in r["dudas"]:
                 orden = por_orden.get(d.get("id_elemento"))
                 pag = f"p{orden:03d}" if orden else None
@@ -891,13 +1312,22 @@ class ProcesoVisita:
                     self.duda(f"excluido:{pag}", d["id_elemento"], d["descripcion_pregunta"])
                 elif d.get("bloquea") is False and pag:
                     obra.setdefault(orden, []).append(d["campo_afectado"])
+                elif pag:
+                    faltantes.setdefault(orden, []).append((d["campo_afectado"], d["descripcion_pregunta"]))
                 else:
-                    self.duda(f"generacion:{pag}" if pag else "generacion:STP-MIVED", d.get("id_elemento") or "(visita)",
-                              d["descripcion_pregunta"])
-            for orden, campos in obra.items():  # UNA duda de OBRA por elemento (la Mesa no se satura)
+                    self.duda("generacion:STP-MIVED", d.get("id_elemento") or "(visita)", d["descripcion_pregunta"])
+            for orden, lista in faltantes.items():  # UNA duda por elemento con TODO lo que falta, en orden fijo (campo_afectado)
                 titulo = next(t for t, o in por_orden.items() if o == orden)
-                self.duda(f"obra:p{orden:03d}", titulo, f"{titulo}: faltan datos de OBRA de la visita ({', '.join(campos)}); "
-                                                        f"las celdas quedan vacías en el STP ({PENDIENTE}).")
+                lista = sorted(set(lista))
+                detalle = "; ".join(f"({i}) {campo}: {pregunta}" for i, (campo, pregunta) in enumerate(lista, 1))
+                self.duda(f"generacion:p{orden:03d}", titulo, f"{titulo}: faltan {len(lista)} dato(s) para generar el STP-MIVED. "
+                                                              f"{detalle}", actualizar=True)
+            for orden, campos in obra.items():  # UNA duda de OBRA por elemento (la Mesa no se satura), en orden fijo
+                titulo = next(t for t, o in por_orden.items() if o == orden)
+                # T11c: si ya estaba abierta con otra lista (se completó una celda), el texto se actualiza y se audita
+                self.duda(f"obra:p{orden:03d}", titulo, f"{titulo}: faltan datos de OBRA de la visita "
+                                                        f"({', '.join(sorted(set(campos)))}); "
+                                                        f"las celdas quedan vacías en el STP ({PENDIENTE}).", actualizar=True)
             for e in r["errores"]:
                 self.duda("generacion:STP-MIVED", "(visita)", f"STP-MIVED: {e}")
             for f in fichas:  # las dudas de OBRA / excluido / generación que el STP ya no da, se cierran

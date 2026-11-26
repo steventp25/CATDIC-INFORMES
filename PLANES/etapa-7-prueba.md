@@ -1,0 +1,137 @@
+# Etapa 7 · T5 — Prueba de punta a punta, corrida 1 (23/11/2026, Director)
+
+## Montaje
+- **Código:** copia exacta de `claude/etapa7-campo-informe-02d16d` en `db08f7e` (T2, T3 y T4).
+- **BD:** copia de la BD de T1 (`catdic_copia_t1.db`). Tiene los 16 elementos de diseño de C1, C3, MH2, MH3 y el muro de contención, sin confirmar. Está en el scratch del Director, `…\scratchpad\t5\copia.db`.
+- **Visita:** real, `24. VERTICALES S-2 COMPLETIVO 06-11-2026`. Se leyó de Dropbox sin escribir nada.
+- **Paquete v2 simulado** a partir del PDF real.
+  - Las casillas de identidad se llenaron como lo haría el técnico.
+  - En OBRA, C1 y C3 llevan solo la fila «o» (solape), con el texto del PDF.
+  - El resto de las filas va vacío, es decir, conforme.
+- **Salida:** `CATDIC_SALIDA_PRUEBAS` en el scratch. El mapeo está sin confirmar, así que el STP sale como borrador.
+- **BD real y Dropbox:** no se tocaron.
+
+## Resultado: el procesador se detiene antes de generar (0 de 5 fichas, 6 dudas)
+
+| # | Dónde se detiene | Elemento | Por qué | Quién lo resuelve |
+|---|---|---|---|---|
+| 1 | Paquete | MH2, MH3 | La visita no trae ejes | Steven o el técnico (dato de obra) |
+| 2 | Paquete | Muro de contención | La visita no trae ID | Steven o el técnico |
+| 3 | Cruce visita ↔ diseño | C1, C3 | No hay un elemento de diseño con ID + nivel S-2 + ejes. El diseño (T1) está guardado por **rango impreso** (`FUNDACIONES @ E-3`, `E-3 @ E-8`…) y con **EJES pendientes** (el cuadro de columnas no da ejes). El procesador compara el nivel literal (`S-2`) y exige los mismos ejes. | **Código (T6)** y un dato de Steven (S-2 ↔ E-n) |
+| 4 | Cabecera del proyecto | (visita) | Faltan `no_solicitud`, `no_licencia`, `direccion_obra`, `provincia`, `sector` y `residente_obra` | Steven. **T7** puede proponerlos desde un STP ya entregado |
+| 5 | (todavía no se llega) | todos | Recuadros de LOCALIZACIÓN y DETALLE confirmados en el visor | **T8** los propone y Steven los confirma |
+| 6 | (todavía no se llega) | todos | Datos del plano confirmados por Steven («Confirmar plano») | Steven |
+
+## Lo que hace falta desarrollar para que la prueba llegue al PDF
+- **T6 — Cruce por ID + nivel y equivalencia de niveles** (backend).
+  - Si el diseño no trae EJES (cuadro de columnas, detalles de muro), la regla aprobada es cruzar por **ID + nivel** (decisión D11 de la Fase A, A1 §6.2) y tomar los EJES de la visita.
+  - Hace falta una tabla de equivalencias por obra, que da el usuario: `S-2` → el rango impreso que le toca (p. ej. `E-1 @ E-2`).
+  - Mientras falte la equivalencia, se abre una duda y nunca se adivina.
+  - El rango del muro de contención viene impreso `SOTANO S - 2`. Normalizar los espacios para que cuadre con `SOTANO S-2` es una regla exacta.
+- **T7 — Cabecera propuesta** desde la portada de un STP-MIVED ya entregado de Terra Living, en solo lectura.
+  - Cada valor cita el informe y la página.
+  - Va sin confirmar; Steven la confirma.
+- **T8 — Recuadros propuestos.**
+  - **LOCALIZACIÓN:** con `visor._proponer_localizacion` sobre la planta de S-2 (p24). El ID aparece una vez o se cruzan los ejes.
+  - **DETALLE:** con la `zona` que la IA ya escribió en cada `propuesta.json` de T1. Hoy el importador no la guarda.
+  - Todo queda «pendiente» para que Steven lo confirme en el visor.
+
+## Lista de Steven (al volver, en este orden)
+1. Las 3 dudas de la visita: ejes de MH2 y MH3, e ID del muro de contención del eje 4'.
+2. La equivalencia S-2 ↔ E-n de Terra Living.
+3. Confirmar la cabecera propuesta (T7).
+4. Confirmar los datos del plano (28 dudas `IA:` de T1) y los recuadros (T8).
+5. Confirmar el mapeo de filas del STP (`PLANES/etapa-7-mapeo-stp.md`).
+6. Reemplazar Campo por la copia v11.
+
+# Corrida 2 (24/11/2026, Director)
+
+## Montaje
+- **Código:** copia exacta de `claude/etapa7-campo-informe-02d16d` en `2f973b5` (T6, T7, T8, T8b y T8c).
+- **BD:** copia nueva de la BD de T1, en `…\scratchpad\t5b\copia.db`. Se inicializó como lo hace el servidor al arrancar, para crear la tabla `equivalencias_nivel`.
+- **Equivalencia S-2:** cargada **solo en la copia y como hipótesis**, con el usuario `prueba-t5-hipotesis`. Lleva los tres rangos de `PLANES/etapa-7-niveles.md`: `FUNDACIONES @ E-3`, `FUNDACIONES @ E-1` y `FUNDACIONES @ E-2`.
+- **Paquete:** el mismo paquete v2 simulado de la corrida 1.
+- **BD real y Dropbox:** no se tocaron. La BD real tiene sha256 `eba26967…` antes y después; Dropbox solo se leyó.
+
+## Resultado: 0 fichas, pero el cruce ya funciona
+| Paso | Corrida 1 | Corrida 2 |
+|---|---|---|
+| Cruce de C1 y C3 con el diseño | se detenía | **cruza** por ID + nivel con la equivalencia (T6) |
+| Recuadros propuestos | ninguno | **DETALLE** de los 16 elementos y **LOCALIZACIÓN** de C1, C3, MH2 y MH3 en la planta de S-2. Todos quedan pendientes de confirmar (T8). El muro de contención no tiene localización: su ID no aparece en la planta y sus ejes no son un cruce puntual. |
+| Cabecera | faltaban 6 campos | **propuesta** con 19 de 19 STP entregados, todos coinciden (T7): solicitud (dato del cliente, en la BD), licencia (dato del cliente, en la BD), dirección (dato del cliente, en la BD), provincia (dato del cliente, en la BD), sector (dato del cliente, en la BD), residente (dato del cliente, en la BD). Sigue sin confirmar, así que el procesador todavía la pide. |
+| Dudas abiertas | 6 | 6, pero ahora solo las que resuelve Steven (abajo) |
+
+## Dónde se detiene ahora (todas dependen de Steven o del técnico)
+1. Ejes de MH2 y MH3, y el ID del muro de contención (dato de obra).
+2. Datos del plano de C1 y C3 sin confirmar («Confirmar plano»).
+3. La cabecera propuesta sin confirmar. **Ojo:** el número de solicitud y el de licencia salen iguales (dato del cliente, en la BD) en los 19 informes. Steven debe decir si es correcto.
+4. Después vendrán los recuadros propuestos (confirmarlos en el visor) y la equivalencia S-2 (hipótesis).
+
+**Ya no falta código para llegar al PDF de C1 y C3.** Falta que Steven confirme. Cuando lo haga, se repite la corrida 3 y debería salir el STP borrador de esas dos columnas.
+
+# Corrida 3: SIMULACIÓN de las confirmaciones (24/11/2026, Director)
+**No es un dato de Steven.** El objetivo era ver si el código llega al PDF cuando todo está confirmado. Se usó otra copia de la BD (`…\scratchpad\t5c\copia.db`) con el usuario `prueba-simulada`. En esa copia:
+- se dieron por confirmados los datos del plano y los dos recuadros de C1 y C3 (`FUNDACIONES @ E-3`);
+- se copió la cabecera propuesta a la obra;
+- se quitaron de la visita MH2, MH3 y el muro de contención, que tienen dudas de obra.
+
+**Resultado:** C1 y C3 quedan **«listo»**: el cruce, la ficha y los recuadros están bien. Aun así, el STP no se genera por 2 dudas, una por columna: *«Falta en el plano el valor de la fila 'f' de COLUMNA»* (espaciamiento de estribos en nodos).
+- **La causa:** en el mapeo de T4, las filas f, g y h (estribos) y m y n (diámetros) quedaron **sin mapear a propósito**. Son la pregunta 3 de `PLANES/etapa-7-mapeo-stp.md`: *¿se aprueba derivar f, g y h de `estribos` (`9 EST. ∅3/8" @0.10`) y m y n de `acero_longitudinal`?*
+- **Lo que significa:** cuando Steven apruebe esa derivación, hay que programar la conversión exacta (tarea corta, con pruebas). Después, la corrida con sus confirmaciones reales debería sacar el STP borrador de C1 y C3.
+
+## Lista corta de Steven (actualizada)
+1. Dudas de obra: ejes de MH2 y MH3, e ID del muro de contención.
+2. Equivalencia S-2: confirmar o corregir la hipótesis (`PLANES/etapa-7-niveles.md`).
+3. Cabecera propuesta: confirmarla. Ojo: la solicitud y la licencia salen iguales, (dato del cliente, en la BD).
+4. Datos del plano de C1 y C3 (y de los muros) y sus recuadros, en el visor.
+5. Mapeo STP, **sobre todo la pregunta 3** (estribos y diámetros de columna): sin eso no sale el PDF.
+6. Reemplazar Campo por la copia v11.
+
+# Corrida 4: simulación con T9 (`cb859e5`, 24/11/2026)
+Montaje igual que la corrida 3: copia nueva de `…\scratchpad\t5b\copia.db` en `…\scratchpad\t5d\`, con el usuario `prueba-simulada`.
+- **Lo que ya llena:** f, g, h, m y n de C1 y C3 se llenan solos. Se abren las 2 dudas `derivacion_igual`, que no bloquean.
+- **Dónde se detiene ahora:** en la fila **e** (*Altura col. H*). El formato exige además, en columna, **b** (resistencia esperada), **i** y **j** (barras por cara x-x / y-y). Ninguna de las cuatro sale del cuadro de columnas, que es lo que leyó T1. Es la pregunta 6 del mapeo.
+- **De dónde pueden salir estas filas** en el plano (la IA las lee y Steven confirma):
+  - **b:** f'c de las notas generales, o la leyenda «CALIDAD DE MATERIALES» de la planta S2, que da f'c por rango.
+  - **e:** altura de entrepiso, de los cortes. Ojo: es una resta de cotas, no un texto impreso. Steven debe aprobar si se calcula.
+  - **i y j:** conteo de barras por cara en el dibujo de la sección del cuadro de columnas. El informe entregado lleva `6-∅1"` y `14-∅1"` / `16-∅1"`.
+
+# Corrida 5: con T10 y T11 (`d6a953d`, 24/11/2026, Director)
+**Montaje:** copia del código en `…\scratchpad\aud-e7d\codigo`; BD = copia de la BD de T10 (`catdic_copia_t10.db`), con el mismo paquete v2, la hipótesis S-2, los recuadros y la cabecera de la corrida 2 (`…\scratchpad\t5e\`). BD real (`eba26967…`) y copia de T10 (`5948159c…`) sin cambios; Dropbox solo se leyó.
+
+1. **Sin confirmar nada (t5e):** igual que la corrida 2. 6 dudas, todas de Steven o del técnico.
+2. **Simulación de confirmaciones (t5f, usuario `prueba-simulada`):** i y j de C1 y C3 se llenan (`6-∅1"` / `14-∅1"` y `16-∅1"`). Se detiene en la fila **e** (altura, pendiente en el plano). Solo quedan las 2 dudas `derivacion_igual`, que no bloquean.
+3. **Variante con f'c = 350 en la copia (t5g, simula la respuesta de Steven a la duda de T10):** b se llena; ahora se detiene en la fila **k** (*Total barras*).
+
+## Hallazgos nuevos
+- **H1 · la fila k de columna no tiene fuente.** `PLANES/etapa-7-mapeo-stp.md` la da como «derivación propuesta de `acero_longitudinal`», pero ni T9 ni T11 la programaron: ninguna derivación ni `filas` llena k. El generador la exige (`OBLIGATORIAS["col"]`) y la compara con la suma de `barras`. Sin k no sale ninguna columna, aunque Steven confirme todo.
+- **H2 · solo se ve una fila faltante por elemento, y no siempre la misma.** `stp_mived` abre una duda por cada letra que falta, pero el procesador las guarda todas con el mismo campo `generacion:pNNN`, y `duda()` no abre otra si ya hay una abierta: queda solo la primera. Como `OBLIGATORIAS` es un `set`, el orden cambia de una corrida a otra (aquí salió e, y luego k). Steven tendría que resolver una fila, reprocesar y descubrir la siguiente.
+
+## Para que salga el PDF de C1 y C3
+- Código: H1 (k ← total de `acero_longitudinal`, `36∅1"` → 36) y H2 (una duda que liste todas las filas que faltan, en orden fijo).
+- Steven: confirmar el f'c (350, pregunta 9a) y decidir la altura H (pregunta 9c). Además, lo de siempre: las dudas de obra, la equivalencia S-2, la cabecera, los datos y recuadros del plano y el mapeo.
+
+# Corrida 6: con T11b (`2987705`, 24/11/2026, Director) — PRIMER PDF de punta a punta
+**Montaje:** el de la corrida 5, con el código en `…\scratchpad\aud-e7e\codigo` y las carpetas `t5h` a `t5k`.
+
+**Sin tocar:**
+- BD real `eba26967…`;
+- copia de T10 `5948159c…`;
+- Dropbox, que solo se leyó.
+
+1. **Sin confirmar (t5h):** igual que antes, quedan 6 dudas de Steven o del técnico.
+2. **Confirmaciones simuladas (t5i):** k sale 36 y 40. Queda **una sola duda por columna**, que lista a la vez `plano.b` y `plano.e` (H2 resuelto).
+3. **Con f'c = 350 (t5j):** la única falta es `plano.e`, la altura.
+4. **Prueba de humo con una altura de PRUEBA de 3.00 (t5k).** Ese valor **no es del plano**: solo sirve para ver si el código llega al PDF.
+   - **Sale el STP borrador:** `…\scratchpad\t5k\salida\Terra Living - STP - VERTICALES S-2 Completivo - 06-11-2026 - CON DUDAS.pdf`, 6 páginas y 1.85 MB.
+   - Lleva la portada con «BORRADOR — mapeo sin confirmar», la hoja de inspección con la cabecera propuesta y, por cada columna, la hoja comparativa (DETALLE del cuadro de columnas y foto de obra) y la fotográfica (LOCALIZACIÓN en planta y 4 fotos).
+   - Las filas coinciden con el formato del STP entregado: `∅3/8"@0.10`, `9 EST. ∅3/8"`, `6-∅1"`, `14-∅1"`, 36 y `∅1"`.
+   - OBRA = plano (vacío = conforme), y el solape «o» se toma de la visita.
+   - Sale «CON DUDAS» por las 2 dudas `derivacion_igual`, que no bloquean.
+
+**Observaciones para Steven (no bloquean):**
+- **Cuantía:** el programa da 0.0204 (C1) y 0.0227 (C3), con el área de ∅1" = 5.10 cm² (ASTM #8). El informe entregado de C1 dice 0.0203, que corresponde a unos 5.07 cm². Steven debe decir qué área usa.
+- **Altura:** el STP entregado de la visita 24 pone 2.95 en la fila e. El plano no la imprime, así que es la pregunta 9c.
+- **C3 Dim LY:** el plano da 1.50 y el informe entregado 1.20 (pregunta 1 del mapeo).
+- **Cuantía en obra (2.p):** queda vacía cuando no hay barras medidas en obra.
+- **LOCALIZACIÓN:** es la hoja entera con su cajetín. El recuadro rojo se ve, pero es pequeño (comprobarlo en el visor).

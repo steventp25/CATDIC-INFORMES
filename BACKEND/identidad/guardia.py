@@ -155,6 +155,15 @@ POLITICAS = {
     ("GET", "/api/proyectos/{proyecto_id}/tablas-extraidas/{tabla_id}"): Politica(CONSULTAR, _P),
     ("POST", "/api/proyectos/{proyecto_id}/tablas-extraidas/{tabla_id}/confirmar"): Politica(REVISAR_AUTORIZAR, _P),
     ("POST", "/api/proyectos/{proyecto_id}/tablas-extraidas/{tabla_id}/certificar-notas"): Politica(REVISAR_AUTORIZAR, _P),
+    # Etapa 7: cabecera del informe, equivalencias de nivel y zona de la planta. Lo que se guarda queda 'confirmado'
+    ("GET", "/api/proyectos/{proyecto_id}/cabecera"): Politica(CONSULTAR, _P),
+    ("PUT", "/api/proyectos/{proyecto_id}/cabecera"): Politica(REVISAR_AUTORIZAR, _P),
+    ("GET", "/api/proyectos/{proyecto_id}/cabecera-propuesta"): Politica(CONSULTAR, _P),
+    ("GET", "/api/proyectos/{proyecto_id}/equivalencias-nivel"): Politica(CONSULTAR, _P),
+    ("PUT", "/api/proyectos/{proyecto_id}/equivalencias-nivel"): Politica(REVISAR_AUTORIZAR, _P),
+    ("GET", "/api/proyectos/{proyecto_id}/visor/hojas/{pagina}/zona-planta"): Politica(CONSULTAR, _P),
+    ("POST", "/api/proyectos/{proyecto_id}/visor/hojas/{pagina}/zona-planta/propuesta"): Politica(CONSULTAR, _P),
+    ("PUT", "/api/proyectos/{proyecto_id}/visor/hojas/{pagina}/zona-planta"): Politica(REVISAR_AUTORIZAR, _P),
     # Visitas (visitas_obra.py)
     ("POST", "/api/proyectos/{proyecto_id}/visitas"): Politica(PREPARAR, _P),
     ("POST", "/api/proyectos/{proyecto_id}/dropbox"): Politica(PREPARAR, _P),

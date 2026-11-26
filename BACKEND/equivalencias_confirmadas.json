@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "descripcion": "Equivalencias entre el nivel de la visita y los rangos impresos del plano que el usuario CONFIRMÓ por escrito. Se suman a las filas de la tabla equivalencias_nivel y se expanden contra los rangos del diseño de cada proyecto (equivalencias_nivel.py).",
+  "reglas": [
+    {
+      "proyecto_id": "terra-living",
+      "nivel_visita": "S-2",
+      "rango_empieza_con": "FUNDACIONES @",
+      "confirmado_por": "Steven",
+      "fecha": "2026-11-26",
+      "cita": "S-2 SIGNIFICA SOTANO -2. PERTENECE A FUNDACIONES A @ E-1",
+      "nota": "S-2 está entre FUNDACIONES y E-1, por eso cae en todo rango impreso del diseño que empiece por FUNDACIONES @."
+    }
+  ]
+}

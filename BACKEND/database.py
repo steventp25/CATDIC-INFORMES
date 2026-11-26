@@ -140,7 +140,8 @@ def inicializar_bd():
         direccion_obra TEXT DEFAULT '',      -- Etapa 3 · T7a: datos de cabecera de los informes
         provincia TEXT DEFAULT '',
         sector TEXT DEFAULT '',
-        inicio_obra TEXT DEFAULT ''          -- Etapa 2 · T4n: inicio de obra (DD/MM/AAAA)
+        inicio_obra TEXT DEFAULT '',         -- Etapa 2 · T4n: inicio de obra (DD/MM/AAAA)
+        codia_residente TEXT DEFAULT ''      -- Etapa 7 · T15: CODIA del residente (cabecera editable)
     );
     """)
 
@@ -351,6 +352,37 @@ def inicializar_bd():
     );
     """)
 
+    # 13. EQUIVALENCIA DE NIVELES (Etapa 7 · T6): nivel de la visita (S-2) -> rango impreso del plano (E-1 @ E-2).
+    #     Solo la escribe el usuario. Un nivel de visita admite varios rangos impresos por obra (uno por familia de
+    #     elemento y tramo) y un rango impreso puede servir a varios niveles.
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS equivalencias_nivel (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        proyecto_id TEXT NOT NULL REFERENCES proyectos(id) ON DELETE CASCADE,
+        nivel_visita TEXT NOT NULL,          -- 'S-2' (normalizado)
+        rango_impreso TEXT NOT NULL,         -- 'E-1 @ E-2', tal cual está impreso en el plano
+        actualizado_por TEXT NOT NULL,
+        actualizado TEXT NOT NULL,
+        UNIQUE(proyecto_id, nivel_visita, rango_impreso)
+    );
+    """)
+
+    # 14. PROPUESTAS DE CABECERA DEL PROYECTO (Etapa 7 · T7): lo leído de los STP-MIVED entregados, sin confirmar.
+    #     Solo la confirma Steven; sync/cabecera_propuesta.py la usa (con el mismo CREATE IF NOT EXISTS como respaldo).
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS propuestas_proyecto (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        proyecto_id TEXT NOT NULL REFERENCES proyectos(id) ON DELETE CASCADE,
+        campo TEXT NOT NULL,                 -- columna de `proyectos` a la que se refiere
+        valor TEXT NOT NULL,                 -- el valor propuesto, o 'pendiente de verificar' (discrepa / no viene)
+        situacion TEXT NOT NULL CHECK(situacion IN ('coincide', 'discrepa', 'pendiente')),
+        fuente_json TEXT NOT NULL,           -- citas: archivo y página de cada informe, conteos, notas
+        estado TEXT NOT NULL DEFAULT 'propuesta',   -- 'propuesta' (sin confirmar); solo Steven la confirma
+        creado TEXT NOT NULL,
+        UNIQUE(proyecto_id, campo)
+    );
+    """)
+
     conn.commit()
     conn.close()
 
@@ -359,8 +391,81 @@ def inicializar_bd():
     agregar_columna_origen_visitas()
     migrar_elementos_diseno()
     migrar_proyectos_cabecera()
+    migrar_codia_residente()
     migrar_columnas_t4n()
+    migrar_equivalencias_nivel()
+    migrar_zonas_planta()
     migracion_fundacion.migrar_fundacion_f2()  # Fundación F2: identidad, membresías, servicios y pedidos
+
+# ---------- Tabla 'zonas_planta' (Etapa 7 · T12) ----------
+
+ESQUEMA_ZONAS_PLANTA = """
+CREATE TABLE IF NOT EXISTS zonas_planta (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    proyecto_id TEXT NOT NULL REFERENCES proyectos(id) ON DELETE CASCADE,
+    plano_id INTEGER NOT NULL,
+    pagina INTEGER NOT NULL,             -- de 1 en adelante, como recorte_planta_json.pagina
+    rect_json TEXT,                      -- [x0, y0, x1, y1] en puntos del PDF (marco visual de la hoja), o NULL
+    estado TEXT NOT NULL CHECK(estado IN ('vacia', 'pendiente de verificar', 'confirmado')),
+    origen TEXT NOT NULL CHECK(origen IN ('propuesta_ejes', 'manual')),
+    fuente_json TEXT,                    -- rótulos de ejes usados y margen
+    motivo TEXT,
+    actualizado_por TEXT NOT NULL,
+    actualizado TEXT NOT NULL,
+    UNIQUE(plano_id, pagina)
+);
+"""
+
+
+def migrar_zonas_planta() -> bool:
+    """Crea 'zonas_planta' (una zona por hoja del plano, compartida por todos los elementos de esa planta). Idempotente."""
+    conn = get_connection()
+    try:
+        existia = conn.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='zonas_planta'").fetchone()
+        conn.execute(ESQUEMA_ZONAS_PLANTA)
+        conn.commit()
+        return existia is None
+    finally:
+        conn.close()
+
+# ---------- Migración de 'equivalencias_nivel' (Etapa 7 · T6) ----------
+
+def migrar_equivalencias_nivel() -> bool:
+    """
+    La primera versión de la tabla tenía UNIQUE(proyecto_id, nivel_visita) (un rango por nivel). Si existe así, se
+    reconstruye con UNIQUE(proyecto_id, nivel_visita, rango_impreso) conservando todas las filas. Idempotente.
+    """
+    conn = get_connection()
+    try:
+        fila = conn.execute("SELECT sql FROM sqlite_master WHERE type='table' AND name='equivalencias_nivel'").fetchone()
+        if fila is None or "UNIQUE(proyecto_id, nivel_visita, rango_impreso)" in " ".join(fila[0].split()):
+            return False
+        conn.isolation_level = None
+        conn.execute("BEGIN")
+        try:
+            conn.execute("ALTER TABLE equivalencias_nivel RENAME TO equivalencias_nivel_vieja")
+            conn.execute("""
+            CREATE TABLE equivalencias_nivel (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                proyecto_id TEXT NOT NULL REFERENCES proyectos(id) ON DELETE CASCADE,
+                nivel_visita TEXT NOT NULL,
+                rango_impreso TEXT NOT NULL,
+                actualizado_por TEXT NOT NULL,
+                actualizado TEXT NOT NULL,
+                UNIQUE(proyecto_id, nivel_visita, rango_impreso)
+            )""")
+            conn.execute("""INSERT INTO equivalencias_nivel (id, proyecto_id, nivel_visita, rango_impreso, actualizado_por,
+                            actualizado) SELECT id, proyecto_id, nivel_visita, rango_impreso, actualizado_por, actualizado
+                            FROM equivalencias_nivel_vieja""")
+            conn.execute("DROP TABLE equivalencias_nivel_vieja")
+            conn.execute("COMMIT")
+        except Exception:
+            if conn.in_transaction:
+                conn.execute("ROLLBACK")
+            raise
+        return True
+    finally:
+        conn.close()
 
 # ---------- Migración de 'visitas' (Etapa 1 · T2) ----------
 
@@ -583,6 +688,45 @@ def migrar_elementos_diseno() -> dict:
 
 # ---------- Migración de 'proyectos' (Etapa 3 · T7a) ----------
 COLUMNAS_CABECERA_PROYECTO = ("direccion_obra", "provincia", "sector")
+
+def migrar_codia_residente() -> dict:
+    """
+    Etapa 7 · T15: añade `codia_residente` a 'proyectos' (TEXT, por defecto ''), para la cabecera editable.
+    ALTER TABLE ADD COLUMN, no destructivo. Idempotente; respalda la BD antes y audita
+    (MIGRACION_CABECERA_CODIA) en la misma transacción. No siembra valores: los escribe Steven.
+    """
+    db_path = Path(config.obtener_db_path())
+    conn = get_connection()
+    try:
+        existe = conn.execute(
+            "SELECT 1 FROM sqlite_master WHERE type='table' AND name='proyectos'").fetchone()
+        if not existe:
+            return {"migrada": False, "motivo": "tabla proyectos no existe", "respaldo": None}
+        columnas = {r[1] for r in conn.execute("PRAGMA table_info(proyectos)")}
+        if "codia_residente" in columnas:
+            return {"migrada": False, "motivo": "ya migrada", "respaldo": None}
+        respaldo = _respaldar_bd(conn, db_path)
+        conn.isolation_level = None
+        try:
+            conn.execute("BEGIN IMMEDIATE")
+            conn.execute("ALTER TABLE proyectos ADD COLUMN codia_residente TEXT DEFAULT ''")
+            filas = conn.execute("SELECT COUNT(*) FROM proyectos").fetchone()[0]
+            detalle = {"respaldo": Path(respaldo).name, "filas_conservadas": filas,
+                       "columnas_nuevas": ["codia_residente"]}
+            conn.execute("""
+                INSERT INTO auditoria (fecha_hora, usuario, modulo, accion, entidad_id, detalle_json)
+                VALUES (?, ?, ?, ?, ?, ?)
+            """, (datetime.now().isoformat(), usuario_auditoria(), "SISTEMA", "MIGRACION_CABECERA_CODIA",
+                  "proyectos", json.dumps(detalle, ensure_ascii=False)))
+            conn.execute("COMMIT")
+        except Exception:
+            if conn.in_transaction:
+                conn.execute("ROLLBACK")
+            raise
+        return {"migrada": True, **detalle, "respaldo": str(respaldo)}
+    finally:
+        conn.close()
+
 
 def migrar_proyectos_cabecera() -> dict:
     """

@@ -13,6 +13,9 @@ import informes_obra
 import procesador_cola
 import regenerar_visita
 from database import get_connection, inicializar_bd, sembrar_datos_iniciales_catdic, usuario_auditoria
+from cabecera_proyecto import router as router_cabecera_proyecto
+from equivalencias_nivel import router as router_equivalencias_nivel
+from sync.cabecera_propuesta import router as router_cabecera_propuesta
 from identidad.guardia import guardia, obras_del_usuario
 from identidad.permisos import PREPARAR
 from identidad.rutas import router as router_identidad
@@ -249,6 +252,9 @@ app.include_router(router_visor)  # Etapa 2 · T5n: visor del vectorial y recuad
 app.include_router(router_extractor)  # Etapa 2 · T6n: extractor de las tablas de aplicación del vectorial
 app.include_router(router_confirmacion)  # Etapa 2 · T7n: confirmación de los datos extraídos del plano
 app.include_router(router_visitas_obra)  # Etapa 2 · T4v: subir visita o conectar la obra con Dropbox
+app.include_router(router_equivalencias_nivel)  # Etapa 7 · T6: equivalencia nivel de la visita -> rango impreso
+app.include_router(router_cabecera_propuesta)  # Etapa 7 · T7: cabecera propuesta desde STP entregados (solo lectura)
+app.include_router(router_cabecera_proyecto)  # Etapa 7 · T15: cabecera del proyecto editable (GET/PUT)
 
 
 # Se monta al final para que /api/* conserve prioridad. Un solo servidor local entrega

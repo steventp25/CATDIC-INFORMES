@@ -208,6 +208,7 @@
                                             <button @click="abrirCambiarPlano(p)" :data-cambiar-plano="p.id" class="bg-[#29292e] hover:bg-[#323238] text-white px-2 py-1 rounded">{{ planosVigentes[p.id] ? 'Cambiar plano' : 'Subir planos' }}</button>
                                             <button v-if="planosVigentes[p.id]" @click="abrirVisor(p)" :data-ver-plano="p.id" class="bg-[#29292e] hover:bg-[#323238] text-white px-2 py-1 rounded">Ver plano</button>
                                             <button @click="abrirDatosObra(p)" :data-datos-obra="p.id" class="bg-[#29292e] hover:bg-[#323238] text-white px-2 py-1 rounded">Datos de la obra</button>
+                                            <button @click="abrirCabecera(p)" :data-abrir-cabecera="p.id" class="bg-[#29292e] hover:bg-[#323238] text-white px-2 py-1 rounded">Cabecera</button>
                                         </span>
                                         <span class="flex gap-2 mt-1.5">
                                             <button v-if="planosVigentes[p.id]" @click="abrirConfirmar(p)" :data-confirmar-plano="p.id" class="bg-[#29292e] hover:bg-[#323238] text-white px-2 py-1 rounded">Confirmar datos del plano</button>
@@ -562,11 +563,24 @@
                         </div>
                         <p class="text-xs text-gray-400" :data-detalle-recuadro="t.tipo">{{ detalleRecuadro(t.tipo) }}</p>
                         <div class="flex flex-wrap gap-2">
-                            <button @click="usarPropuesta(t.tipo)" :disabled="!visor.propuestas || !visor.propuestas[t.tipo] || !visor.propuestas[t.tipo].rect" :data-usar="t.tipo" class="bg-[#29292e] hover:bg-[#323238] disabled:opacity-40 text-white text-xs px-2 py-1 rounded">Usar propuesta</button>
+                            <button @click="usarPropuesta(t.tipo)" :disabled="!propuestaDe(t.tipo)" :data-usar="t.tipo" class="bg-[#29292e] hover:bg-[#323238] disabled:opacity-40 text-white text-xs px-2 py-1 rounded">Usar propuesta</button>
                             <button @click="guardarRecuadro(t.tipo)" :disabled="!visor.uid || !visor.borrador[t.tipo]" :data-guardar-recuadro="t.tipo" class="bg-yellow-500 hover:bg-yellow-400 disabled:opacity-40 text-black text-xs font-bold px-2 py-1 rounded">Confirmar y guardar</button>
                             <button @click="vistaPrevia(t.tipo)" :disabled="!rectActual(t.tipo)" :data-previa="t.tipo" class="bg-[#29292e] hover:bg-[#323238] disabled:opacity-40 text-white text-xs px-2 py-1 rounded">Vista previa</button>
                         </div>
                         <img v-if="visor.previas[t.tipo]" :src="visor.previas[t.tipo]" class="w-full border border-[#29292e] rounded" :data-previa-img="t.tipo">
+                    </div>
+                    <div class="bg-[#121214] border rounded-lg p-3 space-y-2" :class="visor.tipo === 'zona' ? 'border-sky-500' : 'border-[#29292e]'" data-zona-planta>
+                        <div class="flex items-center justify-between">
+                            <label class="font-semibold text-white"><input type="radio" v-model="visor.tipo" value="zona" class="mr-1.5" data-tipo-zona>Zona de planta (hoja {{ visor.pagina }})</label>
+                            <span class="text-[10px] px-1.5 py-0.5 rounded border" :class="estadoZona().clase" data-estado-zona>{{ estadoZona().texto }}</span>
+                        </div>
+                        <p class="text-xs text-gray-400" data-detalle-zona>{{ detalleZona() }}</p>
+                        <p v-if="visor.errorZona" class="bg-red-950 border border-red-700 text-red-200 rounded px-2 py-1 text-xs" data-zona-error>{{ visor.errorZona }}</p>
+                        <div class="flex flex-wrap gap-2">
+                            <button @click="proponerZona" :disabled="visor.ocupado" data-proponer-zona class="bg-[#29292e] hover:bg-[#323238] disabled:opacity-40 text-white text-xs px-2 py-1 rounded">Proponer zona</button>
+                            <button @click="guardarZona" :disabled="visor.ocupado || !rectZonaAGuardar()" data-guardar-zona class="bg-yellow-500 hover:bg-yellow-400 disabled:opacity-40 text-black text-xs font-bold px-2 py-1 rounded">Confirmar y guardar</button>
+                        </div>
+                        <p class="text-xs text-gray-500">La zona de planta es el dibujo de la planta sin cajetín, tablas ni notas; se confirma una vez por hoja y la usan todos los elementos de esa planta. Debe contener todos los ejes.</p>
                     </div>
                     <p class="text-xs text-gray-400">Dibuja un recuadro arrastrando sobre la hoja; se aplica al tipo marcado. Las coordenadas se guardan en puntos del PDF vectorial.</p>
                     <p v-if="visor.error" class="bg-red-950 border border-red-700 text-red-200 rounded px-3 py-2 text-xs" data-visor-error>{{ visor.error }}</p>
@@ -599,6 +613,42 @@
         </div>
     </div>
 
+
+    <!-- MODAL: CABECERA DEL PROYECTO (Etapa 7 · T15): ver y editar los 7 datos de la hoja de inspección, con la propuesta de los STP al lado -->
+    <div v-if="cabecera" class="fixed inset-0 bg-black/70 z-50 flex items-start justify-center overflow-y-auto p-6" data-cabecera>
+        <div class="bg-[#1a1a1e] border border-[#29292e] rounded-xl w-full max-w-2xl">
+            <div class="px-6 py-4 border-b border-[#29292e] flex justify-between items-center">
+                <h3 class="font-bold text-white"><i class="fa-solid fa-id-card mr-2 text-yellow-400"></i>Cabecera del proyecto · {{ cabecera.nombre }}</h3>
+                <button @click="cabecera = null" class="text-gray-400 hover:text-white" title="Cerrar"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="p-6 text-sm">
+                <p v-if="cabecera.cargando" class="text-gray-400">Cargando…</p>
+                <template v-else-if="cabecera.valores">
+                    <p class="text-xs text-gray-400 mb-3">Estos datos salen en la hoja de inspección de los informes. Lo que dejes vacío sale como «pendiente de verificar». Cada cambio queda en la auditoría.</p>
+                    <p v-if="cabecera.propuesta && cabecera.propuesta.duda_abierta_id" class="mb-3 bg-orange-950 border border-orange-600 text-orange-200 rounded px-3 py-2 text-xs" data-cabecera-duda>Hay una duda abierta sobre la cabecera (propuesta desde los STP entregados). Al guardar un cambio se cierra.</p>
+                    <div class="divide-y divide-[#29292e] border-y border-[#29292e]">
+                        <div v-for="c in camposCabecera" :key="c.clave" class="py-3 grid grid-cols-3 gap-3 items-start">
+                            <label class="text-gray-300 text-xs uppercase tracking-wide pt-1.5">{{ c.rotulo }}</label>
+                            <div class="col-span-2" :data-campo-cabecera="c.clave">
+                                <input v-if="cabecera.editando" v-model="cabecera.form[c.clave]" type="text" class="w-full bg-[#121214] border border-[#29292e] rounded px-3 py-1.5 text-white" :data-input-cabecera="c.clave">
+                                <p v-else class="text-white py-1" :class="cabecera.valores[c.clave] ? '' : 'text-orange-300 italic'">{{ cabecera.valores[c.clave] || 'pendiente de verificar' }}</p>
+                                <p v-if="propuestaCabecera(c.clave)" class="text-xs text-gray-500 mt-1" :data-propuesta-cabecera="c.clave">propuesta: {{ propuestaCabecera(c.clave) }}</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex justify-end gap-2 mt-4">
+                        <template v-if="cabecera.editando">
+                            <button @click="cancelarCabecera" :disabled="cabecera.guardando" class="bg-[#29292e] hover:bg-[#323238] text-white text-xs px-3 py-1.5 rounded">Cancelar</button>
+                            <button @click="guardarCabecera" :disabled="cabecera.guardando" data-guardar-cabecera class="bg-yellow-500 hover:bg-yellow-400 disabled:opacity-50 text-black text-xs font-bold px-3 py-1.5 rounded">{{ cabecera.guardando ? 'Guardando…' : 'Guardar' }}</button>
+                        </template>
+                        <button v-else @click="editarCabecera" data-editar-cabecera class="bg-yellow-500 hover:bg-yellow-400 text-black text-xs font-bold px-3 py-1.5 rounded">Editar</button>
+                    </div>
+                </template>
+                <p v-if="cabecera.error" class="mt-3 bg-red-950 border border-red-700 text-red-200 rounded px-3 py-2 text-xs" data-cabecera-error>{{ cabecera.error }}</p>
+                <p v-if="cabecera.mensaje" class="mt-3 bg-green-950 border border-green-700 text-green-200 rounded px-3 py-2 text-xs" data-cabecera-mensaje>{{ cabecera.mensaje }}</p>
+            </div>
+        </div>
+    </div>
 
     <!-- MODAL: CONFIRMAR DATOS DEL PLANO (Etapa 2 · T7n): confirmación por lote de una tabla en verde, con el recorte al lado -->
     <div v-if="confirmar" class="fixed inset-0 bg-black/80 z-30 flex flex-col p-4" data-confirmar>
@@ -1086,6 +1136,54 @@
                     { tipo: 'hoja_par', titulo: 'Emparejamiento de hojas vectorial → sellado', ayuda: '(número de hoja del vectorial = número de hoja del sellado, o «sin pareja»)', ejemplo: '1 = 1\n9 = sin pareja' },
                     { tipo: 'techo', titulo: 'Nivel de las plantas repetidas', ayuda: '(página del vectorial = nivel; solo para plantas con el mismo título en varias hojas, p. ej. dos «DE TECHO»)', ejemplo: '32 = TECHO\n33 = TECHO ASCENSOR', sinDuda: true },
                 ];
+                // ---- Cabecera del proyecto (Etapa 7 · T15) ----
+                const camposCabecera = [
+                    { clave: 'no_solicitud', rotulo: 'No. solicitud' }, { clave: 'no_licencia', rotulo: 'Licencia' },
+                    { clave: 'direccion_obra', rotulo: 'Dirección de la obra' }, { clave: 'provincia', rotulo: 'Provincia' },
+                    { clave: 'sector', rotulo: 'Sector' }, { clave: 'residente_obra', rotulo: 'Residente de obra' },
+                    { clave: 'codia_residente', rotulo: 'CODIA del residente' },
+                ];
+                const cabecera = ref(null);
+                const abrirCabecera = async (p) => {
+                    cabecera.value = { id: p.id, nombre: p.nombre, cargando: true, valores: null, propuesta: null, editando: false, form: {}, guardando: false, error: '', mensaje: '' };
+                    try {
+                        let res;
+                        try { res = await fetch(`${API}/api/proyectos/${encodeURIComponent(p.id)}/cabecera`); }
+                        catch (e) { throw new Error(`El backend no responde en ${API}. Verifica que el servidor FastAPI esté corriendo.`); }
+                        if (!res.ok) throw new Error(await leerError(res));
+                        const j = await res.json();
+                        Object.assign(cabecera.value, { valores: j.valores, propuesta: j.propuesta });
+                    } catch (e) { cabecera.value.error = e.message; }
+                    finally { if (cabecera.value) cabecera.value.cargando = false; }
+                };
+                const propuestaCabecera = (clave) => {
+                    const c = cabecera.value;
+                    const f = c && c.propuesta && c.propuesta.campos && c.propuesta.campos[clave];
+                    if (!f || f.estado !== 'propuesta' || f.valor === c.valores[clave]) return '';
+                    return f.valor;
+                };
+                const editarCabecera = () => { cabecera.value.form = { ...cabecera.value.valores }; cabecera.value.editando = true; cabecera.value.mensaje = ''; cabecera.value.error = ''; };
+                const cancelarCabecera = () => { cabecera.value.editando = false; cabecera.value.error = ''; };
+                const guardarCabecera = async () => {
+                    const c = cabecera.value;
+                    if (c.guardando) return;
+                    c.guardando = true; c.error = ''; c.mensaje = '';
+                    try {
+                        let res;
+                        try {
+                            res = await fetch(`${API}/api/proyectos/${encodeURIComponent(c.id)}/cabecera`, {
+                                method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(c.form),
+                            });
+                        } catch (e) { throw new Error(`El backend no responde en ${API}. Verifica que el servidor FastAPI esté corriendo.`); }
+                        if (!res.ok) throw new Error(await leerError(res));
+                        const r = await res.json();
+                        c.valores = r.valores; c.editando = false; c.mensaje = r.mensaje;
+                        const j = await (await fetch(`${API}/api/proyectos/${encodeURIComponent(c.id)}/cabecera`)).json();
+                        c.propuesta = j.propuesta;
+                    } catch (e) { c.error = e.message; }
+                    finally { c.guardando = false; }
+                };
+
                 const abrirDatosObra = async (p) => {
                     modalDatos.value = { proyecto_id: p.id, nombre: p.nombre, texto: { equivalencia_nivel: '', losa_tipo: '', hoja_par: '', techo: '' },
                         completo: { equivalencia_nivel: false, losa_tipo: false, hoja_par: false, techo: false }, mensajes: {}, errores: {}, enviando: false };
@@ -1128,8 +1226,8 @@
 
                 const abrirVisor = async (p) => {
                     visor.value = { proyecto_id: p.id, nombre: p.nombre, hojas: [], pagina: 1, info: null, urlImagen: '', zoom: 1,
-                        elementos: [], uid: '', tipo: 'localizacion', propuestas: null, borrador: { localizacion: null, detalle: null },
-                        previas: {}, error: '', mensaje: '', ocupado: false, dibujando: null };
+                        elementos: [], uid: '', tipo: 'localizacion', propuestas: null, borrador: { localizacion: null, detalle: null, zona: null },
+                        zona: null, errorZona: '', previas: {}, error: '', mensaje: '', ocupado: false, dibujando: null };
                     try {
                         const [ri, re] = await Promise.all([fetch(`${API}/api/proyectos/${p.id}/visor/indice`), fetch(`${API}/api/proyectos/${p.id}/elementos`)]);
                         if (!ri.ok) throw new Error(await leerError(ri));
@@ -1149,6 +1247,70 @@
                         v.urlImagen = `${API}/api/proyectos/${v.proyecto_id}/visor/hojas/${v.pagina}.png?dpi=${v.info.dpi}`;
                         await ajustarVisor();
                     } catch (e) { v.error = e.message; }
+                    await cargarZona();
+                };
+                // --- Etapa 7 · T12b: zona de planta (una por hoja; la usan todos los elementos de esa planta) ---
+                const urlZona = () => `${API}/api/proyectos/${visor.value.proyecto_id}/visor/hojas/${visor.value.pagina}/zona-planta`;
+                const cargarZona = async () => {
+                    const v = visor.value, pag = v.pagina;
+                    v.errorZona = '';
+                    if (v.borrador.zona && v.borrador.zona.pagina !== pag) v.borrador.zona = null;   // un borrador es de su hoja
+                    v.zona = null;
+                    try {
+                        const r = await fetch(urlZona());
+                        if (!r.ok) throw new Error(await leerError(r));
+                        const z = await r.json();
+                        if (v.pagina === pag) v.zona = z;
+                    } catch (e) { if (v.pagina === pag) v.errorZona = e.message; }
+                };
+                const proponerZona = async () => {
+                    const v = visor.value, pag = v.pagina;
+                    v.ocupado = true; v.errorZona = ''; v.mensaje = '';
+                    try {
+                        const r = await fetch(urlZona() + '/propuesta', { method: 'POST' });
+                        if (!r.ok) throw new Error(await leerError(r));
+                        const z = await r.json();
+                        if (v.pagina === pag) v.zona = z;
+                    } catch (e) { v.errorZona = e.message; } finally { v.ocupado = false; }
+                };
+                // Rect a confirmar: el borrador dibujado o, si no hay, el rect propuesto (aún no confirmado)
+                const rectZonaAGuardar = () => {
+                    const v = visor.value;
+                    if (v.borrador.zona) return v.borrador.zona.rect;
+                    return v.zona && v.zona.rect && v.zona.estado !== 'confirmado' ? v.zona.rect : null;
+                };
+                const guardarZona = async () => {
+                    const v = visor.value, rect = rectZonaAGuardar(), pag = v.pagina;
+                    if (!rect) return;
+                    v.ocupado = true; v.errorZona = ''; v.mensaje = '';
+                    try {
+                        const r = await fetch(urlZona(), { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ rect }) });
+                        if (!r.ok) throw new Error(await leerError(r));   // p. ej. regla anti-zoom: el borrador se conserva
+                        const z = await r.json();
+                        if (v.pagina === pag) { v.zona = z; v.borrador.zona = null; }
+                        v.mensaje = `Zona de planta de la hoja ${pag} confirmada.`;
+                    } catch (e) { v.errorZona = e.message; } finally { v.ocupado = false; }
+                };
+                const estadoZona = () => {
+                    const v = visor.value, z = v.zona;
+                    if (v.borrador.zona) return { texto: 'sin guardar', clase: 'bg-blue-950 text-blue-300 border-blue-700' };
+                    if (z && z.estado === 'confirmado' && z.rect) return { texto: 'confirmado', clase: 'bg-green-950 text-green-300 border-green-700' };
+                    if (z && z.rect) return { texto: 'propuesto · confirma o ajusta', clase: 'bg-orange-950 text-orange-300 border-orange-600' };
+                    return { texto: 'pendiente de verificar', clase: 'bg-orange-950 text-orange-300 border-orange-600' };
+                };
+                const detalleZona = () => {
+                    const v = visor.value, z = v.zona, b = v.borrador.zona;
+                    const fmt = (r) => `[${r.map(n => Math.round(n)).join(', ')}] pt`;
+                    if (b) return `${fmt(b.rect)} (dibujado, sin guardar)`;
+                    if (!z) return 'Cargando la zona de esta hoja…';
+                    if (z.rect) return `${fmt(z.rect)} · ${z.origen || ''}${z.estado === 'confirmado' ? '' : ' · propuesta, nadie la confirmó'}${z.motivo ? ' · ' + z.motivo : ''}`;
+                    return z.motivo || 'Sin zona en esta hoja: pulsa «Proponer zona» o dibújala marcando «Zona de planta».';
+                };
+                // Zona que viaja con la vista previa de LOCALIZACION: el borrador si existe, si no la confirmada
+                const zonaParaPrevia = (pagina) => {
+                    const v = visor.value;
+                    if (v.borrador.zona && v.borrador.zona.pagina === pagina) return v.borrador.zona.rect;
+                    return v.pagina === pagina && v.zona && v.zona.estado === 'confirmado' && v.zona.rect ? v.zona.rect : null;
                 };
                 const zoomVisor = (f) => { visor.value.zoom = Math.min(8, Math.max(0.1, visor.value.zoom * f)); };
                 const ajustarVisor = async () => {
@@ -1160,16 +1322,28 @@
                 const guardadoDe = (tipo) => {
                     const e = elementoVisor.value;
                     const g = e ? (tipo === 'localizacion' ? e.recorte_planta : e.recorte_detalle) : null;
-                    return g && g.rect ? g : null;
+                    return g && g.rect && g.estado === 'confirmado' ? g : null;   // solo lo confirmado cuenta como guardado
+                };
+                // Recuadro PROPUESTO ya guardado por el backend (estado distinto de 'confirmado'): se muestra, pero nadie lo confirmó
+                const propuestoGuardado = (tipo) => {
+                    const e = elementoVisor.value;
+                    const g = e ? (tipo === 'localizacion' ? e.recorte_planta : e.recorte_detalle) : null;
+                    return g && g.rect && g.estado !== 'confirmado' ? g : null;
+                };
+                const textoFuente = (f) => f ? `${f.metodo || ''}${f.rotulo ? ' «' + f.rotulo + '»' : ''}${f.rotulo_planta ? ' «' + f.rotulo_planta + '»' : ''}${f.archivo ? ' · ' + f.archivo : ''}` : '';
+                const propuestaDe = (tipo) => {
+                    const p = visor.value.propuestas && visor.value.propuestas[tipo];
+                    return p && p.rect ? p : propuestoGuardado(tipo);
                 };
                 const cambiarElemento = () => {
                     const v = visor.value;
-                    v.propuestas = null; v.borrador = { localizacion: null, detalle: null }; v.previas = {}; v.mensaje = ''; v.error = '';
+                    v.propuestas = null; v.borrador = { localizacion: null, detalle: null, zona: v.borrador.zona }; v.previas = {}; v.mensaje = ''; v.error = '';
                     for (const t of ['localizacion', 'detalle']) {
                         const g = guardadoDe(t);
                         if (g) v.borrador[t] = null;
                     }
-                    const g = guardadoDe(v.tipo) || guardadoDe('localizacion') || guardadoDe('detalle');
+                    const g = guardadoDe(v.tipo) || guardadoDe('localizacion') || guardadoDe('detalle')
+                        || propuestoGuardado(v.tipo) || propuestoGuardado('localizacion') || propuestoGuardado('detalle');
                     if (g && g.pagina !== v.pagina) { v.pagina = g.pagina; cargarHoja(); }
                 };
                 const proponerVisor = async () => {
@@ -1184,20 +1358,21 @@
                     } catch (e) { v.error = e.message; } finally { v.ocupado = false; }
                 };
                 const usarPropuesta = async (tipo) => {
-                    const v = visor.value, p = v.propuestas && v.propuestas[tipo];
+                    const v = visor.value, p = propuestaDe(tipo);
                     if (!p || !p.rect) return;
                     v.borrador[tipo] = { pagina: p.pagina, rect: p.rect.slice(), origen: 'confirmado' };
                     v.tipo = tipo;
                     if (p.pagina !== v.pagina) { v.pagina = p.pagina; await cargarHoja(); }
                 };
                 const rectActual = (tipo) => {
-                    const v = visor.value, b = v.borrador[tipo], g = guardadoDe(tipo);
+                    const v = visor.value, b = v.borrador[tipo], g = guardadoDe(tipo) || propuestoGuardado(tipo);
                     return b ? { pagina: b.pagina, rect: b.rect } : (g ? { pagina: g.pagina, rect: g.rect } : null);
                 };
                 const estadoRecuadro = (tipo) => {
                     const v = visor.value;
                     if (v.borrador[tipo]) return { texto: 'sin guardar', clase: 'bg-blue-950 text-blue-300 border-blue-700' };
                     if (guardadoDe(tipo)) return { texto: 'confirmado', clase: 'bg-green-950 text-green-300 border-green-700' };
+                    if (propuestoGuardado(tipo)) return { texto: 'propuesto · confirma o ajusta', clase: 'bg-orange-950 text-orange-300 border-orange-600' };
                     const p = v.propuestas && v.propuestas[tipo];
                     if (p) return { texto: p.rect ? 'propuesto · pendiente de verificar' : 'pendiente de verificar', clase: 'bg-orange-950 text-orange-300 border-orange-600' };
                     return { texto: 'pendiente de verificar', clase: 'bg-orange-950 text-orange-300 border-orange-600' };
@@ -1207,6 +1382,8 @@
                     const fmt = (x) => `p${x.pagina} · [${x.rect.map(n => Math.round(n)).join(', ')}] pt`;
                     if (b) return `${fmt(b)} (${b.origen})`;
                     if (g) return `${fmt(g)} · ${g.origen} por ${g.confirmado_por}`;
+                    const ps = propuestoGuardado(tipo);
+                    if (ps) return `Propuesto — confirma o ajusta · ${fmt(ps)} · fuente: ${textoFuente(ps.fuente) || ps.origen || 'sin fuente'}`;
                     if (p) return p.rect ? `${fmt(p)} · fuente: ${p.fuente.metodo}${p.fuente.rotulo ? ' «' + p.fuente.rotulo + '»' : ''}` : p.motivo;
                     return 'Sin recuadro: elige un elemento y pulsa «Proponer recuadros», o dibújalo.';
                 };
@@ -1232,7 +1409,12 @@
                     v.error = '';
                     try {
                         const r = await fetch(`${API}/api/proyectos/${v.proyecto_id}/visor/vista-previa`, { method: 'POST',
-                            headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ tipo, pagina: ra.pagina, rect: ra.rect }) });
+                            headers: { 'Content-Type': 'application/json' }, body: JSON.stringify((() => {
+                                const cuerpo = { tipo, pagina: ra.pagina, rect: ra.rect };
+                                const z = tipo === 'localizacion' ? zonaParaPrevia(ra.pagina) : null;
+                                if (z) cuerpo.zona = z;
+                                return cuerpo;
+                            })()) });
                         if (!r.ok) throw new Error(await leerError(r));
                         if (v.previas[tipo]) URL.revokeObjectURL(v.previas[tipo]);
                         v.previas[tipo] = URL.createObjectURL(await r.blob());
@@ -1247,8 +1429,20 @@
                         const sigla = t === 'localizacion' ? 'LOC' : 'DET';
                         if (g && g.pagina === v.pagina) out.push({ clave: `guardado-${t}`, rect: g.rect, etiqueta: `${sigla} confirmado`, borde: '2px solid #22c55e', fondo: 'rgba(34,197,94,0.08)', etiquetaFondo: '#22c55e' });
                         if (p && p.rect && p.pagina === v.pagina) out.push({ clave: `propuesta-${t}`, rect: p.rect, etiqueta: `${sigla} propuesto (pendiente)`, borde: '2px dashed #eab308', fondo: 'rgba(234,179,8,0.08)', etiquetaFondo: '#eab308' });
+                        else if (!g) {
+                            const ps = propuestoGuardado(t);
+                            if (ps && ps.pagina === v.pagina) out.push({ clave: `propuesto-${t}`, rect: ps.rect, etiqueta: `${sigla} Propuesto — confirma o ajusta${ps.fuente && ps.fuente.metodo ? ' (' + ps.fuente.metodo + ')' : ''}`, borde: '2px dashed #f97316', fondo: 'rgba(249,115,22,0.10)', etiquetaFondo: '#f97316' });
+                        }
                         if (b && b.pagina === v.pagina) out.push({ clave: `borrador-${t}`, rect: b.rect, etiqueta: `${sigla} sin guardar`, borde: '2px solid #3b82f6', fondo: 'rgba(59,130,246,0.12)', etiquetaFondo: '#60a5fa' });
                     }
+                    // Zona de planta (azul cielo, discontinuo) y los ejes que encontró el backend (trazo fino)
+                    const z = v.zona, bz = v.borrador.zona;
+                    if (bz && bz.pagina === v.pagina) out.push({ clave: 'borrador-zona', rect: bz.rect, etiqueta: 'ZONA sin guardar', borde: '2px dashed #38bdf8', fondo: 'rgba(56,189,248,0.10)', etiquetaFondo: '#38bdf8' });
+                    else if (z && z.rect) {
+                        const conf = z.estado === 'confirmado';
+                        out.push({ clave: 'zona', rect: z.rect, etiqueta: conf ? 'ZONA confirmada' : 'ZONA propuesta — confirma o ajusta', borde: `${conf ? 3 : 2}px dashed #0ea5e9`, fondo: 'rgba(14,165,233,0.07)', etiquetaFondo: '#38bdf8' });
+                    }
+                    if (z && z.ejes_rect) out.push({ clave: 'zona-ejes', rect: z.ejes_rect, etiqueta: 'ejes detectados', borde: '1px solid #67e8f9', fondo: 'transparent', etiquetaFondo: '#67e8f9' });
                     return out;
                 });
                 const puntoDeEvento = (ev) => {
@@ -1463,10 +1657,12 @@
                     dudasAbiertas, bloqueantesAbiertas, candidatosStp, abrirMesa, cerrarMesa, responder, responderEstado,
                     esElementoVisita, fotosDe,
                     sincronizarDropbox, contarOTs, filtrarOTs, trabajoCola, procesarCola,
+                    cabecera, camposCabecera, abrirCabecera, propuestaCabecera, editarCabecera, cancelarCabecera, guardarCabecera,
                     planosVigentes, avisoObra, modalObra, modalDatos, gruposDatos,
                     abrirNuevaObra, abrirCambiarPlano, cerrarModalObra, enviarObra, abrirDatosObra, guardarDatos,
                     visor, lienzoVisor, tiposRecuadro, elementoVisor, cajasVisibles, ptAPx, abrirVisor, cargarHoja, zoomVisor, ajustarVisor,
-                    cambiarElemento, proponerVisor, usarPropuesta, rectActual, estadoRecuadro, detalleRecuadro, guardarRecuadro,
+                    cambiarElemento, proponerVisor, usarPropuesta, propuestaDe, rectActual, estadoRecuadro, detalleRecuadro, guardarRecuadro,
+                    proponerZona, guardarZona, estadoZona, detalleZona, rectZonaAGuardar,
                     vistaPrevia, empezarDibujo, seguirDibujo, terminarDibujo,
                     confirmar, nombreTabla, esDudaPlano, dudasObra, abrirMesaObra, abrirConfirmar, cerrarConfirmar, abrirTabla,
                     cajaResaltada, confirmarTabla, certificarNotas, extraerPlano,

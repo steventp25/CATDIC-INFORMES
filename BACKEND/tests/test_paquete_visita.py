@@ -1,5 +1,5 @@
 # BACKEND/tests/test_paquete_visita.py
-# Paquete de visita v1 de CATDIC Campo -> elementos_visita (PLANES/paquete-visita-v1.md).
+# Paquete de visita v1 y v2 de CATDIC Campo -> elementos_visita (PLANES/paquete-visita-v1.md y -v2.md).
 # Todo SINTÉTICO: paquetes, fotos y visita se generan en la prueba.
 import base64
 import io
@@ -211,7 +211,7 @@ def test_auditoria_de_la_carga(entorno):
 
 @pytest.mark.parametrize("estropear, texto", [
     (lambda p: p.update(formato="otra-cosa"), "no es un paquete"),
-    (lambda p: p.update(version=2), "versión 2"),
+    (lambda p: p.update(version=3), "versión 3"),
     (lambda p: p.update(elementos=[]), "no trae elementos"),
     (lambda p: p["elementos"][0].update(fotos=[]), "no trae fotos"),
     (lambda p: p["elementos"][1]["fotos"][0].update(numero=1), "repite"),
@@ -295,3 +295,136 @@ def test_fecha_o_clase_invalida_no_se_usa(entorno, fecha, clase):
     _cargar(entorno, _paquete([_el(1, [1])], fecha=fecha, clase=clase))
     assert _visita()["fecha_visita"] == PENDIENTE
     assert [d["campo_afectado"] for d in _dudas()] == ["fecha_visita"]
+
+
+# ---------- Paquete v2: mediciones guiadas de OBRA ----------
+
+def _v2(elementos, **kw):
+    p = _paquete(elementos, **kw)
+    p["version"] = 2
+    return p
+
+
+def _el2(orden, numeros, fila="col", textos=None, medidas=None, estado="Conforme", **kw):
+    el = _el(orden, numeros, **kw)
+    el["estado"] = estado
+    el["obra"] = {"fila_stp": fila, "textos": textos or {}, "medidas_acero": medidas or {}}
+    return el
+
+
+def _medidas_json(i=0):
+    return json.loads(_filas()[i]["medidas_acero_campo_json"])
+
+
+def test_v2_completo_construye_el_json_del_contrato(entorno):
+    r = _cargar(entorno, _v2([_el2(1, [1], textos={"k": "12", "h": '3/8"'}, medidas={"c": "0.32", "d": "0,42"})]))
+    assert r["version"] == 2 and not _dudas()
+    assert _medidas_json() == {"c": 0.32, "d": 0.42, "obra": {"k": "12", "h": '3/8"'},
+                               "conforme_por_omision": list("abefgijmnoq"), "estado_campo": "Conforme",
+                               "origen": "paquete_v2"}
+    with _bd() as c:
+        a = c.execute("SELECT detalle_json FROM auditoria WHERE accion = 'CARGAR_PAQUETE'").fetchone()
+    assert json.loads(a["detalle_json"])["version"] == 2
+
+
+def test_v2_con_todo_vacio_es_conforme_por_omision(entorno):
+    _cargar(entorno, _v2([_el2(1, [1], fila="col")]))
+    m = _medidas_json()
+    assert m["conforme_por_omision"] == sorted(paquete_visita.JUEGO_V2["col"]) and m["obra"] == {}
+    assert "c" in m["conforme_por_omision"] and "d" in m["conforme_por_omision"]  # dimensionales vacías = conformes
+    assert not _dudas()
+
+
+def test_v2_sin_clave_obra_no_se_supone_conforme(entorno):
+    el = _el(1, [1])
+    el["estado"] = "Conforme"
+    _cargar(entorno, _v2([el]))
+    # sin `obra` la fila declarada es "" y no coincide con "col": no se usa y hay duda
+    assert [d["campo_afectado"] for d in _dudas()] == ["elemento_visita:p001:obra"]
+    assert _medidas_json()["conforme_por_omision"] == []
+
+
+def test_v2_estado_pendiente_no_entra_como_conforme_y_abre_duda(entorno):
+    _cargar(entorno, _v2([_el2(1, [1], estado="Pendiente", textos={"k": "12"})]))
+    m = _medidas_json()
+    assert m["conforme_por_omision"] == [] and m["estado_campo"] == "Pendiente" and m["obra"] == {"k": "12"}
+    assert [d["campo_afectado"] for d in _dudas()] == ["elemento_visita:p001:pendiente"]
+    assert _visita()["estado"] == "Con dudas"
+
+
+@pytest.mark.parametrize("valor", ["32 cm", "3/8", "abc", "-0.3", "0", "31", "1e-1", "0.3.2", "0.32 m"])
+def test_v2_medida_ilegible_no_se_usa_y_va_a_duda_con_el_valor_literal(entorno, valor):
+    _cargar(entorno, _v2([_el2(1, [1], medidas={"c": valor, "d": "0.42"})]))
+    m = _medidas_json()
+    assert "c" not in m and m["d"] == 0.42
+    assert "c" not in m["conforme_por_omision"] and "d" not in m["conforme_por_omision"]
+    duda = _dudas()
+    assert [d["campo_afectado"] for d in duda] == ["elemento_visita:p001:obra"]
+    assert f"'{valor}'" in duda[0]["descripcion_pregunta"]
+
+
+@pytest.mark.parametrize("valor, esperado", [("0,32", 0.32), (".32", 0.32), ("0.32", 0.32), (" 1,5 ", 1.5), ("30", 30.0)])
+def test_v2_medida_con_coma_o_punto(entorno, valor, esperado):
+    _cargar(entorno, _v2([_el2(1, [1], medidas={"c": valor})]))
+    assert _medidas_json()["c"] == esperado and not _dudas()
+
+
+def test_v2_letra_fuera_del_juego_va_a_duda(entorno):
+    # 'p' (cuantía) no se pide; 'c' (dimensional) no va como texto; 'z' no existe; 'a' no es dimensional
+    _cargar(entorno, _v2([_el2(1, [1], textos={"p": "1", "c": "0.3", "z": "x", "k": "12"}, medidas={"a": "0.3"})]))
+    m = _medidas_json()
+    assert m["obra"] == {"k": "12"}
+    assert all(l not in m["conforme_por_omision"] for l in "pcz")
+    assert [d["campo_afectado"] for d in _dudas()] == ["elemento_visita:p001:obra"]
+
+
+def test_v2_fila_stp_que_no_coincide_no_usa_la_obra(entorno):
+    _cargar(entorno, _v2([_el2(1, [1], fila="viga", textos={"k": "12"}, medidas={"c": "0.3"})]))
+    m = _medidas_json()
+    assert m["obra"] == {} and m["conforme_por_omision"] == [] and "c" not in m
+    assert [d["campo_afectado"] for d in _dudas()] == ["elemento_visita:p001:obra"]
+
+
+def test_v2_tipo_sin_stp_lleva_fila_vacia_y_nada_conforme(entorno):
+    _cargar(entorno, _v2([_el2(1, [1], fila="", tipo="ZAPATA", ident="Z1")]))
+    assert _medidas_json()["conforme_por_omision"] == [] and not _dudas()
+
+
+def test_v2_juegos_por_tipo_salen_de_los_rotulos_del_generador(entorno):
+    from generators import stp_mived
+    for fila, juego in paquete_visita.JUEGO_V2.items():
+        assert juego <= {l for l, _ in stp_mived.ROTULOS[fila]}
+    _cargar(entorno, _v2([_el2(1, [1], tipo="LOSA", ident="L5", caso="losa", l1="", n1="", fila="losa",
+                               medidas={"b": "0.20"})]))
+    assert _medidas_json()["conforme_por_omision"] == list("cdefghijkmnop") and _medidas_json()["b"] == 0.2
+
+
+def test_v2_recarga_idempotente_y_actualiza_si_cambia_la_obra(entorno):
+    p = _v2([_el2(1, [1], textos={"k": "12"})])
+    _cargar(entorno, p)
+    r2 = _cargar(entorno, p)
+    assert (r2["filas_nuevas"], r2["filas_actualizadas"], r2["sin_cambios"]) == (0, 0, 1)
+    p["elementos"][0]["obra"]["textos"]["k"] = "16"
+    r3 = _cargar(entorno, p)
+    assert r3["filas_actualizadas"] == 1 and _medidas_json()["obra"] == {"k": "16"}
+
+
+def test_v1_no_toca_medidas_acero_campo_json(entorno):
+    _cargar(entorno, _paquete([_el(1, [1])]))
+    assert _filas()[0]["medidas_acero_campo_json"] == "{}"
+    with _bd() as c:  # lo que haya en la columna (p. ej. de un v2 previo) un v1 no lo borra
+        c.execute("""UPDATE elementos_visita SET medidas_acero_campo_json = '{"c": 0.3}'""")
+    r = _cargar(entorno, _paquete([_el(1, [1])]))
+    assert r["sin_cambios"] == 1 and _filas()[0]["medidas_acero_campo_json"] == '{"c": 0.3}'
+
+
+def test_estado_desconocido_se_trata_como_pendiente(entorno):
+    _cargar(entorno, _v2([_el2(1, [1], estado="Revisar")]))
+    assert _medidas_json()["estado_campo"] == "Pendiente" and _medidas_json()["conforme_por_omision"] == []
+    assert any("no se reconoce" in d["descripcion_pregunta"] for d in _dudas())
+
+
+def test_estado_vacio_es_observacion_y_acepta_sin_acento(entorno):
+    _cargar(entorno, _v2([_el2(1, [1], estado=""), _el2(2, [2], estado="observacion")]))
+    assert [json.loads(f["medidas_acero_campo_json"])["estado_campo"] for f in _filas()] == ["Observación"] * 2
+    assert not _dudas()

@@ -1,0 +1,94 @@
+{
+  "version": 1,
+  "descripcion": "Valores de filas del STP-MIVED que el plano no trae y que Steven CONFIRMÓ por escrito (26/11/2026, respuestas 2 y 17 de su otra cuenta, hechas suyas). El procesador los usa como fuente de esas filas (valores_proyecto.py); nunca van como constantes en el generador. `solo_si` = el valor aplica solo si el dato de diseño trae esa palabra completa; `contraste_campos` = datos del diseño que, si traen un número en metros distinto del valor, abren una duda en vez de llenar la fila. `solo_nivel_visita: sotano` = el valor aplica solo si el nivel de la VISITA es un sótano (T20: la altura 2.95, «Solo sótanos»); en otro nivel la fila queda vacía con la duda diseno:pNNN:valor.<letra>. El 240 aplica a todo MURO DE CONTENCION de Terra Living («Sí, todos 240», pregunta 30) y el 350 solo a MURO H.A.",
+  "valores": [
+    {
+      "proyecto_id": "terra-living",
+      "fila_stp": "col",
+      "letra": "e",
+      "valor": "2.95",
+      "aplica_a": [
+        "COLUMNA"
+      ],
+      "contraste_campos": [
+        "altura_m"
+      ],
+      "confirmado_por": "Steven",
+      "fecha": "2026-11-26",
+      "cita": "Altura de la columna: 2.95 m… Hay que usar 2.95 en todos y no calcularla de nuevo (respuesta 2); «Solo sótanos» (Steven, 26/11/2026, pregunta 29)",
+      "origen": "informes STP entregados",
+      "solo_nivel_visita": "sotano"
+    },
+    {
+      "proyecto_id": "terra-living",
+      "fila_stp": "col",
+      "letra": "o",
+      "valor": "ZONA CENTRAL / 1.08",
+      "aplica_a": [
+        "COLUMNA"
+      ],
+      "confirmado_por": "Steven",
+      "fecha": "2026-11-26",
+      "cita": "Columna o = «ZONA CENTRAL / 1.08» (respuesta 17)",
+      "origen": "informes STP entregados"
+    },
+    {
+      "proyecto_id": "terra-living",
+      "fila_stp": "muro",
+      "letra": "a",
+      "valor": "350",
+      "aplica_a": [
+        "MURO H.A."
+      ],
+      "confirmado_por": "Steven",
+      "fecha": "2026-11-26",
+      "cita": "Muro a = 350 en muros H.A. (respuesta 17)",
+      "origen": "informes STP entregados"
+    },
+    {
+      "proyecto_id": "terra-living",
+      "fila_stp": "muro",
+      "letra": "a",
+      "valor": "240",
+      "aplica_a": [
+        "MURO DE CONTENCION"
+      ],
+      "confirmado_por": "Steven",
+      "fecha": "2026-11-26",
+      "cita": "Muro a = … 240 en el perimetral (respuesta 17); «Sí, todos 240» (Steven, 26/11/2026, pregunta 30: todo MURO DE CONTENCION es el perimetral)",
+      "origen": "informes STP entregados"
+    },
+    {
+      "proyecto_id": "terra-living",
+      "fila_stp": "muro",
+      "letra": "d",
+      "valor": "2.95",
+      "aplica_a": [
+        "MURO H.A.",
+        "MURO DE CONTENCION"
+      ],
+      "contraste_campos": [
+        "altura_m"
+      ],
+      "confirmado_por": "Steven",
+      "fecha": "2026-11-26",
+      "cita": "Muro d = 2.95 (respuesta 17); «Hay que usar 2.95 en todos y no calcularla de nuevo» (respuesta 2); «Solo sótanos» (Steven, 26/11/2026, pregunta 29)",
+      "origen": "informes STP entregados",
+      "solo_nivel_visita": "sotano"
+    },
+    {
+      "proyecto_id": "terra-living",
+      "fila_stp": "muro",
+      "letra": "e",
+      "valor": "SI",
+      "aplica_a": [
+        "MURO H.A.",
+        "MURO DE CONTENCION"
+      ],
+      "confirmado_por": "Steven",
+      "fecha": "2026-11-26",
+      "cita": "Muro e = «SI», valor fijo de stp_lib (respuesta 17)",
+      "origen": "informes STP entregados"
+    }
+  ]
+}
