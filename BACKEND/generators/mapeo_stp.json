@@ -11,7 +11,6 @@
                              "n": {"campo": "acero_longitudinal", "regla": "barras_diametro_unico"},
                              "k": {"campo": "acero_longitudinal", "regla": "barras_total_unico"},
                              "b": {"campo": "fc", "regla": "fc_kgcm2"},
-                             "e": {"campo": "altura_m", "regla": "metros_impresos"},
                              "i": {"campo": "barras_cara_x", "regla": "barras_por_cara",
                                    "apoyo": {"par": "barras_cara_y", "acero": "acero_longitudinal"}},
                              "j": {"campo": "barras_cara_y", "regla": "barras_por_cara",

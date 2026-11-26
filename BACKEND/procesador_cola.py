@@ -21,11 +21,13 @@ import re
 import threading
 import uuid
 from datetime import datetime
+from decimal import Decimal
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
 import config
 import pymupdf
+import valores_proyecto
 from database import _respaldar_bd, get_connection, usuario_auditoria
 from equivalencias_nivel import clave_nivel_visita, equivalencias_de, normalizar_nivel
 from generators import fi_mived, stp_mived
@@ -853,6 +855,10 @@ class ProcesoVisita:
             _con_conexion(lambda conn: _auditar(conn, "EJES_DEL_PLANO", ev["uid"], {
                 "visita_id": self.visita_id, "uid_diseno": c["uid"], "id_elemento": c["id_elemento"], "ejes": c["ejes"],
                 "motivo": NOTA_EJES_DEL_PLANO, "trabajo": self.trabajo_id}, self.usuario))
+        if ficha.get("origen_filas"):  # T17: de dónde salió cada fila que no viene del dibujo del plano
+            _con_conexion(lambda conn: _auditar(conn, "ORIGEN_FILAS", ev["uid"], {
+                "visita_id": self.visita_id, "uid_diseno": c["uid"], "id_elemento": c["id_elemento"],
+                "origen_filas": ficha["origen_filas"], "trabajo": self.trabajo_id}, self.usuario))
         for campo, texto in self.notas_ficha:  # T9: dudas que no bloquean; no se esperan (la ficha sigue)
             vigentes.add(campo)
             ya_resuelta = _con_conexion(lambda conn: conn.execute(
@@ -959,6 +965,52 @@ class ProcesoVisita:
                 f"{', '.join(repr(r) for r in equivalencia)} no corresponden a ningún rango de {ident['id']} en el plano "
                 f"({lista}). Corrígelas en {donde}.")
 
+    def _valores_del_proyecto(self, c, fila: str, pagina: str, datos: Dict, ficha: Dict, faltas: List) -> set:
+        """
+        T17: filas que salen de `valores_proyecto_confirmados.json` (valor, cita y quién lo confirmó). Devuelve las letras
+        que esa configuración cubre para este tipo de elemento (aunque la fila quede vacía por una duda): la derivación
+        del plano no las llena. Un valor con `solo_si` que el diseño no marca abre `diseno:pNNN:valor.<letra>`; un dato
+        de altura legible y distinto abre `diseno:pNNN:altura`. Nunca se deduce ni se calcula.
+        """
+        tipo = c["tipo_elemento"]
+        por_letra: Dict[str, List[Dict]] = {}
+        for v in valores_proyecto.valores_de(self.contexto["proyecto"]["id"], fila, tipo):
+            por_letra.setdefault(v["letra"], []).append(v)
+        for letra, lista in sorted(por_letra.items()):
+            if letra in ficha["plano"]:
+                continue  # una fila mapeada directo desde el plano manda
+            aplican = [v for v in lista if valores_proyecto.cumple_marca(v, c, datos)]
+            if len(aplican) != 1:
+                if not aplican:
+                    pedidos = "; ".join(
+                        f"{v['valor']} solo si {v['solo_si']['campo']} trae la palabra '{v['solo_si']['contiene_palabra']}'"
+                        for v in lista if v.get("solo_si"))
+                    faltas.append((f"diseno:{pagina}:valor.{letra}",
+                                   f"La fila {letra} de {c['id_elemento']} ({tipo}): el valor confirmado por Steven "
+                                   f"({pedidos}) no aplica porque el dato de diseño no lo marca; no se deduce por el tipo "
+                                   f"ni por la cercanía. La fila queda vacía ({PENDIENTE}). Indica el valor de la fila {letra}."))
+                else:
+                    faltas.append((f"diseno:{pagina}:valor.{letra}",
+                                   f"La fila {letra} de {c['id_elemento']} ({tipo}) tiene más de un valor confirmado que "
+                                   f"aplica ({', '.join(v['valor'] for v in aplican)}): no se elige ({PENDIENTE})."))
+                continue
+            v = aplican[0]
+            distinto = []
+            for campo in v.get("contraste_campos") or []:
+                impreso = datos.get(campo)
+                legible = _metros_impresos(impreso) if not _vacio(impreso) else None
+                if legible is not None and Decimal(legible) != Decimal(v["valor"]):
+                    distinto.append(f"{campo} = '{impreso}'")
+            if distinto:
+                faltas.append((f"diseno:{pagina}:altura",
+                               f"La altura de {c['id_elemento']} no cuadra: el diseño trae {'; '.join(distinto)} y Steven "
+                               f"confirmó {v['valor']} m para la fila {letra} ({v['cita']}). La fila queda vacía "
+                               f"({PENDIENTE}): confirma cuál vale; no se calcula ni se elige."))
+                continue
+            ficha["plano"][letra] = v["valor"]
+            ficha["origen_filas"][letra] = valores_proyecto.origen_de(v)
+        return set(por_letra)
+
     def _ficha(self, ev, c) -> Tuple[Optional[Dict], List[Tuple[str, str]]]:
         """Arma la ficha del generador (Capa 1 + Capa 2; la Capa 3 la calcula el generador). Devuelve (ficha, faltas)."""
         pagina = f"p{ev['orden_en_log']:03d}"
@@ -969,7 +1021,8 @@ class ProcesoVisita:
         fila = stp_mived._tipo_de_fila(tipo)
         ficha = {"titulo": f"{tipo}-{c['id_elemento']}" + ("" if c["ejes"] == EJE_LOSA else f"-{c['ejes']}"),
                  "tipo_elemento": tipo, "ejes": c["ejes"], "visita_id": self.visita_id, "fila_stp": fila,
-                 "uid_diseno": c["uid"], "orden_en_log": ev["orden_en_log"], "plano": {}, "obra": {}, "medidas": {}}
+                 "uid_diseno": c["uid"], "orden_en_log": ev["orden_en_log"], "plano": {}, "obra": {}, "medidas": {},
+                 "origen_filas": {}}
         # Paquete v2 (Etapa 7): estado "Pendiente" = elemento en revisión; no entra como conforme. La duda
         # elemento_visita:pNNN:pendiente la abre el importador; mientras siga abierta (o no exista) no se procesa.
         medidas_campo = _dict(ev["medidas_acero_campo_json"])
@@ -1021,8 +1074,9 @@ class ProcesoVisita:
 
                 # Derivaciones (T9, propuesta): una fila mapeada directo en `filas` manda; la derivación solo llena lo vacío
                 derivadas: Dict[str, str] = {}
+                de_proyecto = self._valores_del_proyecto(c, fila, pagina, datos, ficha, faltas)  # T17
                 for letra, d in (mapeo.get("derivaciones") or {}).items():
-                    if letra in mapeo.get("filas", {}) or letra in ficha["plano"]:
+                    if letra in mapeo.get("filas", {}) or letra in ficha["plano"] or letra in de_proyecto:
                         continue
                     impreso = datos.get(d["campo"])
                     if _vacio(impreso):

@@ -666,7 +666,7 @@ def test_t4_el_json_entregado_es_propuesta_sin_confirmar():
         "n": {"campo": "acero_longitudinal", "regla": "barras_diametro_unico"},
         "k": {"campo": "acero_longitudinal", "regla": "barras_total_unico"},  # T11b
         "b": {"campo": "fc", "regla": "fc_kgcm2"},  # T11
-        "e": {"campo": "altura_m", "regla": "metros_impresos"},
+        # T17: «e» (altura) ya no se deriva del plano: sale de valores_proyecto_confirmados.json
         "i": {"campo": "barras_cara_x", "regla": "barras_por_cara",
               "apoyo": {"par": "barras_cara_y", "acero": "acero_longitudinal"}},
         "j": {"campo": "barras_cara_y", "regla": "barras_por_cara",
@@ -815,6 +815,9 @@ def test_t4_la_viga_sigue_con_la_duda_de_mapeo(entorno, monkeypatch):
 
 def _mapeo_real(monkeypatch, confirmado=False):
     mapeo, _ = pc.cargar_mapeo_stp()
+    # T17: el mapeo real ya no deriva «e» del plano (la altura sale de valores_proyecto_confirmados.json). Las pruebas de T11
+    # siguen probando la regla `metros_impresos` en una obra SIN valores confirmados (SINTÉTICO).
+    mapeo["col"]["derivaciones"]["e"] = {"campo": "altura_m", "regla": "metros_impresos"}
     monkeypatch.setattr(pc, "MAPEO_DISENO_A_STP", mapeo)
     monkeypatch.setattr(pc, "MAPEO_CONFIRMADO", confirmado)
     return mapeo
