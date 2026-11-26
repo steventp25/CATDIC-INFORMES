@@ -15,6 +15,21 @@ Rama `claude/etapa7-campo-informe-02d16d`. Commits locales, sin push ni PR (los 
 
 | T12 (zona de planta para LOCALIZACIÓN) | hecha, aprobada por el Director (Evaluación 9) | `8165cd5` (plan y contrato), `6eee060` (código). Suite: 1286 pasan, 3 omitidas y solo las 2 fallas conocidas de Dropbox. Imágenes de la prueba en seco en la carpeta de notas del Director, `t12-localizacion\` |
 
+| T13 + T14 (muros únicos, MC y equivalencia S-2 confirmada) | hecha, falta la auditoría del Director | `9b81694`. Un muro único en el nivel cruza con los ejes del plano; «MC» cruza con cualquier muro de contención del nivel; S-2 = FUNDACIONES @ E-1 en `BACKEND/equivalencias_confirmadas.json` |
+| T15 (cabecera editable) | hecha, falta la auditoría del Director | `fed15a9` (GET/PUT `/api/proyectos/{id}/cabecera` y el modal «Cabecera» del tablero) y `1da55da` (`codia_residente` migrada al arrancar, con respaldo y auditoría) |
+| T16 (área de 1" = 5.07) | hecha, falta la auditoría del Director | `2b17ccb`. C1 36∅1" en 0.60 × 1.50 da 0.0203 |
+
+Suite tras T13–T16: 1323 pasan, 3 omitidas y solo las 2 fallas conocidas de Dropbox.
+
+**Observaciones de T13–T16 (no bloquean):**
+- MH2 y MH3 cruzan como muros únicos, pero sus ejes de diseño siguen «pendiente de verificar». Por eso abren `diseno:pNNN:ejes`.
+- El MC real de la visita no trae ID escrito: su duda del importador sigue abierta hasta que el técnico escriba «MC».
+- La prueba en seco confirmó C3 LY = 1.50 en el STP borrador (hoja 5).
+- T15 usa un modal en el tablero porque no existe una vista de detalle del proyecto.
+- Dato previo, sin tocar: una duda `elemento_visita:pNNN` resuelta en blanco la lee `_respuesta_vigente` como respuesta de Steven.
+- Reglas C14 (cuantía de OBRA = la del plano cuando hay conformidad) y C16 (el muro en L suma sus alas): Steven las aprobó, pero aún no están programadas.
+- El Ejecutor de T15 dejó un uvicorn de prueba en el puerto 8000 (PID 46264, BD temporal). No pude detenerlo (permiso denegado).
+
 **Observaciones de T12 que no bloquean** (Director, Evaluación 9):
 - El recuadro de LOCALIZACIÓN de C1 que propuso T8 queda corrido: la columna cae en su esquina de arriba a la izquierda. Steven lo ajusta en el visor.
 - `proponer_zona` escribe en la BD sin hacer antes un respaldo. Hay que hacerlo antes de usarlo sobre la BD real.
