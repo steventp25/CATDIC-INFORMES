@@ -116,3 +116,20 @@ Fuera de alcance de T4: sin entrada en el JSON, sigue la duda `diseno:pNNN:mapeo
    d. **Fila k (Total barras, T11b):** ¿se aprueba que k sea el total que dice el rótulo del plano (`36∅1"` → 36, `40∅1"` → 40) cuando hay un solo grupo de barras? Con varios grupos no se suma: va a duda.
    e. **Área de la barra para la cuantía (corrida 6):** el programa calcula para C1 una cuantía de 0.0204 con ∅1" = 5.10 cm². El STP entregado dice 0.0203, que corresponde a unos 5.07 cm² por barra. ¿Qué área por diámetro usa Steven? `reglas_ingenieria` no se cambia hasta tener su respuesta.
    f. **Cuantía en obra (fila 2.p):** queda vacía cuando no hay barras medidas en obra. ¿Debe copiar la del plano cuando el elemento es conforme, como el resto de las filas vacías?
+
+## Respuestas de Steven (26/11/2026, transmitidas por el Director)
+Numeración de `PENDIENTES-STEVEN.md` (C10–C16), con su equivalente en la lista de arriba. `mapeo_stp.json` **sigue en `confirmado: false`**: falta la 17 (filas sin fuente) y la 18 (confirmar el mapeo completo, la 8 de arriba).
+
+| Pendientes | Aquí | Respuesta |
+|---|---|---|
+| A1 | 9a | f'c = 350 kg/cm²: **sí**. |
+| A4 | 1 | C3 LY = **1.50**; el 1.20 del informe «PARECE SER UN ERROR DE CAMPO». Manda el plano, sin código nuevo. |
+| C10 | 3, 4, 9b, 9d | f, g, h, m, n, k, i y j derivadas del plano: **aprobado**. |
+| C11 | 7 | f = g y m = n cuando el plano trae un solo valor: **aprobado**. La duda `derivacion_igual` deja de ser necesaria cuando se confirme el mapeo. |
+| C12 | 9a | `fc` sin unidad = kg/cm²: **aprobado**. |
+| C13 | 9b | x-x = cara del lado b, y-y = cara del lado h, con las esquinas en las dos: **aprobado**. |
+| C14 | 9f | Cuantía de obra (2.p) = la del plano cuando el elemento es conforme: **aprobado**. **Aún sin programar** (tarea nueva). |
+| C15 | 2 | `alma.ASV` en h e i, `alma.ASH` en j y k: **aprobado solo si la malla es simétrica**; si el plano trae caras distintas, manda el plano. Hoy el campo de diseño es uno solo por dirección (simétrico). Una cara distinta impresa necesitará campos por cara. |
+| C16 | 5 | Muro en L: c = suma de las alas (3.80 + 3.85): **aprobado**. **Aún sin programar** (tarea nueva; hoy c solo se copia cuando el plano trae un único valor). |
+
+**Siguen abiertas:** 9e (área de ∅1": 5.10 cm² según ASTM A615 #8, o 5.07 del círculo de 25.4 mm, que reproduce el 0.0203 entregado), 9c (altura H), 6/17 (fila o de columna y filas a, d y e de muro) y 8/18.
